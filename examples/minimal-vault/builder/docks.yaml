@@ -1,6 +1,4 @@
-# Default dock templates — seeded into each vault as builder/docks.yaml on first use.
-# Per-vault docks can be extended via the SCUBA UI (+ Add dock).
-
+# Vault docks — four defaults; add more via SCUBA UI (+ Add dock).
 docks:
   - id: my-portfolio
     emoji: "⚓"

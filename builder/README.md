@@ -5,7 +5,8 @@ sits in), **idempotent** (re-run anytime), and **data-driven** (swap `data.py` f
 
 ## Run it
 ```bash
-python3 builder/map_channel.py --channel my-portfolio   # docked PDFs → builder/entries/
+python3 builder/map_channel.py --channel my-portfolio   # Quick Dip: docked PDFs → builder/entries/
+python3 builder/qa_quick_dip.py                         # QA Tier 1 (no guessing)
 python3 builder/build.py            # scaffold wiki chart from entries + data.py
 ```
 
@@ -25,7 +26,9 @@ PDF text extraction (optional, below) needs **poppler** (`brew install poppler`)
 | File | Role | Edit per vault? |
 |---|---|---|
 | `build.py` | Entrypoint — runs engines + link check | no |
-| `map_channel.py` | Docked artifacts → `builder/entries/` + auto registry | no |
+| `map_channel.py` | Quick Dip: docked artifacts → `builder/entries/` + auto registry | no |
+| `quick_dip.py` | Tier 1 PDF/text extraction (facts only) | no |
+| `qa_quick_dip.py` | QA script for Quick Dip | no |
 | `engine_papers.py` | Portfolio chart → `wiki/papers/`, `wiki/themes/`, `index.md` | no |
 | `engine_ingest.py` | Ingest channels → `wiki/sources/` shells | no |
 | `engine_web.py` | Concepts + entities | no |
@@ -39,18 +42,19 @@ PDF text extraction (optional, below) needs **poppler** (`brew install poppler`)
 | `cache/` | Disposable PDF text (gitignored) | — |
 
 ## Two rules
-1. **Entries:** edit `builder/entries/<channel>/<slug>.md`, then Surface Interval / `build.py`.
+1. **Entries:** edit `builder/entries/<channel>/<slug>.md`, then Quick Dip / `build.py`.
    Uploads in `raw/` are never modified by the chart build.
 2. **Deep dives:** edit `builder/deepdives/<slug>.md` (or run LLM Deep Dive when available).
 3. **Hand-maintained:** `wiki/overview.md`, `wiki/syntheses/`, `log.md`, `CLAUDE.md`.
 
 ## Add a paper
-1. Dock PDF → `raw/papers/` (or copy `builder/templates/my-portfolio/entry.md` to
-   `builder/entries/my-portfolio/<slug>.md` and fill in by hand).
-2. `python3 builder/map_channel.py --channel my-portfolio` — creates entry from template if needed.
-3. Add theme links and abstract in the **entry file** (not `raw/notes/`).
+1. Dock PDF → `raw/papers/`.
+2. **Update chart (Quick Dip)** — `python3 builder/map_channel.py --channel my-portfolio` creates Tier 1 entry from PDF facts.
+3. **Deep Dive** — add theme links, one-liner, and `builder/deepdives/<slug>.md`.
 4. Register in `data.py` `P` if hand-curated; auto-mapped papers land in `auto_papers.py`.
 5. `python3 builder/build.py`. Update `wiki/overview.md` + `log.md` by hand.
+
+See [`docs/PAPER-CHART-SPEC.md`](../docs/PAPER-CHART-SPEC.md) for what Quick Dip fills vs Deep Dive.
 
 Legacy: hand-curated abstract notes in `raw/notes/abstracts/` still work if referenced from `data.py`.
 

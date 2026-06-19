@@ -14,7 +14,9 @@ updated: 2026-06-19
 
 > 11-month audit of r/popular: recent comments help posts climb; cliff below rank 80; toxicity doesn't extend feed life.
 
-**Venue:** ICWSM · **Year:** 2026 · **Source:** 📄 abstract + PDF
+## My notes
+
+**Venue:** ICWSM · **Year:** 2026 · **Source:** 📄 charted + PDF
 
 **Themes:** [[algorithmic-ai-audits|Algorithmic and AI Audits]], [[social-media-online-communities|Social Media & Online Communities]]
 
@@ -41,4 +43,4 @@ Platforms are increasingly relying on algorithms to curate the content within us
 ## Source
 
 - `raw/papers/2502.20491v3.pdf`
-- Abstract note: `raw/notes/abstracts/2026_icwsm_popular-feed-audit.md`
+- Chart entry: `builder/entries/my-portfolio/popular-feed-audit.md`

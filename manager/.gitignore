@@ -8,5 +8,5 @@ __pycache__/
 frontend/node_modules/
 frontend/dist/
 
-# OS
-.DS_Store
+# User-registered vaults (added via UI — do not commit)
+backend/config/vaults.user.yaml

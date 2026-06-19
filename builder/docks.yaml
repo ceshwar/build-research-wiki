@@ -1,0 +1,52 @@
+# Vault docks — edit by hand or add via SCUBA UI.
+docks:
+- id: my-portfolio
+  emoji: "\u2693"
+  name: My Portfolio
+  description: Your research papers and output
+  raw_path: raw/papers
+  profile: portfolio
+  extensions:
+  - pdf
+  auto_file: auto_papers.py
+  auto_key: P_AUTO
+- id: lit-review
+  emoji: "\U0001F30A"
+  name: Literature Review
+  description: Field papers to read, skim, and connect
+  raw_path: raw/literature
+  profile: ingest
+  extensions:
+  - pdf
+  - md
+  - txt
+  auto_file: auto_sources.py
+  auto_key: S_AUTO
+  source_type: paper
+- id: dive-log
+  emoji: "\U0001F93F"
+  name: Dive Log
+  description: Meeting transcripts, session notes, lab discussions
+  raw_path: raw/dive-log
+  profile: ingest
+  extensions:
+  - txt
+  - md
+  - pdf
+  - vtt
+  - srt
+  auto_file: auto_sources.py
+  auto_key: S_AUTO
+  source_type: transcript
+- id: ideas
+  emoji: "\U0001F4A1"
+  name: Ideas & Notes
+  description: Sketches, quick captures, research notes
+  raw_path: raw/notes/inbox
+  profile: ingest
+  extensions:
+  - md
+  - txt
+  auto_file: auto_sources.py
+  auto_key: S_AUTO
+  source_type: note

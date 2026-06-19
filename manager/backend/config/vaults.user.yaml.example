@@ -1,0 +1,3 @@
+# User-added vaults (created via the SCUBA UI — "Add reef")
+# Paths are stored locally per machine; this file is gitignored.
+vaults: []

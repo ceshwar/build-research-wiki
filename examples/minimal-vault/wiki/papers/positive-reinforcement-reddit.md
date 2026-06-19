@@ -14,7 +14,9 @@ updated: 2026-06-19
 
 > Causal study of 11M Reddit posts: positive feedback makes users post more frequently and at higher quality.
 
-**Venue:** CHI · **Year:** 2025 · **Source:** 📄 abstract + PDF
+## My notes
+
+**Venue:** CHI · **Year:** 2025 · **Source:** 📄 charted + PDF
 
 **Themes:** [[healthy-online-behavior|Healthy Online Behavior]], [[computational-social-science|Computational Social Science]], [[social-media-online-communities|Social Media & Online Communities]]
 
@@ -41,4 +43,4 @@ Social media platform design often incorporates explicit signals of positive fee
 ## Source
 
 - `raw/papers/chi2025-positive-reinforcement.pdf`
-- Abstract note: `raw/notes/abstracts/2025_chi_positive-reinforcement-reddit.md`
+- Chart entry: `builder/entries/my-portfolio/positive-reinforcement-reddit.md`

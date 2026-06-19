@@ -5,10 +5,36 @@ Call build(root, deepdives_dir, data, today)."""
 import os, re
 from collections import Counter, defaultdict
 
-STATUS_LABEL = {"mapped": "📄 entry + PDF",
+STATUS_LABEL = {"mapped": "📄 charted + PDF",
                 "no-pdf": "📝 entry only (PDF not in raw/)",
-                "inferred": "🔎 PDF docked (entry scaffold — confirm themes)"}
-ICON = {"mapped": "📄", "no-pdf": "📝", "inferred": "🔎"}
+                "inferred": "🔎 legacy scaffold",
+                "quick-dip": "🤿 quick dip (PDF facts only)"}
+ICON = {"mapped": "📄", "no-pdf": "📝", "inferred": "🔎", "quick-dip": "🤿"}
+
+
+def _display_field(val, empty="—"):
+    if val is None or val == "" or val == 0:
+        return empty
+    return str(val)
+
+
+def _deepdive_block(p, dd_path):
+    if os.path.exists(dd_path):
+        with open(dd_path) as df:
+            text = df.read().strip()
+        if text and "chart-tier: quick-dip" not in text:
+            try:
+                from completion import _deepdive_complete
+                if _deepdive_complete(dd_path, "portfolio"):
+                    return text
+                if len(text) > 80 and "(fill in" not in text.lower():
+                    return text
+            except ImportError:
+                if len(text) > 80:
+                    return text
+    if p.get("status") == "no-pdf":
+        return "*No PDF in `raw/papers/` yet.*"
+    return "*Run **Deep Dive** to enrich themes, one-liner, method, findings, and cross-links.*"
 
 
 def _notes_dirs(data):
@@ -133,28 +159,28 @@ def build(root, deepdives_dir, data, today, rebuild_papers=None, rebuild_themes=
         papers_built += 1
         note_abs = _note_path(root, p, notes_dirs)
         note_rel = os.path.relpath(note_abs, root).replace("\\", "/") if note_abs and os.path.exists(note_abs) else p.get("entry", "")
-        body = _read_body(note_abs) if note_abs and os.path.exists(note_abs) else "*No entry file yet — run Surface Interval after docking.*"
+        body = _read_body(note_abs) if note_abs and os.path.exists(note_abs) else ""
         one_line, theme_slugs = _entry_meta(note_abs, p.get("one", ""), p.get("themes", []))
+        venue = _display_field(p.get("venue"))
+        year = _display_field(p.get("year"))
         fm = ["---", "type: paper", f'title: "{p["title"].replace(chr(34), chr(39))}"', f"slug: {p['slug']}",
-              f"venue: {p['venue']}", f"year: {p['year']}", f"status: {p['status']}",
+              f"venue: {p.get('venue') or ''}", f"year: {p.get('year') or 0}", f"status: {p['status']}",
               "themes: [" + ", ".join(theme_slugs) + "]",
               "pdfs: [" + ", ".join('"{}"'.format(pdf_display(x)) for x in p["pdfs"]) + "]",
               f"updated: {today}", "---", ""]
-        theme_line = ", ".join(f"[[{s}|{THEMES[s][0]}]]" for s in theme_slugs if s in THEMES) if theme_slugs else "_(assign themes in chart entry)_"
-        lines = fm + [f"# {p['title']}", "", f"> {one_line}", "",
-                      f"**Venue:** {p['venue']} · **Year:** {p['year']} · **Source:** {STATUS_LABEL[p['status']]}", "",
+        theme_line = ", ".join(f"[[{s}|{THEMES[s][0]}]]" for s in theme_slugs if s in THEMES) if theme_slugs else "—"
+        one_display = one_line if one_line else "—"
+        lines = fm + [f"# {p['title'] or p['slug']}", "", f"> {one_display}", "",
+                      f"**Venue:** {venue} · **Year:** {year} · **Source:** {STATUS_LABEL.get(p['status'], p['status'])}", "",
                       f"**Themes:** {theme_line}", ""]
-        if p.get("flag"):
+        if p.get("flag") and p.get("status") == "quick-dip":
+            lines += [f"> [!note] Quick dip\n> {p['flag']}", ""]
+        elif p.get("flag"):
             lines += [f"> [!warning] Needs confirmation\n> {p['flag']}", ""]
         dd_path = os.path.join(deepdives_dir, p["slug"] + ".md")
-        if os.path.exists(dd_path):
-            with open(dd_path) as df:
-                dd = df.read().strip()
-        elif p["status"] == "no-pdf":
-            dd = "*No PDF in `raw/papers/` yet — deep dive pending. Abstract/notes above stand in for now.*"
-        else:
-            dd = "*Deep dive pending — run LLM Deep Dive or edit `builder/deepdives/{}.md`.*".format(p["slug"])
-        lines += ["## Abstract / Notes", "", body, "", "## Deep dive", "", dd, "", "## Source", ""]
+        dd = _deepdive_block(p, dd_path)
+        abstract_section = body if body else "—"
+        lines += ["## Abstract / Notes", "", abstract_section, "", "## Deep dive", "", dd, "", "## Source", ""]
         if p["pdfs"]:
             for x in p["pdfs"]:
                 lines.append("- `{}`".format(pdf_display(x)))
@@ -194,8 +220,12 @@ def build(root, deepdives_dir, data, today, rebuild_papers=None, rebuild_themes=
             lines += [f"*Source note:* `{theme_rel}`", ""]
         lines += [f"## Papers ({len(ps)})", ""]
         for p in ps:
-            tag = "" if p["status"] == "mapped" else (" _(abstract only)_" if p["status"] == "no-pdf" else " _(drafted note)_")
-            lines.append(f"- [[{p['slug']}|{p['title']}]] — {p['venue']} {p['year']}.{tag} {p['one']}")
+            tag = ""
+            if p["status"] == "quick-dip":
+                tag = " _(quick dip)_"
+            elif p["status"] != "mapped":
+                tag = " _(abstract only)_" if p["status"] == "no-pdf" else " _(legacy)_"
+            lines.append(f"- [[{p['slug']}|{p['title']}]] — {_display_field(p.get('venue'))} {_display_field(p.get('year'))}.{tag} {p.get('one') or ''}")
         rel = [b for b, _ in cooc[slug].most_common(5)]
         if rel:
             lines += ["", "## Related themes", ""]
@@ -206,12 +236,13 @@ def build(root, deepdives_dir, data, today, rebuild_papers=None, rebuild_themes=
 
     # ---- index.md ----
     n_mapped = sum(1 for p in P if p["status"] == "mapped")
+    n_quick = sum(1 for p in P if p["status"] == "quick-dip")
     n_nopdf = sum(1 for p in P if p["status"] == "no-pdf")
     n_inf = sum(1 for p in P if p["status"] == "inferred")
     idx = ["---", "type: index", f"updated: {today}", "---", "", "# Index", "",
            " A catalog of the research-portfolio map. **Read this first** to navigate, then open a [[overview|portfolio overview]] for the cross-cutting threads.", "",
-           f"**Totals:** {len(P)} papers ({n_mapped} with PDF, {n_nopdf} abstract-only, {n_inf} drafted-from-PDF) · {len(THEMES)} themes", "",
-           "**Legend:** 📄 abstract+PDF · 📝 abstract only (PDF not in `raw/`) · 🔎 PDF only (note drafted by Claude, theme inferred — pending confirmation)", "",
+           f"**Totals:** {len(P)} papers ({n_mapped} charted, {n_quick} quick dip, {n_nopdf} abstract-only, {n_inf} legacy) · {len(THEMES)} themes", "",
+           "**Legend:** 📄 charted · 🤿 quick dip (PDF facts) · 📝 abstract only · 🔎 legacy scaffold", "",
            "---", "", "## Research themes", ""]
     for slug, (name, core, has_note) in sorted(THEMES.items(), key=lambda kv: -len(papers_by_theme.get(kv[0], []))):
         n = len(papers_by_theme.get(slug, []))

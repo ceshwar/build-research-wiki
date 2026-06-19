@@ -1,9 +1,8 @@
 # SCUBA entry templates
 
-Copy any file here into `builder/entries/<channel>/` to start a new chart entry by hand.
+Templates are for **hand-starting** entries or reference. **Quick Dip** does not copy these — it writes a minimal PDF-fact entry via `builder/quick_dip.py`.
 
-On **Surface Interval**, unmapped dock artifacts get an entry file created automatically
-from the matching template. Edit the entry file — not `raw/` — then re-run Surface Interval.
+On **Update chart (Quick Dip)**, unmapped dock artifacts get a Tier 1 entry automatically. **Deep Dive** (later) enriches themes, one-liner, and `builder/deepdives/`.
 
 | Channel | Template | Entry | Deep dive |
 |---------|----------|-------|-----------|
@@ -12,21 +11,23 @@ from the matching template. Edit the entry file — not `raw/` — then re-run S
 | lit-review | `lit-review/entry.md` | `builder/entries/lit-review/<slug>.md` | `builder/deepdives/<slug>.md` |
 | concepts | `concepts/entry.md` | copy by hand | — |
 
-**Paper page shape** (matches a fleshed-out `wiki/papers/` entry like *beyond-throughput*):
+See [`docs/PAPER-CHART-SPEC.md`](../docs/PAPER-CHART-SPEC.md) for the full Tier 1 / Tier 2 spec.
 
-| Section | Filled by | Where you edit |
-|---------|-----------|----------------|
-| Frontmatter, title, venue, year | Surface Interval (deterministic) | `builder/data.py` / auto registry |
-| One-liner `>` quote | You or LLM | `## One-liner` in entry file |
-| Themes | You or LLM | `[[wikilinks]]` on line 1 of entry |
-| Abstract / Notes | You or LLM | `## Abstract` in entry file |
-| Deep dive (RQ, method, findings, …) | LLM Deep Dive or manual | `builder/deepdives/<slug>.md` |
+**Paper page shape** (finished state, like *beyond-throughput*):
 
-**Completion states** (shown on Dive Computer):
+| Section | Quick Dip | Deep Dive |
+|---------|-----------|-----------|
+| Frontmatter, title, venue, year | PDF facts only | confirm/correct in registry |
+| One-liner `>` quote | — | entry `## One-liner` |
+| Themes | — | `[[wikilinks]]` line 1 of entry |
+| Abstract | PDF text if found | edit entry if PDF missed it |
+| Deep dive (RQ, method, findings, …) | — | `builder/deepdives/<slug>.md` |
 
-- **Pending** — docked in `raw/` but not surfaced yet
-- **Scaffolded** — on chart; themes, abstract, or one-liner still empty
-- **Charted** — deterministic parts filled; deep dive still pending
-- **Processed** — fully charted including deep dive
+**Completion states** (Dive Computer):
+
+- **Pending** — docked in `raw/` but not charted
+- **Quick dip** — Tier 1 on chart (PDF facts)
+- **Needs deep dive** — themes/abstract/one-liner done; analysis pending
+- **Deep dive done** — fully enriched
 
 Uploads stay in `raw/` only. They are never modified by the chart build.

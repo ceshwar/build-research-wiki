@@ -20,7 +20,11 @@ async def dock(
     artifact_type: str = "",
 ):
     """Stage artifacts into the channel's raw/ folder. No chart update."""
-    ch = channel_registry.get(channel_id)
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault '{}' not found".format(vault_id))
+    ch = channel_registry.get(channel_id, vault_path)
     if not ch:
         raise HTTPException(status_code=400, detail="Unknown channel '{}'".format(channel_id))
 

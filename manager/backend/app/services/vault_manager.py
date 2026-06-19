@@ -1,7 +1,10 @@
 """Vault + channel orchestration."""
 
+import glob
 import importlib.util
 import os
+import re
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -15,29 +18,179 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_DIR.parent.parent
 BUILDER_DIR = REPO_ROOT / "builder"
 CONFIG_PATH = BACKEND_DIR / "config" / "vaults.yaml"
+USER_CONFIG_PATH = BACKEND_DIR / "config" / "vaults.user.yaml"
 
 
 class VaultManager:
     def __init__(self) -> None:
-        self._vaults = self._load_config()
+        self.reload()
 
-    def _load_config(self) -> List[dict]:
-        with open(CONFIG_PATH) as f:
-            data = yaml.safe_load(f)
-        return data.get("vaults", [])
+    def reload(self) -> None:
+        self._vaults = self._load_all()
+
+    def _load_all(self) -> List[dict]:
+        builtin = self._load_yaml(CONFIG_PATH)
+        user = self._load_yaml(USER_CONFIG_PATH)
+        seen = {v["id"] for v in builtin}
+        merged = list(builtin)
+        for v in user:
+            if v["id"] not in seen:
+                merged.append(v)
+                seen.add(v["id"])
+        return merged
+
+    def _load_yaml(self, path: Path) -> List[dict]:
+        if not path.exists():
+            return []
+        with open(path) as f:
+            data = yaml.safe_load(f) or {}
+        vaults = data.get("vaults", []) or []
+        for v in vaults:
+            v.setdefault("user_added", path == USER_CONFIG_PATH)
+        return vaults
+
+    def _save_user_vaults(self, vaults: List[dict]) -> None:
+        USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(USER_CONFIG_PATH, "w") as f:
+            yaml.safe_dump({"vaults": vaults}, f, default_flow_style=False, sort_keys=False)
+
+    def _resolve_vault_path(self, vault: dict) -> Path:
+        p = Path(vault["path"]).expanduser()
+        if not p.is_absolute():
+            p = REPO_ROOT / p
+        return p.resolve()
+
+    def _slugify(self, name: str) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        return slug or "vault"
+
+    def _unique_id(self, base: str) -> str:
+        existing = {v["id"] for v in self._vaults}
+        if base not in existing:
+            return base
+        n = 2
+        while "{}-{}".format(base, n) in existing:
+            n += 1
+        return "{}-{}".format(base, n)
+
+    def validate_path(self, path_str: str) -> dict:
+        p = Path(path_str).expanduser()
+        if not p.is_absolute():
+            p = (REPO_ROOT / p).resolve()
+        else:
+            p = p.resolve()
+
+        if not p.exists():
+            return {"ok": False, "path": str(p), "error": "Folder does not exist."}
+        if not p.is_dir():
+            return {"ok": False, "path": str(p), "error": "Path is not a folder."}
+
+        has_builder = (p / "builder" / "data.py").exists()
+        has_wiki = (p / "wiki").is_dir()
+        paper_count = 0
+        mod = None
+        if has_builder:
+            try:
+                mod = self._load_data_module(p / "builder" / "data.py")
+                paper_count = len(getattr(mod, "P", []))
+            except Exception:
+                pass
+
+        warnings = []
+        if not has_builder:
+            warnings.append("No builder/data.py — Surface Interval will not work until you add a builder.")
+        if not has_wiki:
+            warnings.append("No wiki/ folder yet — chart may be empty until you build or ingest.")
+
+        suggested_name = p.name.replace("-", " ").replace("_", " ").title()
+        if has_builder and mod:
+            vn = getattr(mod, "VAULT", {}).get("name")
+            if vn:
+                suggested_name = vn
+
+        return {
+            "ok": True,
+            "path": str(p),
+            "has_builder": has_builder,
+            "has_wiki": has_wiki,
+            "paper_count": paper_count,
+            "suggested_name": suggested_name,
+            "warnings": warnings,
+        }
+
+    def pick_folder(self) -> Optional[str]:
+        """Native folder picker (local dev only)."""
+        if sys.platform == "darwin":
+            script = 'POSIX path of (choose folder with prompt "Select your Obsidian vault folder")'
+            result = subprocess.run(
+                ["osascript", "-e", script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            if result.returncode != 0:
+                return None
+            return result.stdout.strip()
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            path = filedialog.askdirectory(title="Select your Obsidian vault folder")
+            root.destroy()
+            return path or None
+        except Exception:
+            return None
+
+    def add_vault(self, path_str: str, name: Optional[str] = None) -> dict:
+        check = self.validate_path(path_str)
+        if not check.get("ok"):
+            raise ValueError(check.get("error", "Invalid vault path"))
+
+        p = Path(check["path"])
+        display = name.strip() if name else check["suggested_name"]
+        base_id = self._slugify(p.name)
+        vault_id = self._unique_id(base_id)
+
+        entry = {
+            "id": vault_id,
+            "name": display,
+            "path": str(p),
+            "user_added": True,
+        }
+
+        user_vaults = self._load_yaml(USER_CONFIG_PATH)
+        for v in user_vaults:
+            if self._resolve_vault_path(v) == p:
+                raise ValueError("This folder is already registered as '{}'.".format(v["name"]))
+        user_vaults.append(entry)
+        self._save_user_vaults(user_vaults)
+        self.reload()
+        return self.get_vault(vault_id)
+
+    def remove_vault(self, vault_id: str) -> None:
+        user_vaults = self._load_yaml(USER_CONFIG_PATH)
+        kept = [v for v in user_vaults if v["id"] != vault_id]
+        if len(kept) == len(user_vaults):
+            raise KeyError("Only user-added vaults can be removed.")
+        self._save_user_vaults(kept)
+        self.reload()
 
     def list_vaults(self) -> List[dict]:
         return [self._enrich(v) for v in self._vaults]
 
-    def get_vault(self, vault_id: str) -> dict:
+    def resolve_path(self, vault_id: str) -> Path:
+        return self._resolve_vault_path(self._vault_by_id(vault_id))
+
+    def _vault_by_id(self, vault_id: str) -> dict:
         for v in self._vaults:
             if v["id"] == vault_id:
-                return self._enrich(v)
+                return v
         raise KeyError("Unknown vault: {}".format(vault_id))
 
-    def resolve_path(self, vault_id: str) -> Path:
-        vault = self.get_vault(vault_id)
-        return Path(vault["path"])
+    def get_vault(self, vault_id: str) -> dict:
+        return self._enrich(self._vault_by_id(vault_id))
 
     def _known_pdfs(self, vault_path):
         known = set()
@@ -73,12 +226,13 @@ class VaultManager:
         return known
 
     def _enrich(self, vault: dict) -> dict:
-        path = REPO_ROOT / vault["path"]
+        path = self._resolve_vault_path(vault)
         stats = self._stats(path)
         return {
             "id": vault["id"],
             "name": vault["name"],
             "path": str(path),
+            "user_added": vault.get("user_added", False),
             **stats,
         }
 
@@ -113,7 +267,8 @@ class VaultManager:
         channels = []
         total_artifacts = 0
         total_pending = 0
-        for ch in channel_registry.list_channels():
+        channel_registry.ensure_vault_docks(vault_path)
+        for ch in channel_registry.list_channels(vault_path):
             if ch.get("profile") == "ingest":
                 known_ch = self._known_channel_files(vault_path, ch["id"])
                 cs = channel_registry.channel_stats(
@@ -132,10 +287,12 @@ class VaultManager:
             counts = ch_report.get("counts", {})
             cs.update({
                 "on_chart": counts.get("on_chart", 0),
+                "quick_dip": counts.get("quick_dip", 0),
+                "needs_deep_dive": counts.get("needs_deep_dive", 0),
                 "scaffolded": counts.get("scaffolded", 0),
                 "charted": counts.get("charted", 0),
                 "processed": counts.get("processed", 0),
-                "needs_review": counts.get("scaffolded", 0) + counts.get("charted", 0),
+                "needs_review": counts.get("needs_deep_dive", 0) + counts.get("scaffolded", 0),
                 "needs_attention": [
                     {"slug": a["slug"], "title": a["title"], "status": a["status"]}
                     for a in ch_report.get("needs_attention", [])[:8]
@@ -150,10 +307,12 @@ class VaultManager:
             "last_build": last_build,
             "pending_artifacts": total_pending,
             "on_chart": totals.get("on_chart", paper_count),
+            "quick_dip_count": totals.get("quick_dip", 0),
+            "needs_deep_dive_count": totals.get("needs_deep_dive", 0),
             "scaffolded_count": totals.get("scaffolded", 0),
             "charted_count": totals.get("charted", 0),
             "processed_count": totals.get("processed", 0),
-            "needs_review_count": totals.get("scaffolded", 0) + totals.get("charted", 0),
+            "needs_review_count": totals.get("needs_deep_dive", 0) + totals.get("scaffolded", 0),
             "channels": channels,
             # legacy fields
             "pdf_count": next((c["artifact_count"] for c in channels if c["id"] == "my-portfolio"), 0),
@@ -216,7 +375,7 @@ class VaultManager:
         vault_path = self.resolve_path(vault_id)
         data_path = vault_path / "builder" / "data.py"
         engine_map = REPO_ROOT / "builder" / "map_channel.py"
-        ch = channel_registry.get(channel_id)
+        ch = channel_registry.get(channel_id, vault_path)
         if not ch:
             return None
 
@@ -233,7 +392,7 @@ class VaultManager:
     def ingest_status_plan(self, vault_id, channel_id):
         # type: (str, str) -> Optional[dict]
         vault_path = self.resolve_path(vault_id)
-        ch = channel_registry.get(channel_id)
+        ch = channel_registry.get(channel_id, vault_path)
         if not ch or ch.get("profile") != "ingest":
             return None
         engine = REPO_ROOT / "builder" / "channel_status.py"

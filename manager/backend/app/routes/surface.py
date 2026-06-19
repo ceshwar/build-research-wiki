@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import BuildResponse, ChannelSummary
+from app.models.schemas import BuildResponse, ChannelSummary, DockCreateRequest
 from app.services.channel_registry import channel_registry
 from app.services.map_service import MapService
 from app.services.vault_manager import VaultManager
@@ -13,18 +13,33 @@ map_service = MapService(vault_manager)
 
 
 @router.get("/channels", response_model=List[ChannelSummary])
-def list_channels():
+def list_channels(vault_id: Optional[str] = None, include_hidden: bool = False):
+    vault_path = None
+    if vault_id:
+        try:
+            vault_path = vault_manager.resolve_path(vault_id)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="Vault not found")
     return [
-        ChannelSummary(
-            id=ch["id"],
-            name=ch["name"],
-            description=ch.get("description", ""),
-            profile=ch["profile"],
-            raw_path=ch["raw_path"],
-            extensions=ch.get("extensions", []),
-        )
-        for ch in channel_registry.list_channels()
+        ChannelSummary(**ch)
+        for ch in channel_registry.list_channels(vault_path, include_hidden=include_hidden)
     ]
+
+
+@router.post("/vaults/{vault_id}/docks", response_model=ChannelSummary)
+def create_dock(vault_id: str, body: DockCreateRequest):
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault not found")
+    dock = channel_registry.create_dock(
+        vault_path,
+        name=body.name,
+        emoji=body.emoji,
+        description=body.description,
+        profile=body.profile,
+    )
+    return ChannelSummary(**dock)
 
 
 @router.post("/update-map", response_model=BuildResponse)

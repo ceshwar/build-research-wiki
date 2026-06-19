@@ -12,7 +12,7 @@ an AI assistant maintains for you. Drop in papers and notes; browse the result i
 
 **Your research world, mapped and connected.**
 
-A web control panel for docking artifacts, surfacing structured charts, and tracking what's fully processed vs still needs review.
+A web control panel for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, and tracking completion in the Dive Computer.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -21,12 +21,12 @@ A web control panel for docking artifacts, surfacing structured charts, and trac
 | Step | Action |
 |------|--------|
 | 1 | Pick a channel (portfolio, lit review, lab memory, …) |
-| 2 | **Dock** files → `raw/{channel}/` |
-| 3 | **Surface Interval** → scaffold chart + rebuild `wiki/` |
-| 4 | Edit `builder/entries/` and `builder/deepdives/`; re-surface |
+| 2 | **Dock** files → `raw/{channel}/` (portfolio uploads auto-run Quick Dip) |
+| 3 | **Update chart (Quick Dip)** → PDF facts → `builder/entries/` → `wiki/` |
+| 4 | **Deep Dive** — edit `builder/entries/` and `builder/deepdives/`; re-chart |
 | 5 | Open reef in Obsidian |
 
-Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)**
+Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)** · Chart spec: **[docs/PAPER-CHART-SPEC.md](docs/PAPER-CHART-SPEC.md)**
 
 ---
 
@@ -34,7 +34,7 @@ Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)**
 
 ### 1. SCUBA Ideaverse (UI) — *recommended for teams*
 
-Dock → Surface Interval → edit entries → Obsidian. Uploads stay in `raw/`; chart scaffolds land in `builder/entries/`. The Dive Computer shows how many entries are **processed** vs **need review**.
+Dock → Quick Dip → Deep Dive → Obsidian. Uploads stay in `raw/`; Tier 1 chart entries land in `builder/entries/` from PDF facts only (no guessing). The Dive Computer shows **Quick dip**, **Needs deep dive**, and **Deep dive done** counts.
 
 ### 2. LLM-driven ingest (agent workflow)
 
@@ -105,7 +105,7 @@ build-research-wiki/
 | [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
 | [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
 | [Changelog](docs/CHANGELOG.md) | Release notes (v0.3.0) |
-| [Tour vault](examples/minimal-vault/) | Demo with 5 papers on chart |
+| [Tour vault](examples/minimal-vault/) | Demo with 3 papers on chart |
 | [CLAUDE.md](CLAUDE.md) | Full wiki schema |
 | [BUILD.md](BUILD.md) | Deterministic builder |
 | [manager/README.md](manager/README.md) | API reference |

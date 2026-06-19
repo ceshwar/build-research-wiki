@@ -20,7 +20,8 @@ BUILDER_DIR = os.path.dirname(os.path.abspath(__file__))
 ENGINE_FILES = [
     "build.py", "engine_papers.py", "engine_web.py", "engine_ingest.py",
     "map_channel.py", "map_pdfs.py", "templates_util.py", "completion.py",
-    "channel_status.py", "extract_pdfs.py", "new_vault.py", "README.md",
+    "quick_dip.py", "qa_quick_dip.py", "docks_util.py", "channel_status.py", "extract_pdfs.py",
+    "new_vault.py", "README.md",
 ]
 
 STARTER_DATA = '''#!/usr/bin/env python3
@@ -63,17 +64,17 @@ METHODS = {{}}
 '''
 
 DIRS = [
-    "raw/papers", "raw/lab/papers", "raw/literature", "raw/transcripts",
+    "raw/papers", "raw/literature", "raw/dive-log",
     "raw/notes/inbox", "raw/assets",
-    "builder/entries/my-portfolio", "builder/entries/lab-portfolio",
-    "builder/entries/lit-review", "builder/entries/lab-memory", "builder/entries/ideas",
+    "builder/entries/my-portfolio", "builder/entries/lit-review",
+    "builder/entries/dive-log", "builder/entries/ideas",
     "builder/deepdives", "builder/cache",
     "wiki/papers", "wiki/themes", "wiki/concepts", "wiki/entities",
     "wiki/syntheses", "wiki/sources",
 ]
 
 CHANNEL_TEMPLATE_DIRS = [
-    "my-portfolio", "lab-portfolio", "lit-review", "lab-memory", "ideas",
+    "my-portfolio", "lit-review", "ideas",
 ]
 
 
@@ -117,6 +118,12 @@ def main():
         "# {} — Overview\n\n*(hand-maintained)*\n".format(name))
     open(os.path.join(dest, ".gitignore"), "w").write(
         "builder/cache/\nbuilder/__pycache__/\n.DS_Store\n")
+    sys.path.insert(0, os.path.join(dest, "builder"))
+    try:
+        from docks_util import seed_docks
+        seed_docks(dest)
+    except Exception as ex:
+        print("warning: could not seed docks.yaml:", ex)
     print("Scaffolded '{}' at {}".format(name, dest))
     print("Next: dock files to raw/, run map_channel + build, edit builder/entries/")
 

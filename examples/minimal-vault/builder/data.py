@@ -39,7 +39,8 @@ THEMES = {
 P = [
     dict(
         slug="positive-reinforcement-reddit",
-        note="2025_chi_positive-reinforcement-reddit.md",
+        entry="builder/entries/my-portfolio/positive-reinforcement-reddit.md",
+        note="builder/entries/my-portfolio/positive-reinforcement-reddit.md",
         title="Does Positive Reinforcement Work? A Quasi-Experimental Study of the Effects of Positive Feedback on Reddit",
         venue="CHI",
         year=2025,
@@ -50,7 +51,8 @@ P = [
     ),
     dict(
         slug="popular-feed-audit",
-        note="2026_icwsm_popular-feed-audit.md",
+        entry="builder/entries/my-portfolio/popular-feed-audit.md",
+        note="builder/entries/my-portfolio/popular-feed-audit.md",
         title="Examining Algorithmic Curation on Social Media: An Empirical Audit of Reddit's r/popular Feed",
         venue="ICWSM",
         year=2026,
@@ -61,7 +63,8 @@ P = [
     ),
     dict(
         slug="language-of-approval",
-        note="2026_chi_language-of-approval.md",
+        entry="builder/entries/my-portfolio/language-of-approval.md",
+        note="builder/entries/my-portfolio/language-of-approval.md",
         title="The Language of Approval: Identifying the Drivers of Positive Feedback Online",
         venue="CHI",
         year=2026,

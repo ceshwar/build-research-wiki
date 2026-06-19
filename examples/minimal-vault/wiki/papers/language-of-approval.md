@@ -14,13 +14,15 @@ updated: 2026-06-19
 
 > Quasi-experiment + prediction on 11M posts identifies linguistic drivers of upvotes/awards and a policy-practice gap.
 
-**Venue:** CHI · **Year:** 2026 · **Source:** 📄 abstract + PDF
+## My notes
+
+**Venue:** CHI · **Year:** 2026 · **Source:** 📄 charted + PDF
 
 **Themes:** [[computational-social-science|Computational Social Science]], [[social-media-online-communities|Social Media & Online Communities]], [[digital-governance|Digital Governance]]
 
 ## Abstract / Notes
 
-Positive feedback via likes and awards is central to online governance, yet which attributes of users’ posts elicit rewards—and how these vary across authors and communities—remains unclear. To examine this, we combine quasi-experimental causal inference with predictive modeling on 11M posts from 100 subreddits. We identify linguistic patterns and stylistic attributes causally linked to rewards, controlling for author reputation, timing, and community context. For example, overtly complicated language, tentative style, and toxicity reduce rewards. We use our set of curated features to train models that can detect highly-upvoted posts with high AUC. Our audit of community guidelines highlights a “policy-practice gap”—most rules focus primarily on civility and formatting requirements, with little emphasis on the attributes identified to drive positive feedback. These results inform the design of community guidelines, support interfaces that teach users how to craft desirable contributions, and moderation workflows that emphasize positive reinforcement over purely punitive enforcement.
+Positive feedback via likes and awards is central to online governance, yet which attributes of users' posts elicit rewards—and how these vary across authors and communities—remains unclear. To examine this, we combine quasi-experimental causal inference with predictive modeling on 11M posts from 100 subreddits. We identify linguistic patterns and stylistic attributes causally linked to rewards, controlling for author reputation, timing, and community context. For example, overtly complicated language, tentative style, and toxicity reduce rewards. We use our set of curated features to train models that can detect highly-upvoted posts with high AUC. Our audit of community guidelines highlights a "policy-practice gap"—most rules focus primarily on civility and formatting requirements, with little emphasis on the attributes identified to drive positive feedback. These results inform the design of community guidelines, support interfaces that teach users how to craft desirable contributions, and moderation workflows that emphasize positive reinforcement over purely punitive enforcement.
 
 ## Deep dive
 
@@ -41,4 +43,4 @@ Positive feedback via likes and awards is central to online governance, yet whic
 ## Source
 
 - `raw/papers/chi2026-language-of-approval-2.pdf`
-- Abstract note: `raw/notes/abstracts/2026_chi_language-of-approval.md`
+- Chart entry: `builder/entries/my-portfolio/language-of-approval.md`

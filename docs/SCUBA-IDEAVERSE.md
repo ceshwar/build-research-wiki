@@ -23,32 +23,37 @@ Requirements: **Python 3.7+**, **Node 18+**, optional **poppler** (`brew install
 ## Workflow
 
 ```
-Dock (raw/)  →  Surface Interval  →  Chart (wiki/)  →  Obsidian
+Dock (raw/)  →  Quick Dip (Update chart)  →  Chart (wiki/)  →  Obsidian
                       │
          ┌────────────┴────────────┐
          │                         │
-   Deterministic scaffold    LLM Deep Dive (next)
-   (templates → entries)     (generative sections)
+   Tier 1: PDF facts only    Tier 2+: Deep Dive
+   (no guessing)             (themes, analysis, LLM)
 ```
 
 1. **Pick a channel** on the Dive Computer (My Portfolio, Lit Review, Lab Memory, …)
 2. **Dock** — drop files, **Confirm Upload** → `raw/{channel}/`
-3. **Surface Interval** — map artifacts → scaffold chart entries → rebuild `wiki/`
-4. **Edit entries** — fill themes, abstract, one-liner in `builder/entries/`; deep dive in `builder/deepdives/`
+3. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart (Quick Dip)** — maps artifacts → Tier 1 entries → rebuilds `wiki/`
+4. **Deep Dive** — edit `builder/entries/` (themes, one-liner) and `builder/deepdives/` (analysis)
 5. **Re-surface** when ready; check Dive Computer for completion counts
 6. **Open reef in Obsidian**
 
+Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
+
 ---
 
-## Reef channels
+## Reef channels (docks)
 
-| Channel | Upload path | Chart output |
-|---------|-------------|--------------|
-| My Portfolio | `raw/papers/` | `wiki/papers/`, themes, concepts |
-| Lab Portfolio | `raw/lab/papers/` | same (lab corpus) |
-| Literature Review | `raw/literature/` | `wiki/sources/` shells |
-| Lab Memory | `raw/transcripts/` | `wiki/sources/` shells |
-| Ideas & Notes | `raw/notes/inbox/` | `wiki/sources/` shells |
+Each vault has `builder/docks.yaml` — four built-in docks plus any you add in the UI:
+
+| Dock | Folder | Purpose |
+|------|--------|---------|
+| ⚓ My Portfolio | `raw/papers/` | Your papers → Quick Dip chart |
+| 🌊 Literature Review | `raw/literature/` | Field papers to read |
+| 🤿 Dive Log | `raw/dive-log/` | Transcripts, session notes |
+| 💡 Ideas & Notes | `raw/notes/inbox/` | Quick captures |
+
+**+ Add dock** creates a new `raw/<slug>/` folder and registers it in `builder/docks.yaml`.
 
 ---
 
@@ -71,21 +76,26 @@ Dock (raw/)  →  Surface Interval  →  Chart (wiki/)  →  Obsidian
 
 | Status | Meaning | What to do |
 |--------|---------|------------|
-| **Pending surface** | File in `raw/` but not mapped | Run Surface Interval |
-| **Scaffolded** | On chart; themes/abstract/one-liner empty | Edit `builder/entries/<channel>/<slug>.md` |
-| **Charted** | Deterministic parts filled; deep dive empty | Edit `builder/deepdives/<slug>.md` |
-| **Processed** | Fully charted (like a finished paper page) | Nothing — or refine in Obsidian |
+| **Pending** | File in `raw/` but not on chart | Run Update chart (Quick Dip) |
+| **Quick dip** | Tier 1 — PDF title/abstract/venue/year on chart | Deep Dive: add themes, one-liner, analysis |
+| **Needs deep dive** | Themes + abstract + one-liner filled; deep dive empty | Edit `builder/deepdives/<slug>.md` |
+| **Deep dive done** | Fully enriched paper page | Refine in Obsidian if needed |
 
-The UI shows vault totals (**Processed**, **Needs review**, **Pending surface**) and per-channel entry lists for items that need attention.
+Portfolio uploads trigger Quick Dip automatically after **Confirm Upload**. The UI shows vault totals (**Quick dip**, **Deep dive done**, **Needs deep dive**, **Pending**) and per-channel breakdowns.
+
+See [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md) for field-level rules (no guessing on Tier 1).
 
 ---
 
 ## CLI (without the UI)
 
 ```bash
-# Map docked PDFs → builder/entries/ + auto registry
+# Quick Dip: map docked PDFs → builder/entries/ + auto registry
 python3 builder/map_channel.py --channel my-portfolio
 python3 builder/map_channel.py --vault examples/minimal-vault --channel lit-review
+
+# QA Tier 1 (no guessing)
+python3 builder/qa_quick_dip.py
 
 # Rebuild chart
 python3 builder/build.py
@@ -94,19 +104,20 @@ python3 builder/build.py --vault examples/minimal-vault --incremental
 
 ---
 
-## Configure vaults
+## Add a reef (UI — no YAML editing)
 
-Edit `manager/backend/config/vaults.yaml`:
+1. Click **+ Add reef** in the header.
+2. **Browse…** to pick your Obsidian vault folder (macOS/Linux native picker), or paste the path.
+3. **Check folder** — confirms `builder/data.py`, paper count, etc.
+4. **Add reef** — saved locally in `manager/backend/config/vaults.user.yaml` (gitignored).
 
-```yaml
-vaults:
-  - id: demo
-    name: Tour vault
-    path: examples/minimal-vault
-  - id: my-lab
-    name: Our lab wiki
-    path: /absolute/path/to/your/vault
-```
+User-added reefs show a ★ in the dropdown. **Remove from list** only unregisters the path — it does not delete your wiki.
+
+Built-in reefs (`demo`, `template`) still come from `vaults.yaml` in the repo.
+
+### Configure vaults (advanced)
+
+To ship default vaults with the repo, edit `manager/backend/config/vaults.yaml`:
 
 ---
 
@@ -114,7 +125,7 @@ vaults:
 
 | Phase | Feature |
 |-------|---------|
-| **Now (v0.3)** | Dock, Surface Interval, template scaffolds, completion tracking |
+| **Now (v0.3+)** | Dock, Quick Dip (Tier 1), Deep Dive tracking, completion stats |
 | **Phase 3** | LLM Deep Dive — auto-fill `builder/deepdives/` from PDFs |
 | **Phase 3** | LLM ingest for lit-review / lab-memory / ideas → full `wiki/sources/` |
 | **Later** | Sonar ping (related work), reef profiles (custom chart shapes) |

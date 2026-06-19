@@ -2,7 +2,7 @@
 
 **Your research world, mapped and connected.**
 
-A research memory control panel for Obsidian vaults. Dock artifacts into reef channels, surface structured charts, and navigate in Obsidian.
+A research memory control panel for Obsidian vaults. Dock artifacts into reef channels, run **Quick Dip** to chart PDF facts, then **Deep Dive** to enrich — open the result in Obsidian.
 
 ## Quick start
 
@@ -16,43 +16,43 @@ Open **http://127.0.0.1:5173**
 
 1. **Pick a channel** on the Dive Computer (My Portfolio, Lit Review, Lab Memory, …)
 2. **Dock** — drop files, **Confirm Upload** → `raw/{channel}/`
-3. **Surface Interval** — update the chart for that channel
-4. **Open reef in Obsidian**
+3. **Quick Dip** — runs automatically after portfolio upload; or click **Update chart (Quick Dip)**
+4. **Deep Dive** — themes, one-liner, analysis in `builder/entries/` and `builder/deepdives/`
+5. **Open reef in Obsidian**
 
-## Reef channels
+See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2 rules.
 
-| Channel | `raw/` path | Surface interval |
-|---------|-------------|------------------|
-| My Portfolio | `raw/papers/` | Map → `builder/entries/` → build chart |
-| Lab Portfolio | `raw/lab/papers/` | Map → `builder/entries/` → build chart |
-| Literature Review | `raw/literature/` | Map → `builder/entries/` → `wiki/sources/` shells |
-| Lab Memory | `raw/transcripts/` | Map → `builder/entries/` → `wiki/sources/` shells |
-| Ideas & Notes | `raw/notes/inbox/` | Map → `builder/entries/` → `wiki/sources/` shells |
+## Docks
 
-**Uploads stay in `raw/` only.** Chart scaffolds deterministic sections from `builder/templates/`
-into `builder/entries/`. LLM **Deep Dive** (Phase 3+) fills generative sections in `builder/deepdives/`.
+| Dock | `raw/` path | Chart |
+|------|-------------|-------|
+| ⚓ My Portfolio | `raw/papers/` | Quick Dip → `wiki/papers/` |
+| 🌊 Literature Review | `raw/literature/` | Quick Dip → `wiki/sources/` |
+| 🤿 Dive Log | `raw/dive-log/` | Quick Dip → `wiki/sources/` |
+| 💡 Ideas & Notes | `raw/notes/inbox/` | Quick Dip → `wiki/sources/` |
 
-## Completion tracking
+Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/docks.yaml` per vault.
 
-The Dive Computer reports:
+## Dive Computer
 
 | Stat | Meaning |
 |------|---------|
-| **On chart** | Entries in the registry (surfaced at least once) |
-| **Processed** | Fully charted — themes, abstract, one-liner, and deep dive filled |
-| **Needs review** | On chart but missing content (scaffolded or charted, not processed) |
-| **Pending surface** | Files in `raw/` not yet mapped |
+| **On chart** | Artifacts already on your wiki chart |
+| **Awaiting chart** | Uploaded to a dock folder, not charted yet (run Update chart) |
+| **Quick dip** | Tier 1 done — PDF facts extracted |
+| **Enrich next** | On chart but needs Deep Dive (themes, analysis) |
 
-Per-channel cards list specific entries that need attention when selected.
+**Chart updated** (top right) = when the wiki was last rebuilt — not a count.
 
 ## SCUBA vocabulary
 
 | Term | Meaning |
 |------|---------|
 | **Dock** | Stage artifacts into a channel (no chart update) |
+| **Quick Dip** | Tier 1 chart update — PDF facts only |
+| **Deep Dive** | Tier 2+ enrichment (themes, analysis) |
 | **Channel** | A reef corpus — portfolio or ingest profile |
 | **Chart** | Generated map (`wiki/` + `index.md`) |
-| **Surface Interval** | Process channel → update chart |
 | **Dive Computer** | Dashboard stats per channel |
 | **Reef** | The Obsidian vault |
 
@@ -62,11 +62,16 @@ Per-channel cards list specific entries that need attention when selected.
 |--------|------|
 | POST | `/dock?vault_id=&channel_id=` |
 | POST | `/surface_interval?vault_id=&channel_id=` |
-| GET | `/channels` |
-| GET | `/dive_computer` |
+| GET | `/channels?vault_id=` |
+| POST | `/vaults/{id}/docks` — create custom dock |
+| GET | `/vaults` |
+| POST | `/vaults` — add reef `{ path, name? }` |
+| POST | `/vaults/validate` — check folder |
+| POST | `/vaults/pick-folder` — native folder picker |
+| DELETE | `/vaults/{id}` — remove user-added reef |
 
 Legacy aliases: `/airlock`, `/upload`, `/update-map`
 
 ## Team setup
 
-See [docs/SCUBA-IDEAVERSE.md](../docs/SCUBA-IDEAVERSE.md) for the full guide. Point `manager/backend/config/vaults.yaml` at your lab's vault path.
+See [docs/SCUBA-IDEAVERSE.md](../docs/SCUBA-IDEAVERSE.md) for the full guide.

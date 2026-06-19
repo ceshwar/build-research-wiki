@@ -62,6 +62,7 @@ def load_corpus(vault_path):
                 "one": p.get("one", ""),
                 "themes": list(p.get("themes", [])),
                 "title": p.get("title", p["slug"]),
+                "status": p.get("status", "mapped"),
             })
         for s in getattr(data, "S", []):
             entries.append({
@@ -72,6 +73,7 @@ def load_corpus(vault_path):
                 "one": s.get("one", ""),
                 "themes": [],
                 "title": s.get("title", s["slug"]),
+                "status": s.get("status", "quick-dip"),
             })
 
     for auto_name, key, default_channel in [
@@ -94,6 +96,7 @@ def load_corpus(vault_path):
                 "one": item.get("one", ""),
                 "themes": list(item.get("themes", [])),
                 "title": item.get("title", item["slug"]),
+                "status": item.get("status", "quick-dip"),
             })
     return entries
 
@@ -247,10 +250,16 @@ def assess_entry(vault_path, entry):
     )
     processed = charted and _deepdive_complete(dd_path, profile)
 
-    if processed:
+    registry_status = entry.get("status") or ""
+    if registry_status == "quick-dip" and not processed:
+        if charted:
+            status = "needs_deep_dive"
+        else:
+            status = "quick_dip"
+    elif processed:
         status = "processed"
     elif charted:
-        status = "charted"
+        status = "needs_deep_dive"
     else:
         status = "scaffolded"
 
@@ -268,11 +277,12 @@ def assess_channel(vault_path, channel_id, pending_count=0):
     corpus = [e for e in load_corpus(vault_path) if e.get("channel") == channel_id]
     assessed = [assess_entry(vault_path, e) for e in corpus]
     counts = {"pending": pending_count, "on_chart": len(corpus),
-              "scaffolded": 0, "charted": 0, "processed": 0}
+              "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0,
+              "charted": 0}
     needs_attention = []
     for a in assessed:
         counts[a["status"]] += 1
-        if a["status"] in ("scaffolded", "charted"):
+        if a["status"] in ("scaffolded", "needs_deep_dive", "charted"):
             needs_attention.append(a)
     return {"counts": counts, "entries": assessed, "needs_attention": needs_attention}
 
@@ -282,7 +292,7 @@ def assess_vault(vault_path, channel_pending=None):
     corpus = load_corpus(vault_path)
     all_assessed = [assess_entry(vault_path, e) for e in corpus]
     totals = {"on_chart": len(corpus), "pending": sum(channel_pending.values()),
-              "scaffolded": 0, "charted": 0, "processed": 0}
+              "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0, "charted": 0}
     for a in all_assessed:
         totals[a["status"]] += 1
     by_channel = {}

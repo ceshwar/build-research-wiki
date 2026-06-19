@@ -1,36 +1,77 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  addVault,
+  createDock,
   dockArtifacts,
   fetchChannels,
   fetchJob,
   fetchJobLogs,
   fetchVaults,
+  pickVaultFolder,
+  removeVault,
   startBuild,
   surfaceInterval,
+  validateVaultPath,
 } from './api/client'
 import type { Channel, Vault } from './types'
+import type { VaultValidateResult } from './api/client'
+
+const MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  md: 'text/markdown',
+  txt: 'text/plain',
+}
+
+function formatChartUpdated(iso: string | null | undefined) {
+  if (!iso) return 'Never'
+  const d = new Date(iso)
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function acceptForChannel(channel?: Channel) {
+  if (!channel) return { 'application/pdf': ['.pdf'] }
+  const map: Record<string, string[]> = {}
+  for (const ext of channel.extensions) {
+    const mime = MIME[ext] ?? 'application/octet-stream'
+    map[mime] = [...(map[mime] ?? []), `.${ext}`]
+  }
+  return map
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return <h2 className="section-label">{children}</h2>
+}
 
 function Stat({
   label,
+  hint,
   value,
   highlight,
 }: {
   label: string
+  hint?: string
   value: string | number
   highlight?: boolean
 }) {
   return (
-    <div
-      className={`rounded-lg border px-4 py-3 ${
-        highlight
-          ? 'border-amber-600/50 bg-amber-950/20'
-          : 'border-slate-700 bg-slate-800/50'
-      }`}
-    >
-      <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${highlight ? 'text-amber-300' : 'text-white'}`}>
+    <div className={`stat-card ${highlight ? 'stat-card--active' : ''}`}>
+      <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--muted)]">
+        {label}
+      </div>
+      {hint && <div className="mt-0.5 text-[10px] leading-snug text-[var(--muted)]">{hint}</div>}
+      <div
+        className={`mt-1.5 text-xl font-semibold tabular-nums ${
+          highlight ? 'text-[var(--accent)]' : 'text-[var(--text)]'
+        }`}
+      >
         {value}
       </div>
     </div>
@@ -41,13 +82,13 @@ function statusColor(status: string) {
   switch (status) {
     case 'running':
     case 'queued':
-      return 'text-amber-400'
+      return 'text-[var(--accent)]'
     case 'completed':
-      return 'text-emerald-400'
+      return 'text-[var(--success)]'
     case 'failed':
       return 'text-red-400'
     default:
-      return 'text-slate-400'
+      return 'text-[var(--muted)]'
   }
 }
 
@@ -58,6 +99,13 @@ export default function App() {
   const [queuedFiles, setQueuedFiles] = useState<File[]>([])
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; channel: string }[]>([])
+  const [showAddReef, setShowAddReef] = useState(false)
+  const [showAddDock, setShowAddDock] = useState(false)
+  const [reefPath, setReefPath] = useState('')
+  const [reefName, setReefName] = useState('')
+  const [reefPreview, setReefPreview] = useState<VaultValidateResult | null>(null)
+  const [dockName, setDockName] = useState('')
+  const [dockEmoji, setDockEmoji] = useState('📁')
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -65,8 +113,9 @@ export default function App() {
   })
 
   const { data: channels = [] } = useQuery<Channel[]>({
-    queryKey: ['channels'],
-    queryFn: fetchChannels,
+    queryKey: ['channels', vaultId],
+    queryFn: () => fetchChannels(vaultId),
+    enabled: !!vaultId,
   })
 
   const vault = vaults.find((v) => v.id === vaultId)
@@ -74,6 +123,12 @@ export default function App() {
   const channelStats = vault?.channels.find((c) => c.id === channelId)
   const hasReef = vault ? vault.paper_count > 0 || !!vault.last_build : false
   const isPortfolio = channel?.profile === 'portfolio'
+
+  useEffect(() => {
+    if (channels.length && !channels.find((c) => c.id === channelId)) {
+      setChannelId(channels[0].id)
+    }
+  }, [channels, channelId])
 
   const jobQuery = useQuery({
     queryKey: ['job', activeJobId],
@@ -105,8 +160,14 @@ export default function App() {
     const status = jobQuery.data?.status ?? logsQuery.data?.status
     if (status === 'completed' || status === 'failed') {
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      queryClient.invalidateQueries({ queryKey: ['channels'] })
     }
   }, [jobQuery.data?.status, logsQuery.data?.status, queryClient])
+
+  const surfaceMutation = useMutation({
+    mutationFn: () => surfaceInterval(vaultId, channelId, 'auto'),
+    onSuccess: (data) => setActiveJobId(data.job_id),
+  })
 
   const dockMutation = useMutation({
     mutationFn: () => dockArtifacts(vaultId, queuedFiles, channelId),
@@ -117,12 +178,10 @@ export default function App() {
       ])
       setQueuedFiles([])
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      if (isPortfolio && data.files_added > 0) {
+        surfaceMutation.mutate()
+      }
     },
-  })
-
-  const surfaceMutation = useMutation({
-    mutationFn: () => surfaceInterval(vaultId, channelId, 'auto'),
-    onSuccess: (data) => setActiveJobId(data.job_id),
   })
 
   const rebuildMutation = useMutation({
@@ -130,231 +189,380 @@ export default function App() {
     onSuccess: (data) => setActiveJobId(data.job_id),
   })
 
+  const addDockMutation = useMutation({
+    mutationFn: () => createDock(vaultId, { name: dockName.trim(), emoji: dockEmoji }),
+    onSuccess: (dock) => {
+      queryClient.invalidateQueries({ queryKey: ['channels'] })
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      setChannelId(dock.id)
+      setShowAddDock(false)
+      setDockName('')
+      setDockEmoji('📁')
+    },
+  })
+
+  const pickFolderMutation = useMutation({
+    mutationFn: pickVaultFolder,
+    onSuccess: async (data) => {
+      if (data.cancelled || !data.path) return
+      setReefPath(data.path)
+      const preview = await validateVaultPath(data.path)
+      setReefPreview(preview)
+      if (preview.suggested_name) {
+        setReefName((prev) => prev || preview.suggested_name)
+      }
+    },
+  })
+
+  const validateMutation = useMutation({
+    mutationFn: () => validateVaultPath(reefPath),
+    onSuccess: (data) => {
+      setReefPreview(data)
+      if (data.suggested_name && !reefName) setReefName(data.suggested_name)
+    },
+  })
+
+  const addVaultMutation = useMutation({
+    mutationFn: () => addVault(reefPath, reefName || undefined),
+    onSuccess: (v) => {
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      setVaultId(v.id)
+      setShowAddReef(false)
+      setReefPath('')
+      setReefName('')
+      setReefPreview(null)
+    },
+  })
+
+  const removeVaultMutation = useMutation({
+    mutationFn: () => removeVault(vaultId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      setVaultId('demo')
+    },
+  })
+
   const onDrop = useCallback((accepted: File[]) => {
     if (accepted.length) setQueuedFiles((prev) => [...prev, ...accepted])
   }, [])
 
-  const acceptMap: Record<string, Record<string, string[]>> = {
-    'my-portfolio': { 'application/pdf': ['.pdf'] },
-    'lab-portfolio': { 'application/pdf': ['.pdf'] },
-    'lit-review': { 'application/pdf': ['.pdf'], 'text/plain': ['.txt'], 'text/markdown': ['.md'] },
-    'lab-memory': { 'application/pdf': ['.pdf'], 'text/plain': ['.txt'], 'text/markdown': ['.md'] },
-    ideas: { 'text/plain': ['.txt'], 'text/markdown': ['.md'] },
-  }
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: acceptMap[channelId] ?? { 'application/pdf': ['.pdf'], 'text/plain': ['.txt'] },
+    accept: acceptForChannel(channel),
     multiple: true,
   })
 
   const jobStatus = jobQuery.data?.status ?? logsQuery.data?.status
   const isDiving = jobStatus === 'running' || jobStatus === 'queued'
+  const enrichCount =
+    (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
 
   if (vaultsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-slate-400">
-        Descending…
+      <div className="flex min-h-screen items-center justify-center text-[var(--muted)]">
+        Loading…
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-cyan-400/80">
-            SCUBA Lab
-          </p>
-          <h1 className="text-2xl font-bold text-white">SCUBA Ideaverse</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Your research world, mapped and connected.
-          </p>
+    <>
+      <header className="site-header">
+        <div className="site-header__inner">
+          <div className="site-header__brand">
+            <div className="logo-wrap">
+              <img src="/scuba-logo.png" alt="SCUBA Lab" width={40} height={40} />
+            </div>
+            <div>
+              <h1>SCUBA Ideaverse</h1>
+              <p className="tagline">Your research world, mapped and connected.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={vaultId}
+              onChange={(e) => {
+                setVaultId(e.target.value)
+                setQueuedFiles([])
+                setUploadedFiles([])
+                setActiveJobId(null)
+              }}
+            >
+            {vaults.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+                {v.user_added ? ' ★' : ''}
+              </option>
+            ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowAddReef((s) => !s)}
+              className="header-btn"
+            >
+              {showAddReef ? 'Cancel' : '+ Reef'}
+            </button>
+          </div>
         </div>
-        <select
-          value={vaultId}
-          onChange={(e) => {
-            setVaultId(e.target.value)
-            setQueuedFiles([])
-            setUploadedFiles([])
-            setActiveJobId(null)
-          }}
-          className="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-white"
-        >
-          {vaults.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
-        </select>
       </header>
+
+      <div className="main-content">
+
+      {showAddReef && (
+        <section className="panel-card panel-card--accent mb-6">
+          <SectionLabel>Add reef</SectionLabel>
+          <p className="mb-3 text-xs text-[var(--muted)]">
+            Point SCUBA at an existing Obsidian vault on this machine.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={reefPath}
+              onChange={(e) => {
+                setReefPath(e.target.value)
+                setReefPreview(null)
+              }}
+              placeholder="/Users/you/Desktop/my-wiki"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
+            />
+            <button
+              type="button"
+              onClick={() => pickFolderMutation.mutate()}
+              disabled={pickFolderMutation.isPending}
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-[var(--text)] hover:border-[var(--border-accent)] disabled:opacity-50"
+            >
+              Browse…
+            </button>
+          </div>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="text"
+              value={reefName}
+              onChange={(e) => setReefName(e.target.value)}
+              placeholder="Display name"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => validateMutation.mutate()}
+              disabled={!reefPath.trim() || validateMutation.isPending}
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Check
+            </button>
+            <button
+              type="button"
+              onClick={() => addVaultMutation.mutate()}
+              disabled={!reefPreview?.ok || addVaultMutation.isPending}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
+          {reefPreview && (
+            <p className={`mt-2 text-xs ${reefPreview.ok ? 'text-[var(--success)]' : 'text-red-400'}`}>
+              {reefPreview.ok ? `✓ ${reefPreview.paper_count} papers` : reefPreview.error}
+            </p>
+          )}
+        </section>
+      )}
+
+      {vault?.user_added && (
+        <div className="panel-card mb-5 flex items-center justify-between px-3 py-2 text-xs text-[var(--muted)]">
+          <span className="truncate" title={vault.path}>{vault.path}</span>
+          <button
+            type="button"
+            onClick={() => removeVaultMutation.mutate()}
+            className="ml-2 shrink-0 hover:text-red-400"
+          >
+            Remove
+          </button>
+        </div>
+      )}
 
       {/* Dive Computer */}
       {vault && (
-        <section className="mb-8">
-          <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-slate-500">
-            Dive Computer
-          </h2>
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <Stat label="On chart" value={vault.on_chart ?? vault.paper_count} />
+        <section className="mb-6">
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <SectionLabel>Dive Computer</SectionLabel>
+            <span className="text-[11px] text-[var(--muted)]">
+              Chart updated {formatChartUpdated(vault.last_build)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <Stat label="On chart" hint="Artifacts on your wiki" value={vault.on_chart ?? vault.paper_count} />
             <Stat
-              label="Processed"
-              value={vault.processed_count ?? 0}
-              highlight={(vault.processed_count ?? 0) > 0}
-            />
-            <Stat
-              label="Needs review"
-              value={vault.needs_review_count ?? 0}
-              highlight={(vault.needs_review_count ?? 0) > 0}
-            />
-            <Stat
-              label="Pending surface"
+              label="Awaiting chart"
+              hint="Uploaded, not charted yet"
               value={vault.pending_artifacts}
               highlight={vault.pending_artifacts > 0}
             />
             <Stat
-              label="Last surface"
-              value={vault.last_build ? vault.last_build.replace('T', ' ') : '—'}
+              label="Quick dip"
+              hint="PDF facts only"
+              value={vault.quick_dip_count ?? 0}
+              highlight={(vault.quick_dip_count ?? 0) > 0}
             />
-          </div>
-          {(vault.needs_review_count ?? 0) > 0 && (
-            <p className="mb-3 text-xs text-slate-500">
-              <span className="text-amber-400">Needs review</span> = on chart but missing themes,
-              abstract, or deep dive. <span className="text-emerald-400">Processed</span> = fully
-              charted (like your fleshed-out paper pages).
-            </p>
-          )}
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            {vault.channels.map((ch) => (
-              <button
-                key={ch.id}
-                type="button"
-                onClick={() => setChannelId(ch.id)}
-                className={`rounded-lg border px-4 py-3 text-left transition-colors ${
-                  channelId === ch.id
-                    ? 'border-cyan-600/60 bg-cyan-950/30'
-                    : 'border-slate-700 bg-slate-800/30 hover:border-slate-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">{ch.name}</span>
-                  <span className="text-xs text-slate-500">{ch.artifact_count} files</span>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">{ch.description}</p>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                  {(ch.processed ?? 0) > 0 && (
-                    <span className="text-emerald-400">{ch.processed} processed</span>
-                  )}
-                  {(ch.needs_review ?? 0) > 0 && (
-                    <span className="text-amber-400">{ch.needs_review} need review</span>
-                  )}
-                  {ch.pending > 0 && (
-                    <span className="text-amber-400">{ch.pending} pending surface</span>
-                  )}
-                  {(ch.on_chart ?? 0) > 0 &&
-                    !(ch.needs_review ?? 0) &&
-                    !(ch.processed ?? 0) && (
-                      <span className="text-slate-500">{ch.on_chart} on chart</span>
-                    )}
-                </div>
-                {ch.needs_attention && ch.needs_attention.length > 0 && channelId === ch.id && (
-                  <ul className="mt-2 space-y-0.5 text-xs text-amber-300/90">
-                    {ch.needs_attention.slice(0, 4).map((item) => (
-                      <li key={item.slug}>
-                        ◦ {item.title}{' '}
-                        <span className="text-slate-500">({item.status})</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </button>
-            ))}
+            <Stat
+              label="Enrich next"
+              hint="On chart — needs Deep Dive"
+              value={enrichCount}
+              highlight={enrichCount > 0}
+            />
           </div>
         </section>
       )}
 
-      {/* Dock */}
-      <section className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xs font-medium uppercase tracking-widest text-slate-500">
-            Dock — {channel?.name ?? 'Channel'}
-          </h2>
-          <span className="text-xs text-slate-600">
-            → <code className="text-slate-500">{channel?.raw_path}</code>
-          </span>
+      {/* Dock picker */}
+      <section className="mb-5">
+        <div className="mb-2">
+          <SectionLabel>Docks</SectionLabel>
         </div>
+        <div className="flex flex-wrap gap-2">
+          {channels.map((ch) => {
+            const stats = vault?.channels.find((c) => c.id === ch.id)
+            const count = stats?.artifact_count ?? 0
+            const awaiting = stats?.pending ?? 0
+            return (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => setChannelId(ch.id)}
+                className={`dock-pill ${channelId === ch.id ? 'dock-pill--active' : ''}`}
+                title={
+                  awaiting > 0
+                    ? `${count} file${count === 1 ? '' : 's'} · ${awaiting} awaiting chart`
+                    : `${count} file${count === 1 ? '' : 's'} in ${ch.raw_path}/`
+                }
+              >
+                <span className="dock-pill__label text-sm font-medium text-[var(--text)]">
+                  {ch.emoji} {ch.name}
+                </span>
+                <span className="dock-pill__count">{count}</span>
+              </button>
+            )
+          })}
+          <button
+            type="button"
+            onClick={() => setShowAddDock(true)}
+            className="dock-pill text-[var(--muted)]"
+          >
+            + Add dock
+          </button>
+        </div>
+        {channel && (
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            {channel.description} · <code className="text-[var(--muted)]">{channel.raw_path}/</code>
+          </p>
+        )}
+      </section>
 
+      {showAddDock && (
+        <section className="panel-card mb-5">
+          <SectionLabel>New dock</SectionLabel>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Creates a folder under <code>raw/</code> in your vault and wires it into the chart pipeline.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              value={dockEmoji}
+              onChange={(e) => setDockEmoji(e.target.value)}
+              className="w-14 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-2 text-center text-lg"
+              maxLength={4}
+            />
+            <input
+              value={dockName}
+              onChange={(e) => setDockName(e.target.value)}
+              placeholder="Dock name"
+              className="min-w-[12rem] flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => addDockMutation.mutate()}
+              disabled={!dockName.trim() || addDockMutation.isPending}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddDock(false)}
+              className="btn-secondary px-4 py-2 text-sm text-[var(--muted)]"
+            >
+              Cancel
+            </button>
+          </div>
+          {addDockMutation.isError && (
+            <p className="mt-2 text-xs text-red-400">{addDockMutation.error.message}</p>
+          )}
+        </section>
+      )}
+
+      {/* Upload */}
+      <section className="mb-6">
+        <SectionLabel>
+          Upload to {channel?.emoji} {channel?.name}
+        </SectionLabel>
         <div
           {...getRootProps()}
-          className={`cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-            isDragActive
-              ? 'border-cyan-400 bg-cyan-950/30'
-              : 'border-slate-600 bg-slate-800/30 hover:border-slate-500'
-          }`}
+          className={`dropzone cursor-pointer px-6 py-8 text-center ${isDragActive ? 'dropzone--active' : ''}`}
         >
           <input {...getInputProps()} />
-          <p className="text-lg text-slate-200">
-            {isDragActive ? 'Release into dock…' : 'Drop artifacts here'}
+          <p className="text-[var(--text)]">
+            {isDragActive ? 'Release to dock…' : 'Drop files here'}
           </p>
-          <p className="mt-2 text-sm text-slate-500">
-            Staged until you confirm · {channel?.extensions.join(', ')}
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            {channel?.extensions.map((e) => `.${e}`).join(', ')} · staged until you confirm
           </p>
         </div>
 
         {queuedFiles.length > 0 && (
-          <ul className="mt-4 space-y-1 text-sm text-slate-300">
+          <ul className="mt-3 space-y-0.5 text-xs text-[var(--muted)]">
             {queuedFiles.map((f) => (
-              <li key={f.name}>◦ {f.name} (staged)</li>
+              <li key={f.name}>{f.name}</li>
             ))}
           </ul>
         )}
 
-        <div className="mt-4">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             onClick={() => dockMutation.mutate()}
             disabled={queuedFiles.length === 0 || dockMutation.isPending}
-            className="rounded-lg border border-cyan-700 bg-cyan-950/40 px-5 py-2.5 text-sm font-medium text-cyan-100 hover:bg-cyan-900/40 disabled:opacity-50"
+            className="btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
-            {dockMutation.isPending ? 'Transferring…' : 'Confirm Upload'}
+            {dockMutation.isPending ? 'Uploading…' : 'Confirm upload'}
           </button>
         </div>
 
         {dockMutation.isError && (
-          <p className="mt-2 text-sm text-red-400">{dockMutation.error.message}</p>
+          <p className="mt-2 text-xs text-red-400">{dockMutation.error.message}</p>
         )}
-
         {uploadedFiles.length > 0 && (
-          <ul className="mt-4 space-y-1 text-sm text-emerald-400">
-            {uploadedFiles.map((f) => (
-              <li key={`${f.channel}-${f.name}`}>
-                ✓ {f.name} → {f.channel}
-              </li>
+          <ul className="mt-2 space-y-0.5 text-xs text-[var(--success)]">
+            {uploadedFiles.slice(0, 5).map((f) => (
+              <li key={`${f.channel}-${f.name}`}>✓ {f.name}</li>
             ))}
           </ul>
         )}
       </section>
 
-      {/* Surface interval */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-slate-500">
-          Chart — {channel?.name}
-        </h2>
-        <div className="flex flex-wrap gap-3">
+      {/* Chart */}
+      <section className="mb-6">
+        <SectionLabel>Chart</SectionLabel>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => surfaceMutation.mutate()}
             disabled={surfaceMutation.isPending || isDiving}
-            className="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+            className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
           >
-            {surfaceMutation.isPending || isDiving
-              ? 'Diving…'
-              : 'Surface Interval — Update Chart'}
+            {surfaceMutation.isPending || isDiving ? 'Quick dip…' : 'Update chart'}
           </button>
           {isPortfolio && hasReef && (
             <button
               onClick={() => rebuildMutation.mutate()}
               disabled={rebuildMutation.isPending || isDiving}
-              className="rounded-lg border border-slate-600 px-5 py-2.5 text-sm text-slate-300 hover:border-slate-500 disabled:opacity-50"
+              className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
             >
               Full rebuild
             </button>
@@ -362,50 +570,78 @@ export default function App() {
           {vault && (
             <a
               href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
-              className="rounded-lg border border-slate-600 px-5 py-2.5 text-sm text-slate-300 hover:border-slate-500"
+              className="btn-secondary px-4 py-2 text-sm link-accent"
             >
-              Open reef in Obsidian
+              Open in Obsidian
             </a>
           )}
         </div>
-        <p className="mt-2 text-xs text-slate-500">
-          Scaffolds chart entries from templates in <code className="text-slate-400">builder/entries/</code>
-          {' '}— uploads stay in <code className="text-slate-400">raw/</code> only.
-          {isPortfolio
-            ? ' Updates papers, themes, concepts, and index.md.'
-            : ' Updates wiki/sources shells; LLM Deep Dive fills generative sections later.'}
-          {channelStats && channelStats.pending > 0 && (
-            <span className="text-amber-400"> · {channelStats.pending} pending</span>
-          )}
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          Quick Dip pulls PDF facts onto your wiki chart. Deep Dive (in Obsidian) adds themes and analysis.
+          {isPortfolio && ' Portfolio uploads run Quick Dip automatically.'}
         </p>
         {(surfaceMutation.isError || rebuildMutation.isError) && (
-          <p className="mt-2 text-sm text-red-400">
+          <p className="mt-2 text-xs text-red-400">
             {(surfaceMutation.error ?? rebuildMutation.error)?.message}
           </p>
         )}
       </section>
 
       {activeJobId && (
-        <section className="rounded-xl border border-slate-700 bg-slate-900/80">
-          <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
-            <span className="text-sm font-medium text-slate-200">Dive log</span>
+        <section className="panel-card">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
+            <span className="text-xs font-medium text-[var(--text)]">Job log</span>
             {jobStatus && (
-              <span className={`text-sm font-medium uppercase ${statusColor(jobStatus)}`}>
+              <span className={`text-xs font-medium uppercase ${statusColor(jobStatus)}`}>
                 {jobStatus}
               </span>
             )}
           </div>
-          <pre className="max-h-72 overflow-auto p-4 font-mono text-xs leading-relaxed text-slate-300">
-            {(logsQuery.data?.lines ?? []).join('\n') || 'Waiting for output…'}
+          <pre className="max-h-48 overflow-auto p-3 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
+            {(logsQuery.data?.lines ?? []).join('\n') || 'Waiting…'}
           </pre>
         </section>
       )}
 
-      {vault && (
-        <p className="mt-6 text-xs text-slate-600">
-          Reef path: <code className="text-slate-500">{vault.path}</code>
-        </p>
+      {channelStats?.needs_attention && channelStats.needs_attention.length > 0 && (
+        <section className="panel-card mt-4">
+          <h3 className="text-xs font-medium text-[var(--text)]">Needs attention in this dock</h3>
+          <ul className="mt-1.5 space-y-0.5 text-xs text-[var(--muted)]">
+            {channelStats.needs_attention.slice(0, 4).map((item) => (
+              <li key={item.slug}>
+                {item.title}{' '}
+                <span className="text-[var(--accent)]">({item.status.replace(/_/g, ' ')})</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-    </div>
+      </div>
+
+      <footer className="site-footer">
+        <div className="site-footer__inner">
+          <div className="site-footer__brand">
+            <img src="/scuba-logo.png" alt="" width={24} height={24} />
+            <span>
+              A product of{' '}
+              <a href="https://eshwarchandrasekharan.com/lab.html" target="_blank" rel="noreferrer">
+                SCUBA Lab
+              </a>
+              {' '}@ UIUC
+            </span>
+          </div>
+          <span>
+            <a
+              href="https://github.com/ceshwar/build-research-wiki/blob/main/LICENSE"
+              target="_blank"
+              rel="noreferrer"
+            >
+              MIT License
+            </a>
+            {' '}· © 2026 Eshwar Chandrasekharan
+          </span>
+        </div>
+      </footer>
+    </>
   )
 }

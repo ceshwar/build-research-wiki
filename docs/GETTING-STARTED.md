@@ -37,8 +37,8 @@ Best if you're starting fresh or have a pile of papers without curated notes.
 Best if you organize work by research theme and want a reproducible portfolio map.
 
 1. Add PDFs to `raw/papers/`.
-2. Run Surface Interval (UI) or `python3 builder/map_channel.py --channel my-portfolio` — creates `builder/entries/my-portfolio/<slug>.md` from templates.
-3. Edit the entry: `[[theme-slug]]` wikilinks on line 1, `## Abstract`, `## One-liner`.
+2. **Quick Dip** — UI (auto after dock on portfolio) or `python3 builder/map_channel.py --channel my-portfolio` — extracts PDF title/abstract/venue/year into `builder/entries/my-portfolio/<slug>.md` (no theme placeholders).
+3. **Deep Dive** — add `[[theme-slug]]` wikilinks, `## One-liner`, and `builder/deepdives/<slug>.md`.
 4. Add theme definitions to `builder/data.py` and theme one-liners in `raw/notes/themes/` (optional).
 5. Register hand-curated papers in `builder/data.py` (see `examples/minimal-vault/builder/data.py`).
 6. Run `python3 builder/build.py`.
@@ -100,7 +100,7 @@ See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md).
 ## See also
 
 - [SCUBA Ideaverse](SCUBA-IDEAVERSE.md) — dock, surface, completion tracking
-- [Tour vault (demo)](../examples/minimal-vault/) — five papers on chart
+- [Tour vault (demo)](../examples/minimal-vault/) — three papers on chart
 - [Team collaboration](TEAM-COLLABORATION.md) — shared repos, git norms, privacy
 - [Changelog](CHANGELOG.md) — v0.3.0 release notes
 - [README](../README.md) — product overview

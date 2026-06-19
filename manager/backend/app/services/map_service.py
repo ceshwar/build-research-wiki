@@ -12,12 +12,8 @@ class MapService:
 
     def surface_interval(self, vault_id, channel_id="my-portfolio", build_mode="auto"):
         # type: (str, str, str) -> str
-        ch = channel_registry.get(channel_id)
-        if not ch:
-            raise KeyError("Unknown channel: {}".format(channel_id))
-
         vault_path = self.vaults.resolve_path(vault_id)
-        ch = channel_registry.get(channel_id)
+        ch = channel_registry.get(channel_id, vault_path)
         if not ch:
             raise KeyError("Unknown channel: {}".format(channel_id))
         if not self.vaults.has_builder(vault_id):
@@ -37,7 +33,7 @@ class MapService:
             job_type="surface_interval",
             vault_id=vault_id,
             steps=steps,
-            label="Surface interval — {} / {}".format(vault_path.name, ch["name"]),
+            label="Quick dip — {} / {}".format(vault_path.name, ch["name"]),
         )
 
     def map_pdfs(self, vault_id, channel_id="my-portfolio"):

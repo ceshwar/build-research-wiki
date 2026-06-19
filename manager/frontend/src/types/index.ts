@@ -1,31 +1,37 @@
 export interface Channel {
   id: string
   name: string
+  emoji: string
   description: string
   profile: 'portfolio' | 'ingest'
   raw_path: string
   extensions: string[]
+  builtin?: boolean
+  hidden?: boolean
 }
 
 export interface NeedsAttention {
   slug: string
   title: string
-  status: 'scaffolded' | 'charted' | 'processed'
+  status: 'scaffolded' | 'charted' | 'processed' | 'quick_dip' | 'needs_deep_dive'
 }
 
 export interface ChannelStats {
   id: string
   name: string
+  emoji?: string
   description: string
   profile: string
   raw_path: string
+  extensions?: string[]
   artifact_count: number
   pending: number
   on_chart: number
   scaffolded: number
   charted: number
   processed: number
-  needs_review: number
+  needs_deep_dive: number
+  quick_dip?: number
   needs_attention: NeedsAttention[]
 }
 
@@ -43,8 +49,11 @@ export interface Vault {
   scaffolded_count: number
   charted_count: number
   processed_count: number
+  quick_dip_count?: number
+  needs_deep_dive_count?: number
   needs_review_count: number
   channels: ChannelStats[]
+  user_added?: boolean
 }
 
 export interface Job {
@@ -70,4 +79,11 @@ export interface UploadResult {
   channel_id: string
   channel_name: string
   raw_path: string
+}
+
+export interface DockCreatePayload {
+  name: string
+  emoji?: string
+  description?: string
+  profile?: 'portfolio' | 'ingest'
 }

@@ -1,0 +1,11 @@
+[[algorithmic-ai-audits]], [[social-media-online-communities]]
+
+## Abstract
+
+Platforms are increasingly relying on algorithms to curate the content within users' social media feeds. However, the growing prominence of proprietary, algorithmically curated feeds has concealed what factors influence the presentation of content on social media feeds and how that presentation affects user behavior. This lack of transparency can be detrimental to users, from reducing users' agency over their content consumption to the propagation of misinformation and toxic content. To uncover details about how these feeds operate and influence user behavior, we conduct an empirical audit of Reddit's algorithmically curated trending feed called r/popular. Using 10K r/popular posts collected by taking snapshots of the feed over 11 months, we find that recent comments help a post remain on r/popular longer and climb the feed. We also find that posts below rank 80 correspond to a sharp decline in activity compared to posts above. When examining the effects of having a higher proportion of undesired behavior---i.e., moderator-removed and toxic comments---we find no significant evidence that it helps posts stay on r/popular for longer. Although posts closer to the top receive more undesired comments, we find this increase to coincide with a broader increase in overall engagement---rather than indicating a disproportionate effect on undesired activity. The relationships between algorithmic rank and engagement highlight the extent to which algorithms employed by social media platforms essentially determine which content is prioritized and which is not. We conclude by discussing how content creators, consumers, and moderators on social media platforms can benefit from empirical audits aimed at improving transparency in algorithmically curated feeds.
+
+## One-liner
+
+11-month audit of r/popular: recent comments help posts climb; cliff below rank 80; toxicity doesn't extend feed life.
+
+## My notes

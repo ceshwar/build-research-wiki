@@ -15,8 +15,62 @@ export function fetchVaults() {
   return request<Vault[]>('/vaults')
 }
 
-export function fetchChannels() {
-  return request<Channel[]>('/channels')
+export interface VaultValidateResult {
+  ok: boolean
+  path: string
+  has_builder: boolean
+  has_wiki: boolean
+  paper_count: number
+  suggested_name: string
+  warnings: string[]
+  error?: string
+}
+
+export function validateVaultPath(path: string) {
+  return request<VaultValidateResult>('/vaults/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+}
+
+export function pickVaultFolder() {
+  return request<{ path: string | null; cancelled: boolean }>('/vaults/pick-folder', {
+    method: 'POST',
+  })
+}
+
+export function addVault(path: string, name?: string) {
+  return request<Vault>('/vaults', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, name: name || null }),
+  })
+}
+
+export function removeVault(vaultId: string) {
+  return request<{ ok: boolean }>(`/vaults/${vaultId}`, { method: 'DELETE' })
+}
+
+export function fetchChannels(vaultId?: string, includeHidden = false) {
+  const params = new URLSearchParams()
+  if (vaultId) params.set('vault_id', vaultId)
+  if (includeHidden) params.set('include_hidden', 'true')
+  const q = params.toString()
+  return request<Channel[]>(`/channels${q ? `?${q}` : ''}`)
+}
+
+export function createDock(vaultId: string, payload: import('../types').DockCreatePayload) {
+  return request<Channel>(`/vaults/${vaultId}/docks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: payload.name,
+      emoji: payload.emoji ?? '📁',
+      description: payload.description ?? '',
+      profile: payload.profile ?? 'ingest',
+    }),
+  })
 }
 
 export function dockArtifacts(vaultId: string, files: File[], channelId: string) {
