@@ -1,0 +1,17 @@
+# Disposable cache — extracted PDF text, regenerable via builder/extract_pdfs.py (poppler)
+builder/cache/
+builder/__pycache__/
+
+# Obsidian's per-machine UI state (keep the rest of .obsidian if you commit your config)
+.obsidian/workspace.json
+.obsidian/workspace*.json
+
+# OS noise
+.DS_Store
+
+# Keep everything else, including:
+#   builder/*.py        — the generator engine + entrypoint
+#   builder/data.py     — your corpus data (edit this per vault)
+#   builder/deepdives/  — source of truth for paper Deep dive sections
+#   raw/                — your immutable sources (PDFs, notes, assets)
+#   wiki/               — generated + hand-maintained pages
