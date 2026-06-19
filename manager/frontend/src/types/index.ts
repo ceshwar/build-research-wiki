@@ -6,6 +6,8 @@ export interface Channel {
   profile: 'portfolio' | 'ingest'
   raw_path: string
   extensions: string[]
+  /** full = portfolio Quick Dip; preview = ingest shell only (Phase 3 full ingest) */
+  chart_support: 'full' | 'preview'
   builtin?: boolean
   hidden?: boolean
 }

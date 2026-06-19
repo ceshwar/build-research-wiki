@@ -102,6 +102,7 @@ build-research-wiki/
 | Doc | What it covers |
 |-----|----------------|
 | [SCUBA Ideaverse](docs/SCUBA-IDEAVERSE.md) | UI workflow, channels, completion states, roadmap |
+| [Roadmap](docs/ROADMAP.md) | Phased next steps + GitHub issue script |
 | [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
 | [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
 | [Changelog](docs/CHANGELOG.md) | Release notes (v0.3.0) |

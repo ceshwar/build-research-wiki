@@ -123,6 +123,8 @@ export default function App() {
   const channelStats = vault?.channels.find((c) => c.id === channelId)
   const hasReef = vault ? vault.paper_count > 0 || !!vault.last_build : false
   const isPortfolio = channel?.profile === 'portfolio'
+  const chartSupport = channel?.chart_support ?? (isPortfolio ? 'full' : 'preview')
+  const isIngestPreview = chartSupport === 'preview'
 
   useEffect(() => {
     if (channels.length && !channels.find((c) => c.id === channelId)) {
@@ -168,6 +170,19 @@ export default function App() {
     mutationFn: () => surfaceInterval(vaultId, channelId, 'auto'),
     onSuccess: (data) => setActiveJobId(data.job_id),
   })
+
+  const handleUpdateChart = useCallback(() => {
+    if (isIngestPreview) {
+      const ok = window.confirm(
+        'Full ingest for this dock is in development (Phase 3).\n\n' +
+          'Update chart will only create a thin Quick Dip placeholder shell in wiki/sources/ — ' +
+          'not a finished source page with summaries, takeaways, and entity links.\n\n' +
+          'Your files stay safe in raw/. Continue with placeholder shell?'
+      )
+      if (!ok) return
+    }
+    surfaceMutation.mutate()
+  }, [isIngestPreview, surfaceMutation])
 
   const dockMutation = useMutation({
     mutationFn: () => dockArtifacts(vaultId, queuedFiles, channelId),
@@ -456,6 +471,14 @@ export default function App() {
             {channel.description} · <code className="text-[var(--muted)]">{channel.raw_path}/</code>
           </p>
         )}
+        {isIngestPreview && (
+          <div className="notice-callout mt-3">
+            <strong>In development.</strong> You can dock files here — they land in{' '}
+            <code>{channel?.raw_path}/</code> and stay safe. Full LLM ingest (faithful summaries,
+            entity links, takeaways) ships in Phase 3. Until then, <strong>Update chart</strong>{' '}
+            only creates a thin placeholder shell, not a finished source page.
+          </div>
+        )}
       </section>
 
       {showAddDock && (
@@ -514,6 +537,7 @@ export default function App() {
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
             {channel?.extensions.map((e) => `.${e}`).join(', ')} · staged until you confirm
+            {isIngestPreview && ' · full ingest coming in Phase 3'}
           </p>
         </div>
 
@@ -550,13 +574,24 @@ export default function App() {
       {/* Chart */}
       <section className="mb-6">
         <SectionLabel>Chart</SectionLabel>
+        {isIngestPreview && (
+          <div className="notice-callout mb-3">
+            <strong>Preview only.</strong> Chart update for {channel?.emoji} {channel?.name} is not
+            production-ready. Use <strong>⚓ My Portfolio</strong> for full Quick Dip charting today,
+            or dock here and wait for Phase 3 ingest.
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => surfaceMutation.mutate()}
+            onClick={handleUpdateChart}
             disabled={surfaceMutation.isPending || isDiving}
             className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
           >
-            {surfaceMutation.isPending || isDiving ? 'Quick dip…' : 'Update chart'}
+            {surfaceMutation.isPending || isDiving
+              ? 'Updating…'
+              : isIngestPreview
+                ? 'Update chart (preview)'
+                : 'Update chart'}
           </button>
           {isPortfolio && hasReef && (
             <button
@@ -577,8 +612,18 @@ export default function App() {
           )}
         </div>
         <p className="mt-2 text-xs text-[var(--muted)]">
-          Quick Dip pulls PDF facts onto your wiki chart. Deep Dive (in Obsidian) adds themes and analysis.
-          {isPortfolio && ' Portfolio uploads run Quick Dip automatically.'}
+          {isIngestPreview ? (
+            <>
+              Placeholder shells land in <code>wiki/sources/</code>. Phase 3 will add full LLM
+              ingest (summary, takeaways, entities).
+            </>
+          ) : (
+            <>
+              Quick Dip pulls PDF facts onto your wiki chart. Deep Dive (in Obsidian) adds themes
+              and analysis.
+              {isPortfolio && ' Portfolio uploads run Quick Dip automatically.'}
+            </>
+          )}
         </p>
         {(surfaceMutation.isError || rebuildMutation.isError) && (
           <p className="mt-2 text-xs text-red-400">

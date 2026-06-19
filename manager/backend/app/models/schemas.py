@@ -17,6 +17,7 @@ class ChannelSummary(BaseModel):
     profile: str
     raw_path: str
     extensions: List[str] = []
+    chart_support: Literal["full", "preview"] = "full"
     builtin: bool = True
     hidden: bool = False
 

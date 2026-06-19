@@ -41,14 +41,17 @@ class ChannelRegistry:
 
     def _public_channel(self, dock):
         ch = self._normalize(dock)
+        profile = ch["profile"]
         return {
             "id": ch["id"],
             "name": ch["name"],
             "emoji": ch.get("emoji", "📁"),
             "description": ch.get("description", ""),
-            "profile": ch["profile"],
+            "profile": profile,
             "raw_path": ch["raw_path"],
             "extensions": [e.lstrip(".") for e in ch.get("extensions", [])],
+            # portfolio: Quick Dip → wiki/papers (supported). ingest: shell only until Phase 3.
+            "chart_support": "full" if profile == "portfolio" else "preview",
         }
 
     def _normalize(self, dock):

@@ -46,14 +46,16 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 
 Each vault has `builder/docks.yaml` — four built-in docks plus any you add in the UI:
 
-| Dock | Folder | Purpose |
-|------|--------|---------|
-| ⚓ My Portfolio | `raw/papers/` | Your papers → Quick Dip chart |
-| 🌊 Literature Review | `raw/literature/` | Field papers to read |
-| 🤿 Dive Log | `raw/dive-log/` | Transcripts, session notes |
-| 💡 Ideas & Notes | `raw/notes/inbox/` | Quick captures |
+| Dock | Folder | Purpose | Chart today |
+|------|--------|---------|-------------|
+| ⚓ My Portfolio | `raw/papers/` | Your papers → Quick Dip chart | **Full** — auto after upload |
+| 🌊 Literature Review | `raw/literature/` | Field papers to read | **Preview** — shell only (Phase 3) |
+| 🤿 Dive Log | `raw/dive-log/` | Transcripts, session notes | **Preview** — shell only (Phase 3) |
+| 💡 Ideas & Notes | `raw/notes/inbox/` | Quick captures | **Preview** — shell only (Phase 3) |
 
 **+ Add dock** creates a new `raw/<slug>/` folder and registers it in `builder/docks.yaml`.
+
+Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **in development** notice and asks for confirmation before **Update chart (preview)** — that path creates a thin `wiki/sources/` placeholder, not a finished ingest. Full LLM ingest is [Phase 3 on the roadmap](ROADMAP.md).
 
 ---
 
@@ -123,12 +125,16 @@ To ship default vaults with the repo, edit `manager/backend/config/vaults.yaml`:
 
 ## What's next (roadmap)
 
+Full issue list: **[docs/ROADMAP.md](ROADMAP.md)** · create on GitHub: `./scripts/create-roadmap-issues.sh`
+
 | Phase | Feature |
 |-------|---------|
 | **Now (v0.3+)** | Dock, Quick Dip (Tier 1), Deep Dive tracking, completion stats |
-| **Phase 3** | LLM Deep Dive — auto-fill `builder/deepdives/` from PDFs |
-| **Phase 3** | LLM ingest for lit-review / lab-memory / ideas → full `wiki/sources/` |
-| **Later** | Sonar ping (related work), reef profiles (custom chart shapes) |
+| **Phase 2** | LLM Deep Dive — auto-fill `builder/deepdives/` from PDFs |
+| **Phase 2** | Theme/one-liner assistance, Enrich actions, entity propagation |
+| **Phase 3** | Full LLM ingest for lit-review / dive-log / ideas (replaces preview shells) |
+| **Phase 4** | Sonar ping (related work), query-to-file syntheses, overview threads |
+| **Phase 5** | Reef profiles, Obsidian Dataview stats |
 
 ---
 

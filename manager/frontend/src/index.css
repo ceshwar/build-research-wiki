@@ -352,3 +352,17 @@ code {
   padding: 0.1em 0.35em;
   border-radius: 4px;
 }
+
+.notice-callout {
+  border: 1px solid rgba(234, 88, 12, 0.35);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.notice-callout strong {
+  color: var(--accent);
+}
