@@ -5,35 +5,54 @@ sits in), **idempotent** (re-run anytime), and **data-driven** (swap `data.py` f
 
 ## Run it
 ```bash
-python3 builder/build.py            # rebuild this vault's papers/themes/concepts/entities + index.md
+python3 builder/map_channel.py --channel my-portfolio   # docked PDFs → builder/entries/
+python3 builder/build.py            # scaffold wiki chart from entries + data.py
 ```
+
+## Chart layers
+
+| Layer | Location | Who edits |
+|-------|----------|-----------|
+| Uploads (immutable) | `raw/papers/`, `raw/literature/`, … | you dock files |
+| Deterministic entries | `builder/entries/<channel>/<slug>.md` | you (copy from `builder/templates/`) |
+| Generative deep dives | `builder/deepdives/<slug>.md` | LLM Deep Dive later, or by hand |
+| Chart output | `wiki/papers/`, `wiki/sources/`, … | generated — do not edit |
+
 Output ends with a link check (`red links: NONE` = healthy). Requires Python 3 only.
 PDF text extraction (optional, below) needs **poppler** (`brew install poppler`).
 
 ## Files
 | File | Role | Edit per vault? |
 |---|---|---|
-| `build.py` | Entrypoint — runs both engines + link check; finds the vault as its parent | no |
-| `engine_papers.py` | Generic engine → `wiki/papers/`, `wiki/themes/`, `index.md` | no |
-| `engine_web.py` | Generic engine → `wiki/concepts/`, `wiki/entities/` | no |
-| **`data.py`** | **The corpus**: THEMES, P (papers), TITLES, CONCEPTS, PEOPLE, PLATFORMS, METHODS | **yes** |
-| `deepdives/<slug>.md` | **Source of truth** for each paper's *Deep dive* section (injected at build) | yes (content) |
-| `extract_pdfs.py` | Helper: `pdftotext` every paper PDF → `cache/<slug>.txt` (for writing deep dives) | no |
-| `new_vault.py` | Scaffold a brand-new vault that reuses this engine | no |
-| `cache/` | Disposable extracted PDF text (gitignored) | — |
+| `build.py` | Entrypoint — runs engines + link check | no |
+| `map_channel.py` | Docked artifacts → `builder/entries/` + auto registry | no |
+| `engine_papers.py` | Portfolio chart → `wiki/papers/`, `wiki/themes/`, `index.md` | no |
+| `engine_ingest.py` | Ingest channels → `wiki/sources/` shells | no |
+| `engine_web.py` | Concepts + entities | no |
+| `templates/` | Default entry templates per channel (copy to start by hand) | no |
+| **`data.py`** | Corpus: THEMES, P, CONCEPTS, PEOPLE, … | **yes** |
+| `entries/<channel>/` | Your working chart notes (deterministic sections) | **yes** |
+| `deepdives/<slug>.md` | Generative *Deep dive* section (injected at build) | yes |
+| `auto_papers.py` / `auto_sources.py` | Registry of auto-mapped dock artifacts | auto |
+| `extract_pdfs.py` | `pdftotext` → `cache/<slug>.txt` | no |
+| `new_vault.py` | Scaffold a new vault | no |
+| `cache/` | Disposable PDF text (gitignored) | — |
 
 ## Two rules
-1. **Deep dives:** edit `builder/deepdives/<slug>.md`, then re-run. Editing the *Deep dive*
-   block inside `wiki/papers/<slug>.md` directly will be overwritten.
-2. **Hand-maintained (never generated):** `wiki/overview.md`, `wiki/syntheses/`, `log.md`,
-   `CLAUDE.md`, root `BUILD.md`.
+1. **Entries:** edit `builder/entries/<channel>/<slug>.md`, then Surface Interval / `build.py`.
+   Uploads in `raw/` are never modified by the chart build.
+2. **Deep dives:** edit `builder/deepdives/<slug>.md` (or run LLM Deep Dive when available).
+3. **Hand-maintained:** `wiki/overview.md`, `wiki/syntheses/`, `log.md`, `CLAUDE.md`.
 
 ## Add a paper
-1. Abstract note → `raw/notes/recent project abstracts/(YEAR_VENUE) Title.md` (`[[Theme]]` on
-   line 1, then `## Abstract:`). PDF → `raw/papers/`.
-2. Add a row to `P` in `data.py`. (Optional: add concept/entity/title entries.)
-3. `python3 builder/extract_pdfs.py` then write `builder/deepdives/<slug>.md`.
-4. `python3 builder/build.py`. Update `wiki/overview.md` + `log.md` by hand.
+1. Dock PDF → `raw/papers/` (or copy `builder/templates/my-portfolio/entry.md` to
+   `builder/entries/my-portfolio/<slug>.md` and fill in by hand).
+2. `python3 builder/map_channel.py --channel my-portfolio` — creates entry from template if needed.
+3. Add theme links and abstract in the **entry file** (not `raw/notes/`).
+4. Register in `data.py` `P` if hand-curated; auto-mapped papers land in `auto_papers.py`.
+5. `python3 builder/build.py`. Update `wiki/overview.md` + `log.md` by hand.
+
+Legacy: hand-curated abstract notes in `raw/notes/abstracts/` still work if referenced from `data.py`.
 
 ## Clone for a different set of papers
 ```bash

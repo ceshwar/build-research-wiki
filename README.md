@@ -1,127 +1,132 @@
 # build-research-wiki
 
 Build your own **LLM-powered research wiki** — a persistent, compounding knowledge base that
-an AI assistant (Claude Code, or any LLM agent that can read files) maintains for you. You drop
-in papers and notes; the assistant reads them, summarizes them, cross-links entities and
-concepts, flags contradictions, and files everything as plain Markdown you browse in
+an AI assistant maintains for you. Drop in papers and notes; browse the result in
 [Obsidian](https://obsidian.md).
 
-It's just a folder of Markdown. No database, no server, no lock-in. The "intelligence" lives in
-one schema file (`CLAUDE.md`) that tells the assistant how to read and file things, plus an
-optional Python builder for reproducible, scriptable rebuilds.
-
-```
-raw/  ──(you add papers)──►  assistant reads + files  ──►  wiki/  ──►  open in Obsidian
-```
+**Based on the [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** by Andrej Karpathy — compile knowledge once and keep it current.
 
 ---
 
-## Two ways to use it
+## SCUBA Ideaverse (v0.3)
 
-You can use either, or both. Both produce the same kind of plain-Markdown, Obsidian-friendly
-wiki.
+**Your research world, mapped and connected.**
 
-### 1. LLM-driven ingest (the main workflow)
-Drop documents into `raw/`, open the folder in an LLM coding agent (e.g. Claude Code), and say:
+A web control panel for docking artifacts, surfacing structured charts, and tracking what's fully processed vs still needs review.
+
+```bash
+./manager/scripts/dev.sh    # → http://127.0.0.1:5173
+```
+
+| Step | Action |
+|------|--------|
+| 1 | Pick a channel (portfolio, lit review, lab memory, …) |
+| 2 | **Dock** files → `raw/{channel}/` |
+| 3 | **Surface Interval** → scaffold chart + rebuild `wiki/` |
+| 4 | Edit `builder/entries/` and `builder/deepdives/`; re-surface |
+| 5 | Open reef in Obsidian |
+
+Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)**
+
+---
+
+## Three ways to use it
+
+### 1. SCUBA Ideaverse (UI) — *recommended for teams*
+
+Dock → Surface Interval → edit entries → Obsidian. Uploads stay in `raw/`; chart scaffolds land in `builder/entries/`. The Dive Computer shows how many entries are **processed** vs **need review**.
+
+### 2. LLM-driven ingest (agent workflow)
+
+Drop documents into `raw/`, open the folder in Cursor or Claude Code, and say:
 
 > *"Ingest the new papers in `raw/`."*
 
-The assistant reads [`CLAUDE.md`](CLAUDE.md) — the operating manual — and does the rest:
-writes a summary page per source, updates/creates entity and concept pages, links everything
-bidirectionally, flags contradictions, and updates `index.md` + `log.md`. Then ask it
-questions (*"What do my sources say about X?"*) and file the good answers back as syntheses.
+The assistant reads [`CLAUDE.md`](CLAUDE.md) and writes `wiki/sources/`, entities, concepts, syntheses. See [`CLAUDE.md`](CLAUDE.md) §6.
 
-Works with **PDFs, Markdown, text, transcripts, images** — anything the assistant can read.
+### 3. Deterministic builder (CLI / cron)
 
-### 2. Deterministic builder (optional, scriptable)
-For the specific pattern of mapping a **paper portfolio by research theme**, the `builder/`
-directory generates that slice of the wiki from a single data file — idempotently, so it can
-run from a script or cron. See [BUILD.md](BUILD.md). Skip it if you only want workflow #1.
+For a **paper portfolio mapped by research theme**, run `python3 builder/build.py`. Idempotent, scriptable. See [BUILD.md](BUILD.md).
+
+You can combine all three: SCUBA for docking and chart scaffolding, the agent for deep dives and ingest, the builder for reproducible rebuilds.
 
 ---
 
-## Quickstart (5 minutes)
+## Quickstart
 
 ```bash
-# 1. Clone
-git clone https://github.com/ceshwar/build-research-wiki.git my-research-wiki
-cd my-research-wiki
+git clone https://github.com/ceshwar/build-research-wiki.git
+cd build-research-wiki
 
-# 2. Add sources — copy PDFs or Markdown notes into raw/
-cp ~/Downloads/some-paper.pdf raw/papers/
+# Option A — try the UI + demo vault
+./manager/scripts/dev.sh
 
-# 3. Open the folder in Claude Code (or your LLM agent) and say:
-#    "Ingest the new files in raw/."
-#    The assistant follows CLAUDE.md and fills wiki/.
+# Option B — browse the tour vault in Obsidian
+open examples/minimal-vault   # or: File → Open vault in Obsidian
 
-# 4. Browse the result
-#    Open this folder as a vault in Obsidian → explore the graph + links.
+# Option C — start your own vault
+python3 builder/new_vault.py ~/my-research-wiki "My Lab"
 ```
 
-That's the whole loop: **add to `raw/` → ask the assistant to ingest → read in Obsidian → ask
-questions.**
+**New here?** → [Getting started](docs/GETTING-STARTED.md) · [SCUBA Ideaverse](docs/SCUBA-IDEAVERSE.md) · [Tour vault](examples/minimal-vault/) · [Team collaboration](docs/TEAM-COLLABORATION.md)
 
 ---
 
 ## How it's organized
 
 ```
-my-research-wiki/
-├── CLAUDE.md        # the schema — how the assistant reads, files, and links. Read this.
-├── index.md         # catalog of everything in the wiki (the assistant maintains it)
-├── log.md           # append-only history of every ingest/query/lint
-├── raw/             # YOUR immutable sources — the assistant reads these, never edits them
-│   ├── papers/      #   PDFs go here
-│   ├── notes/       #   Markdown notes go here
-│   └── assets/      #   images / attachments
-├── wiki/            # the assistant's output — all generated Markdown
-│   ├── sources/     #   one summary page per source
-│   ├── entities/    #   people, orgs, tools, venues, datasets
-│   ├── concepts/    #   ideas, theories, methods, findings
-│   ├── syntheses/   #   cross-cutting analyses + filed answers
-│   └── overview.md  #   the evolving big-picture map
-└── builder/         # optional deterministic generator (see BUILD.md)
+build-research-wiki/
+├── manager/              # SCUBA Ideaverse UI (FastAPI + React)
+├── CLAUDE.md             # wiki schema — how the assistant operates
+├── index.md, log.md      # catalog + chronological record
+├── raw/                  # immutable uploads (dock here)
+│   ├── papers/           #   portfolio PDFs
+│   ├── literature/       #   lit review
+│   ├── transcripts/      #   lab memory
+│   └── notes/inbox/      #   ideas
+├── builder/
+│   ├── templates/        #   default entry templates per channel
+│   ├── entries/          #   your chart notes (themes, abstract, one-liner)
+│   ├── deepdives/        #   generative sections (RQ, method, findings, …)
+│   ├── data.py           #   corpus (themes, papers, concepts, people)
+│   └── build.py          #   chart generator
+└── wiki/                 # generated chart (papers, themes, sources, …)
 ```
 
-The two layers that matter: **`raw/` is the source of truth and is never modified.** **`wiki/`
-is everything the assistant writes.** The full rules live in [`CLAUDE.md`](CLAUDE.md).
+**Rule:** `raw/` is never modified by the chart build. Edit `builder/entries/` and `builder/deepdives/`, then re-run Surface Interval or `build.py`.
 
 ---
 
-## Make it yours
+## Documentation
 
-`CLAUDE.md` is a template. The schema (layers, page formats, linking rules, the
-ingest/query/lint operations) works for any research wiki as-is. Tune **§9** to your field —
-swap in your domain and the venues/journals you read — and edit the welcome placeholders. The
-assistant re-reads this file every session, so changing it changes how your wiki gets built.
-
----
-
-## Keeping it fresh (optional automation)
-
-The deterministic builder is a plain, idempotent CLI (`python3 builder/build.py`, exit 0 =
-healthy), so it drops straight into `cron` / `launchd` / CI for a nightly rebuild:
-
-```cron
-# rebuild the portfolio map every night at 3am
-0 3 * * *  cd "/path/to/my-research-wiki" && /usr/bin/python3 builder/build.py
-```
-
-The LLM-driven ingest (workflow #1) is interactive by design, but you can also script it with
-the Claude Agent SDK or a scheduled Claude Code run if you want fully hands-off ingestion.
+| Doc | What it covers |
+|-----|----------------|
+| [SCUBA Ideaverse](docs/SCUBA-IDEAVERSE.md) | UI workflow, channels, completion states, roadmap |
+| [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
+| [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
+| [Changelog](docs/CHANGELOG.md) | Release notes (v0.3.0) |
+| [Tour vault](examples/minimal-vault/) | Demo with 5 papers on chart |
+| [CLAUDE.md](CLAUDE.md) | Full wiki schema |
+| [BUILD.md](BUILD.md) | Deterministic builder |
+| [manager/README.md](manager/README.md) | API reference |
 
 ---
 
 ## Requirements
 
-- **An LLM coding agent** for workflow #1 — [Claude Code](https://claude.com/claude-code) is
-  the reference, but any agent that can read/write files in a folder works.
-- **[Obsidian](https://obsidian.md)** (free) to browse — open this folder as a vault. Optional
-  but recommended; everything is plain Markdown so any editor works.
-- **Python 3** for the optional builder. PDF text extraction additionally needs
-  [`poppler`](https://poppler.freedesktop.org/) (`brew install poppler`).
+| Tool | Purpose |
+|------|---------|
+| Python 3.7+ | Builder + SCUBA backend |
+| Node 18+ | SCUBA frontend |
+| [Obsidian](https://obsidian.md) | Browse the wiki (recommended) |
+| LLM coding agent | Ingest, query, deep dives (Cursor, Claude Code, …) |
+| [poppler](https://poppler.freedesktop.org/) | Optional — PDF title extraction |
 
 ---
+
+## Credits
+
+Implements the **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** pattern. This template adds research-specific formats, a portfolio builder, SCUBA Ideaverse, and team docs.
 
 ## License
 

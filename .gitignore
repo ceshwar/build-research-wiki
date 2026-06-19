@@ -1,6 +1,8 @@
 # Disposable cache — extracted PDF text, regenerable via builder/extract_pdfs.py (poppler)
 builder/cache/
 builder/__pycache__/
+**/__pycache__/
+*.pyc
 
 # Obsidian's per-machine UI state (keep the rest of .obsidian if you commit your config)
 .obsidian/workspace.json

@@ -1,0 +1,38 @@
+# Reef channels — where artifacts dock before surfacing onto the chart.
+# raw_path is vault-relative. profile: portfolio (builder) | ingest (LLM, Phase 3).
+
+channels:
+  - id: my-portfolio
+    name: My Portfolio
+    description: Your own research papers and output
+    raw_path: raw/papers
+    profile: portfolio
+    extensions: [pdf]
+
+  - id: lab-portfolio
+    name: Lab Portfolio
+    description: Papers from your lab and collaborators
+    raw_path: raw/lab/papers
+    profile: portfolio
+    extensions: [pdf]
+
+  - id: lit-review
+    name: Literature Review
+    description: Field papers to read, skim, and connect
+    raw_path: raw/literature
+    profile: ingest
+    extensions: [pdf, md, txt]
+
+  - id: lab-memory
+    name: Lab Memory
+    description: Meeting transcripts, Zoom chats, discussions
+    raw_path: raw/transcripts
+    profile: ingest
+    extensions: [txt, md, pdf, vtt, srt]
+
+  - id: ideas
+    name: Ideas & Notes
+    description: Sketches, quick captures, research notes
+    raw_path: raw/notes/inbox
+    profile: ingest
+    extensions: [md, txt]

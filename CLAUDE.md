@@ -1,5 +1,7 @@
 # CLAUDE.md — Research Wiki Operating Manual
 
+> **Portability:** This file is the canonical schema. [`AGENTS.md`](AGENTS.md) points here for OpenAI Codex, OpenCode, and other agents that expect that filename. The instructions are AI-agnostic.
+
 This vault is an **LLM Wiki**: a persistent, compounding knowledge base that an LLM
 assistant (e.g. Claude) builds and maintains on your behalf. You curate sources, explore,
 and ask questions. The assistant does the reading, summarizing, cross-referencing, filing,
@@ -312,41 +314,32 @@ regenerates a slice of the wiki from a single data file, idempotently, so it can
 script or cron. Skip this whole section if you only want the LLM-driven workflow.
 
 ### Source layout (`raw/`)
-- `raw/papers/` — the paper PDFs (immutable). Identity comes from the PDF's own title (use
-  `mdls -name kMDItemTitle` or `pdftotext -f 1 -l 1`), not the filename.
-- `raw/notes/recent project abstracts/` — one curated note per project, named
-  `(YEAR_VENUE) Title.md`, with **`[[Theme]]` wikilinks on line 1** then `## Abstract:`. This
-  is the **authoritative paper→theme mapping** (author-written; treat as ground truth).
-- `raw/notes/research themes/` — one note per theme (`**Core idea:**` one-liner).
-- If a PDF has no abstract note, draft one here in the same format (lead with an HTML comment
-  marking it assistant-drafted + themes inferred), then flag for confirmation.
+- **Uploads only** — dock artifacts per channel (`raw/papers/`, `raw/literature/`,
+  `raw/transcripts/`, `raw/notes/inbox/`, …). **Immutable.** The chart build never writes here.
+- `raw/papers/` — portfolio PDFs. Title inferred from page 1 (`pdftotext`) when auto-mapped.
+- Legacy: hand-curated notes under `raw/notes/` (abstracts, themes) still work if referenced
+  from `builder/data.py`; new SCUBA workflow uses `builder/entries/` instead.
+
+### Chart entries (deterministic — you edit)
+- `builder/templates/<channel>/entry.md` — default templates to copy when starting by hand.
+- `builder/entries/<channel>/<slug>.md` — working notes for each docked artifact: themes,
+  abstract/summary, my notes. Created from templates on **Surface Interval** (`map_channel.py`).
+- `builder/auto_papers.py` / `builder/auto_sources.py` — auto registry (do not hand-edit).
 
 ### Wiki layout (added by the builder)
-- `wiki/themes/<slug>.md` — `type: theme` hub pages: core idea, the papers under it, related
-  themes (by co-occurrence). One per theme.
-- `wiki/papers/<slug>.md` — `type: paper` pages: title, venue, year, `status`
-  (`mapped`/`no-pdf`/`inferred`), theme links, the abstract/notes, and a **Deep dive**
-  placeholder for Phase 2. Slugs are short titles (e.g. `slm-mod.md`), not date-prefixed.
-- `wiki/overview.md` — the portfolio map: theme landscape + **cross-cutting threads** +
-  platforms/methods + pending confirmations.
-- `index.md` — catalog: themes by size, papers by year, with status icons (📄/📝/🔎).
+- `wiki/themes/<slug>.md` — theme hub pages.
+- `wiki/papers/<slug>.md` — portfolio paper pages (deterministic shell + deep dive slot).
+- `wiki/sources/<date>-<slug>.md` — ingest-channel shells (lit review, lab memory, ideas).
+- `wiki/overview.md` — hand-maintained portfolio map and cross-cutting threads.
+- `index.md` — catalog: themes, papers by year, docked artifacts.
 
 ### How it's generated & maintained
-- All generator code lives in **`builder/`** — see [BUILD.md](BUILD.md) and
-  [builder/README.md](builder/README.md). One entrypoint: `python3 builder/build.py`
-  (idempotent, portable — auto-detects its vault; ends with a red-link check).
-- **Engine vs data:** `builder/build.py` + `builder/engine_papers.py` + `builder/engine_web.py`
-  are generic; **`builder/data.py`** holds your corpus (THEMES, P, CONCEPTS, PEOPLE, …) and is
-  the only file you edit for new papers.
-- Paper **Deep dive** sections live in `builder/deepdives/<slug>.md` (source of truth, injected
-  at build — edit there, not in the paper page). `builder/cache/` is disposable PDF-text cache
-  (`builder/extract_pdfs.py`, needs `poppler`). `overview.md`, `wiki/syntheses/`, `log.md` are
-  hand-maintained.
-- **New vault from a different corpus:** `python3 builder/new_vault.py /path/to/NewVault "Name"`
-  scaffolds a fresh vault with a copy of the engine + a starter `data.py`.
-- **Two-phase ingest:** Phase 1 = this map (from abstracts + first-page PDF checks). Phase 2 =
-  per-paper deep dives (full method/findings/claims/limitations from full PDFs), thread by
-  thread, filling each paper's Deep dive section. Author/venue/dataset **entity** pages (§9's
-  literature web) are deferred to Phase 2.
-- When a new paper arrives: add/confirm its abstract note, add a row to the generator's data
-  table, re-run, then update `overview.md` threads + `log.md`.
+- **`map_channel.py`** — scans `raw/`, scaffolds `builder/entries/` from templates, updates
+  auto registry. **`build.py`** — generates `wiki/` from entries + `data.py` + deepdives.
+- **Generative sections:** `builder/deepdives/<slug>.md` (LLM Deep Dive later, or by hand).
+- **Engine vs data:** `engine_papers.py`, `engine_ingest.py`, `engine_web.py` are generic;
+  **`builder/data.py`** holds your corpus (THEMES, P, CONCEPTS, PEOPLE, …).
+- **Two-phase charting:** Phase 1 = deterministic scaffold (templates → entries → wiki shells).
+  Phase 2 = LLM Deep Dive fills generative sections (summaries, method/findings, ingest).
+- When a new artifact docks: confirm upload to `raw/`, run Surface Interval, edit the entry
+  file in `builder/entries/`, re-surface; optional Deep Dive when LLM integration is available.

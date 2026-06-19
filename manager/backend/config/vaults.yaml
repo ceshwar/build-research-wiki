@@ -1,0 +1,7 @@
+vaults:
+  - id: demo
+    name: Tour vault (5 papers)
+    path: examples/minimal-vault
+  - id: template
+    name: Blank template
+    path: .
