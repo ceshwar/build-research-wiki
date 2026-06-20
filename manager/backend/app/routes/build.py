@@ -2,10 +2,9 @@ from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import BuildResponse
 from app.services.build_service import BuildService
-from app.services.vault_manager import VaultManager
+from app.deps import vault_manager
 
 router = APIRouter(prefix="/build", tags=["build"])
-vault_manager = VaultManager()
 build_service = BuildService(vault_manager)
 
 

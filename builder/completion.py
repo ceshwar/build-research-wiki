@@ -11,6 +11,7 @@ if BUILDER_DIR not in sys.path:
     sys.path.insert(0, BUILDER_DIR)
 
 import registry  # noqa: E402
+import off_chart  # noqa: E402
 
 PLACEHOLDER_MARKERS = (
     "theme-slug-one", "theme-slug-two", "theme-slug", "concept-slug",
@@ -98,7 +99,13 @@ def load_corpus(vault_path):
                 "title": item.get("title", item["slug"]),
                 "status": item.get("status", "quick-dip"),
             })
-    return entries
+    by_channel = {}
+    for e in entries:
+        by_channel.setdefault(e["channel"], []).append(e)
+    filtered = []
+    for channel, items in by_channel.items():
+        filtered.extend(off_chart.filter_entries(builder, channel, items))
+    return filtered
 
 
 def _read_text(path):

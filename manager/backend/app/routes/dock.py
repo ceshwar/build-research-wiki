@@ -4,10 +4,9 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.models.schemas import UploadResponse
 from app.services.channel_registry import channel_registry
-from app.services.vault_manager import VaultManager
+from app.deps import vault_manager
 
 router = APIRouter(tags=["dock"])
-vault_manager = VaultManager()
 
 
 @router.post("/dock", response_model=UploadResponse)

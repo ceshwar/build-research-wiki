@@ -31,5 +31,5 @@ def health():
 
 @app.get("/dive_computer")
 def dive_computer():
-    from app.services.vault_manager import VaultManager
-    return {"vaults": VaultManager().list_vaults()}
+    from app.deps import vault_manager
+    return {"vaults": vault_manager.list_vaults()}

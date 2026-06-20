@@ -13,6 +13,7 @@ import {
   fetchJobLogs,
   fetchVaults,
   pickVaultFolder,
+  removeFromChart,
   removeVault,
   startBuild,
   surfaceInterval,
@@ -668,6 +669,26 @@ export default function App() {
     mutationFn: () => surfaceInterval(vaultId, channelId, 'auto'),
     onSuccess: (data) => setActiveJobId(data.job_id),
   })
+
+  const removeFromChartMutation = useMutation({
+    mutationFn: (slug: string) => removeFromChart(vaultId, channelId, slug),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-map', vaultId, channelId] })
+      if (data.job_id) setActiveJobId(data.job_id)
+    },
+  })
+
+  const handleRemoveFromChart = useCallback(
+    (entry: ChartEntry) => {
+      const ok = window.confirm(
+        `Remove "${entry.title}" from the map?\n\nThe PDF stays in the dock — you can chart it again with Update chart.`,
+      )
+      if (!ok) return
+      removeFromChartMutation.mutate(entry.slug)
+    },
+    [removeFromChartMutation],
+  )
 
   const handleUpdateChart = useCallback(() => {
     if (isIngestPreview) {
@@ -1421,6 +1442,15 @@ export default function App() {
                                           </button>
                                         </>
                                       )}
+                                      {(entry.year || entry.venue || canExpand) && ' · '}
+                                      <button
+                                        type="button"
+                                        className="map-paper-remove"
+                                        disabled={removeFromChartMutation.isPending}
+                                        onClick={() => handleRemoveFromChart(entry)}
+                                      >
+                                        Remove
+                                      </button>
                                     </div>
                                     {expanded && (
                                       <div className="map-paper-detail">

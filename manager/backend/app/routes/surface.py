@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -8,13 +9,13 @@ from app.models.schemas import (
     ChartMapResponse,
     DockCreateRequest,
     IngestPromptResponse,
+    RemoveFromChartResponse,
 )
 from app.services.channel_registry import channel_registry
 from app.services.map_service import MapService
-from app.services.vault_manager import VaultManager
+from app.deps import vault_manager
 
 router = APIRouter(tags=["surface"])
-vault_manager = VaultManager()
 map_service = MapService(vault_manager)
 
 
@@ -84,6 +85,23 @@ def chart_map(vault_id: str, channel_id: str = "my-portfolio"):
     import chart_map as cm
     data = cm.build_map(str(vault_path), channel_id)
     return ChartMapResponse(**data)
+
+
+@router.delete("/chart-entry", response_model=RemoveFromChartResponse)
+def remove_chart_entry(vault_id: str, channel_id: str, slug: str):
+    """Remove a paper from the chart; PDF stays in raw/ as awaiting chart."""
+    try:
+        result, job_id = map_service.remove_from_chart(vault_id, channel_id, slug)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return RemoveFromChartResponse(
+        slug=result["slug"],
+        channel_id=result["channel_id"],
+        deleted_files=[os.path.basename(p) for p in result.get("deleted", [])],
+        job_id=job_id,
+    )
 
 
 @router.post("/map", response_model=BuildResponse)

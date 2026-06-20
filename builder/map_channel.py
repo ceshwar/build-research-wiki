@@ -17,6 +17,7 @@ BUILDER_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BUILDER_DIR)
 
 import registry
+import off_chart
 from templates_util import entry_rel_path
 from quick_dip import build_quick_dip_entry, extract_pdf, extract_text_file
 from docks_util import load_channel_map, get_dock
@@ -227,6 +228,7 @@ def map_channel(vault, channel_id, dry_run=False):
         if (backfilled or refreshed) and not dry_run:
             _write_auto(builder_dir, channel_auto, auto_file, auto_key, channel_id)
         all_entries = manual + channel_auto
+        all_entries = off_chart.filter_entries(builder_dir, channel_id, all_entries)
         known = _known_source_files(all_entries, "pdfs")
         for p in all_entries:
             for pdf in p.get("pdfs", []):
@@ -307,6 +309,7 @@ def map_channel(vault, channel_id, dry_run=False):
                 "flag": "Quick dip — run Deep Dive to enrich this artifact.",
             }
         new_entries.append(entry)
+        off_chart.remove_slug(builder_dir, channel_id, slug)
         print("  quick-dip: {} → {} (title={!r:.50})".format(
             fname, slug, title or "(empty — add in Deep Dive)"))
 

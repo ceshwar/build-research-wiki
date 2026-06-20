@@ -97,6 +97,13 @@ class VaultPickFolderResponse(BaseModel):
     cancelled: bool = False
 
 
+class RemoveFromChartResponse(BaseModel):
+    slug: str
+    channel_id: str
+    deleted_files: List[str] = []
+    job_id: Optional[str] = None
+
+
 class BuildResponse(BaseModel):
     job_id: str
     mode: str = "auto"

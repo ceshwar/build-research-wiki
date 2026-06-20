@@ -17,6 +17,7 @@ if BUILDER_DIR not in sys.path:
     sys.path.insert(0, BUILDER_DIR)
 
 import completion
+import off_chart
 import registry
 from docks_util import load_channel_map
 
@@ -56,7 +57,13 @@ def _full_corpus(vault):
         for item in registry.load(builder, json_name):
             channel = item.get("channel") or default_channel
             items.append({**item, "profile": profile, "channel": channel})
-    return items
+    by_channel = {}
+    for item in items:
+        by_channel.setdefault(item["channel"], []).append(item)
+    filtered = []
+    for channel, group in by_channel.items():
+        filtered.extend(off_chart.filter_entries(builder, channel, group))
+    return filtered
 
 
 def _source_path(vault, item, channels):

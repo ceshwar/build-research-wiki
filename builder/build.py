@@ -29,9 +29,27 @@ def load_data(vault_root):
 
     # Generated Quick Dip registries are JSON (never executed). Legacy .py is migrated on read.
     import registry
+    import off_chart
     mod.P = list(mod.P) + registry.load(builder, "auto_papers.json")
     mod.P = list(mod.P) + registry.load(builder, "auto_lab_papers.json")
     mod.S = list(getattr(mod, "S", [])) + registry.load(builder, "auto_sources.json")
+
+    kept_p = []
+    for p in mod.P:
+        channel = p.get("channel") or (
+            "lab-portfolio" if any("lab/" in x for x in p.get("pdfs", [])) else "my-portfolio")
+        if off_chart.is_off_chart(builder, channel, p["slug"]):
+            continue
+        kept_p.append(p)
+    mod.P = kept_p
+
+    kept_s = []
+    for s in mod.S:
+        channel = s.get("channel", "lit-review")
+        if off_chart.is_off_chart(builder, channel, s["slug"]):
+            continue
+        kept_s.append(s)
+    mod.S = kept_s
 
     return mod, builder
 

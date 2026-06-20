@@ -9,10 +9,9 @@ from app.models.schemas import (
     VaultValidateRequest,
     VaultValidateResponse,
 )
-from app.services.vault_manager import VaultManager
+from app.deps import vault_manager
 
 router = APIRouter(prefix="/vaults", tags=["vaults"])
-vault_manager = VaultManager()
 
 
 @router.get("", response_model=List[VaultSummary])

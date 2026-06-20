@@ -1429,6 +1429,27 @@ code {
   text-underline-offset: 2px;
 }
 
+.map-paper-remove {
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.map-paper-remove:hover:not(:disabled) {
+  color: #c45c5c;
+}
+
+.map-paper-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .map-paper-detail {
   margin-top: 0.45rem;
   padding: 0.5rem 0.65rem;
