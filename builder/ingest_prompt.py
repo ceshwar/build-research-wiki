@@ -194,7 +194,7 @@ def build_prompt(vault, channel_id=None):
     L.append("python3 builder/build.py --vault {}".format(vault))
     L.append("```")
     L.append("")
-    L.append("(Or click **Update chart** in SCUBA Ideaverse.)")
+    L.append("(Or click **Update chart** in Portolan.)")
     return "\n".join(L), len(items)
 
 

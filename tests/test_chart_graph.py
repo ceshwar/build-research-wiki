@@ -32,3 +32,34 @@ def test_non_portfolio_returns_empty():
     g = chart_graph.build_graph(EXAMPLE_VAULT, "lit-review")
     assert g["nodes"] == []
     assert g["edges"] == []
+
+
+def test_theme_labels_unique_case_insensitive(tmp_path):
+    """Duplicate theme slugs differing only by case collapse to one graph node."""
+    import shutil
+
+    vault = tmp_path / "vault"
+    shutil.copytree(EXAMPLE_VAULT, vault)
+    data_path = vault / "builder" / "data.py"
+    text = data_path.read_text()
+    insert = '    "Digital-Governance": ("digital governance", "dup", False),\n'
+    text = text.replace('    "digital-governance": (', insert + '    "digital-governance": (', 1)
+    data_path.write_text(text)
+
+    g = chart_graph.build_graph(str(vault), "my-portfolio")
+    theme_nodes = [n for n in g["nodes"] if n["type"] == "theme"]
+    labels_lower = [n["label"].lower() for n in theme_nodes]
+    assert len(labels_lower) == len(set(labels_lower))
+    slugs = {n["slug"] for n in theme_nodes}
+    assert "digital-governance" in slugs
+    assert "Digital-Governance" not in slugs
+
+
+def test_local_reef_no_duplicate_theme_labels():
+    local = os.path.join(REPO_ROOT, "examples", "local-reef")
+    if not os.path.isdir(local):
+        return
+    g = chart_graph.build_graph(local, "my-portfolio")
+    theme_nodes = [n for n in g["nodes"] if n["type"] == "theme"]
+    labels_lower = [n["label"].lower() for n in theme_nodes]
+    assert len(labels_lower) == len(set(labels_lower)), sorted(labels_lower)

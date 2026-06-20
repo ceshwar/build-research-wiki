@@ -12,8 +12,8 @@ This guide helps you go from **clone** to **working research wiki** in one sessi
 ## First-session checklist (~30 minutes)
 
 - [ ] **Clone** the repo and open the folder in your LLM coding agent (Cursor, Claude Code, Codex, etc.).
-- [ ] **Start SCUBA** — `./manager/scripts/dev.sh` → **http://127.0.0.1:5173**.
-- [ ] **Pick Shallow reef** — explore the workspace (`Reef › Dock` path, Map / Chart status / Actions tabs) and **Docs**.
+- [ ] **Start Portolan** — `./manager/scripts/dev.sh` → **http://127.0.0.1:5173**.
+- [ ] **Pick Shallow reef** — explore the workspace (`Reef › Dock` path, Navigate / Status / Actions tabs) and **Docs**.
 - [ ] **Browse in Obsidian** — open `examples/minimal-vault`; read `index.md` → `wiki/overview.md` → one paper page.
 - [ ] **Try Get ingest prompt** — on Shallow reef, ⚓ My Portfolio → **Get ingest prompt** → paste into your agent to Deep Dive the four Quick Dip papers.
 - [ ] **Spawn your own reef** — **+ Connect your reef…** or `python3 builder/new_vault.py ~/path "Lab Name"`.
@@ -60,22 +60,22 @@ See [`BUILD.md`](../BUILD.md), [`builder/README.md`](../builder/README.md), or P
 3. **Read** [`docs/TEAM-COLLABORATION.md`](TEAM-COLLABORATION.md) for commit norms and what not to edit.
 4. To add papers: drop files in `raw/`, then ask the team (or your agent) to ingest. For builder-managed papers, follow Path B steps 2–5 and open a PR.
 
-### Path D — "SCUBA Ideaverse" (UI workflow) — *recommended for labs*
+### Path D — Portolan (UI workflow) — *recommended for labs*
 
 Best for teams who want a visual dock-and-chart workflow without typing ingest commands.
 
 1. Clone the repo and run `./manager/scripts/dev.sh`.
 2. Open **http://127.0.0.1:5173**.
 3. Pick **Shallow reef** (demo) or **Blank reef** (empty scaffold). Use **+ Connect your reef…** to register your own Obsidian folder (saved locally, gitignored).
-4. **Workspace** — after picking a dock, you see `Reef › Dock` and tabs. **Map** opens by default.
+4. **Workspace** — after picking a dock, you see `Reef › Dock` and tabs. **Navigate** opens by default.
 5. **Dock** files — click the dock name in the path (or **Upload PDFs** in Actions), drop PDFs, **Confirm Upload** → `raw/{channel}/`.
 6. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart**.
-7. **Map** — **List** (sortable table) or **By theme** (portfolio reefs); expand **Note** for one-liner + PDF.
+7. **Navigate** — **List** (sortable table), **By theme** (portfolio reefs), or **Graph**; expand **Note** for one-liner + PDF.
 8. **Deep Dive** — **Get ingest prompt** copies an agent-ready batch prompt; or edit `builder/entries/` and `builder/deepdives/` by hand.
-9. Check **Chart status** — stat cards filter the map; **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** show what still needs work.
-10. Open the reef in Obsidian (header icon or map links).
+9. Check **Status** — stat cards filter Navigate; **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** show what still needs work.
+10. Open the reef in Obsidian (header icon or graph links).
 
-See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** panel for SCUBA vocabulary.
+See [`docs/PORTOLAN.md`](PORTOLAN.md) and the in-app **Docs** panel for key terms.
 
 ---
 
@@ -83,8 +83,8 @@ See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** pane
 
 | Tool | Required? | Purpose |
 |------|-----------|---------|
-| Python 3.7+ | **Yes** (for SCUBA + builder) | Backend + chart generator |
-| Node 18+ | **Yes** (for SCUBA UI) | Frontend dev server |
+| Python 3.7+ | **Yes** (for Portolan + builder) | Backend + chart generator |
+| Node 18+ | **Yes** (for Portolan UI) | Frontend dev server |
 | LLM coding agent | **Yes** (for Deep Dive / ingest) | Reads/writes wiki files; follows `CLAUDE.md` |
 | [Obsidian](https://obsidian.md) | Recommended | Browse links, graph view, Dataview |
 | [poppler](https://poppler.freedesktop.org/) | Optional | PDF text extraction (`brew install poppler`) |
@@ -107,7 +107,7 @@ See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** pane
 
 ## See also
 
-- [SCUBA Ideaverse](SCUBA-IDEAVERSE.md) — dock, chart, completion tracking, reefs
+- [Portolan](PORTOLAN.md) — dock, chart, completion tracking, reefs
 - [Shallow reef (demo)](../examples/minimal-vault/) — 6 papers on chart
 - [Team collaboration](TEAM-COLLABORATION.md) — shared repos, git norms, privacy
 - [Changelog](CHANGELOG.md) — release notes

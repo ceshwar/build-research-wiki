@@ -194,4 +194,4 @@ Confirm OpenAlex `mailto` for polite pool; golden thread = content moderation (a
 Snowball / forward-citations = post-pilot. **Pending:** `fetch_lit.py` + UI must implement §1.1
 (current code ranks by `seed_count` then `cited_by_count` and has no limit).
 
-See also: `CLAUDE.md` · `builder/README.md` · `docs/SCUBA-IDEAVERSE.md`.
+See also: `CLAUDE.md` · `builder/README.md` · `docs/PORTOLAN.md`.

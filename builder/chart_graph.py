@@ -12,6 +12,7 @@ if BUILDER_DIR not in sys.path:
 
 import chart_map
 import completion
+from slug_util import canonical_slug, build_theme_resolver, merge_theme_slugs
 
 WIKI_FOLDER_TYPES = {
     "papers": "paper",
@@ -56,8 +57,37 @@ def _parse_wikilinks(text):
     for raw in re.findall(r"\[\[([^\]]+)\]\]", text):
         name = raw.split("|")[0].split("#")[0].strip()
         if name:
-            targets.append(name)
+            targets.append(canonical_slug(name) or name)
     return targets
+
+
+def _slug_resolver(registry, paper_slugs, theme_titles):
+    """Map any slug variant to one canonical node id."""
+    theme_meta = {slug: (title, "", True) for slug, title in theme_titles.items()}
+    all_slugs = set(registry.keys()) | set(paper_slugs) | set(theme_titles.keys())
+    for reg_slug in registry:
+        canon = canonical_slug(reg_slug)
+        if canon:
+            all_slugs.add(canon)
+    aliases, _canonical = merge_theme_slugs(all_slugs, theme_meta)
+    for reg_slug in registry:
+        canon = canonical_slug(reg_slug)
+        preferred = aliases.get(reg_slug) or aliases.get(canon) or canon or reg_slug
+        aliases[reg_slug] = preferred
+        if canon:
+            aliases[canon] = preferred
+    return aliases
+
+
+def _resolve(registry, resolver, slug, resolve_theme=None):
+    if not slug:
+        return slug
+    if resolve_theme:
+        slug = resolve_theme(slug)
+    canon = canonical_slug(slug)
+    if slug in registry:
+        return resolver.get(slug, resolver.get(canon, canon or slug))
+    return resolver.get(slug, resolver.get(canon, canon or slug))
 
 
 def _wiki_registry(vault):
@@ -75,12 +105,17 @@ def _wiki_registry(vault):
         slug = os.path.splitext(parts[2])[0]
         node_type = WIKI_FOLDER_TYPES.get(folder, "page")
         title = _title_from_wiki(path) or slug.replace("-", " ")
-        registry[slug] = {
-            "slug": slug,
+        canon = canonical_slug(slug) or slug
+        entry = {
+            "slug": canon,
             "type": node_type,
             "wiki_page": rel,
             "title": title,
         }
+        # Prefer the lowercase kebab filename when two paths collide.
+        if canon not in registry or slug == canon:
+            registry[canon] = entry
+        registry[slug] = entry
     return registry
 
 
@@ -106,26 +141,39 @@ def build_graph(vault, channel_id="my-portfolio"):
         return _empty_graph(channel_id)
 
     registry = _wiki_registry(vault)
-    theme_titles = {t["slug"]: t["title"] for t in chart.get("themes") or []}
+    data_path = os.path.join(vault, "builder", "data.py")
+    themes_dict = {}
+    if os.path.isfile(data_path):
+        themes_dict = getattr(completion._load_module(data_path), "THEMES", {})
+    resolve_theme, merged_themes, theme_aliases = build_theme_resolver(themes_dict)
+    theme_titles = {slug: meta[0] for slug, meta in merged_themes.items()}
 
     paper_meta = {
         e["slug"]: {
             "title": e["title"],
             "status": e["status"],
             "wiki_page": e["wiki_page"],
-            "themes": e.get("themes") or [],
+            "themes": [resolve_theme(t) for t in (e.get("themes") or [])],
         }
         for e in entries
     }
     paper_slugs = set(paper_meta.keys())
+    resolver = _slug_resolver(registry, paper_slugs, theme_titles)
+    for variant, preferred in theme_aliases.items():
+        resolver[variant] = preferred
+        resolver[canonical_slug(variant)] = preferred
 
     visited = set(paper_slugs)
     edges = []
     edge_keys = set()
 
     def add_edge(source, target, kind="link"):
+        source = _resolve(registry, resolver, source, resolve_theme)
+        target = _resolve(registry, resolver, target, resolve_theme)
         if source == target:
             return
+        visited.add(source)
+        visited.add(target)
         key = (source, target, kind)
         if key in edge_keys:
             return
@@ -135,7 +183,6 @@ def build_graph(vault, channel_id="my-portfolio"):
     # Structural paper → theme edges from chart data
     for slug, meta in paper_meta.items():
         for theme in meta["themes"]:
-            visited.add(theme)
             add_edge(slug, theme, "theme")
 
     # Wikilink closure from charted papers through the wiki
@@ -143,6 +190,7 @@ def build_graph(vault, channel_id="my-portfolio"):
     scanned = set()
     while frontier:
         slug = frontier.pop()
+        slug = _resolve(registry, resolver, slug, resolve_theme)
         if slug in scanned:
             continue
         scanned.add(slug)
@@ -152,6 +200,11 @@ def build_graph(vault, channel_id="my-portfolio"):
             wiki_page = paper_meta[slug]["wiki_page"]
         elif slug in registry:
             wiki_page = registry[slug]["wiki_page"]
+        else:
+            for reg_slug, reg in registry.items():
+                if _resolve(registry, resolver, reg_slug) == slug:
+                    wiki_page = reg["wiki_page"]
+                    break
         if not wiki_page:
             continue
 
@@ -160,16 +213,19 @@ def build_graph(vault, channel_id="my-portfolio"):
             continue
         text = completion._read_text(abs_path)
         for target in _parse_wikilinks(text):
-            if target not in registry and target not in paper_slugs:
+            resolved = _resolve(registry, resolver, target, resolve_theme)
+            if resolved not in registry and resolved not in paper_slugs:
                 continue
-            if target not in visited:
-                visited.add(target)
-                frontier.append(target)
-            add_edge(slug, target, "link")
+            if resolved not in scanned:
+                frontier.append(resolved)
+            add_edge(slug, resolved, "link")
 
     nodes = []
     stats = {}
     for slug in sorted(visited):
+        slug = _resolve(registry, resolver, slug, resolve_theme)
+        if any(n["id"] == slug for n in nodes):
+            continue
         if slug in paper_meta:
             pm = paper_meta[slug]
             node_type = "paper"

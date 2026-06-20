@@ -12,6 +12,7 @@ if BUILDER_DIR not in sys.path:
 import completion
 import ingest_prompt
 from docks_util import load_channel_map, resolve_raw_dirs, get_dock
+from slug_util import canonical_slug, dedupe_themes, build_theme_resolver
 
 
 def _load_themes(vault):
@@ -20,7 +21,18 @@ def _load_themes(vault):
         return []
     data = completion._load_module(data_path)
     themes = getattr(data, "THEMES", {})
-    return [{"slug": slug, "title": meta[0]} for slug, meta in sorted(themes.items())]
+    _resolve, merged, _aliases = build_theme_resolver(themes)
+    return [{"slug": slug, "title": meta[0]} for slug, meta in sorted(merged.items())]
+
+
+def _theme_resolver(vault):
+    data_path = os.path.join(vault, "builder", "data.py")
+    if not os.path.exists(data_path):
+        return lambda slug, display_hint=None: canonical_slug(slug) or slug, {}
+    data = completion._load_module(data_path)
+    themes = getattr(data, "THEMES", {})
+    resolve, merged, _aliases = build_theme_resolver(themes)
+    return resolve, merged
 
 
 def _strip_frontmatter(text):
@@ -118,9 +130,18 @@ def _themes_for(item, vault):
     entry_abs = completion._resolve_entry_path(
         vault, entry_rel, item.get("channel", "my-portfolio"))
     parsed = completion._parse_entry(entry_abs) if entry_abs else {"themes": []}
-    reg = [t for t in (item.get("themes") or []) if t]
-    parsed_t = [t for t in (parsed.get("themes") or []) if t]
-    return parsed_t or reg
+    resolve, _merged = _theme_resolver(vault)
+    reg = [resolve(t) for t in (item.get("themes") or []) if t]
+    parsed_t = [resolve(t) for t in (parsed.get("themes") or []) if t]
+    themes = parsed_t or reg
+    # Preserve order, drop duplicates after normalization.
+    seen = set()
+    out = []
+    for t in themes:
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out
 
 
 def _raw_files(vault, channel_id):

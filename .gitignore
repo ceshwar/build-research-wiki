@@ -11,8 +11,11 @@ builder/__pycache__/
 # OS noise
 .DS_Store
 
-# Local demo reef — full portfolio copy for SCUBA sandbox (do not commit)
+# Local demo reef — full portfolio copy for the local sandbox (do not commit)
 examples/local-reef/
+
+# Local tooling config (machine-specific paths, e.g. preview launch.json)
+.claude/
 
 # Keep everything else, including:
 #   builder/*.py        — the generator engine + entrypoint

@@ -14,7 +14,8 @@ type StatFilter =
 
 type GraphLayerId = 'paper' | 'theme' | 'concept' | 'entity' | 'synthesis' | 'source'
 
-const LAYERS_STORAGE_KEY = 'ideaverse-graph-layers'
+const LAYERS_STORAGE_KEY = 'portolan-graph-layers'
+const LEGACY_LAYERS_STORAGE_KEY = 'ideaverse-graph-layers'
 const DEFAULT_GRAPH_LAYERS: GraphLayerId[] = ['paper', 'theme', 'concept']
 
 /** Base node colors — navy/orange app palette; accent orange reserved for hover highlight only. */
@@ -54,7 +55,14 @@ const PROXIMITY_RADIUS = 72
 
 function loadEnabledLayers(): Set<GraphLayerId> {
   try {
-    const raw = localStorage.getItem(LAYERS_STORAGE_KEY)
+    let raw = localStorage.getItem(LAYERS_STORAGE_KEY)
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_LAYERS_STORAGE_KEY)
+      if (raw) {
+        localStorage.setItem(LAYERS_STORAGE_KEY, raw)
+        localStorage.removeItem(LEGACY_LAYERS_STORAGE_KEY)
+      }
+    }
     if (raw) {
       const parsed = JSON.parse(raw) as GraphLayerId[]
       if (Array.isArray(parsed) && parsed.length > 0) {

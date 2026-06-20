@@ -1,6 +1,6 @@
 # Shallow reef (demo)
 
-Pre-loaded trial reef for SCUBA Ideaverse — demo papers in `examples/minimal-vault`.
+Pre-loaded trial reef for Portolan — demo papers in `examples/minimal-vault`.
 
 A **hybrid demo**: three fully enriched lab papers plus three **Quick Dip** papers on the Healthy Online Behavior thread (ready for agent Deep Dive).
 
@@ -20,7 +20,7 @@ A **hybrid demo**: three fully enriched lab papers plus three **Quick Dip** pape
 | [Hidden Values / Highly-Upvoted](wiki/papers/hidden-values-upvoted.md) | ICWSM 2026 | `2410.13036.pdf` |
 | [Moderator Perspectives on Positive Reinforcement](wiki/papers/mod-perspectives-pos-reinforcement.md) | CSCW 2024 | `cscw2024_positive_reinforcement.pdf` |
 
-In SCUBA: **Get ingest prompt** on ⚓ My Portfolio lists these three. Paste into Claude Code to fill themes, one-liners, and `builder/deepdives/`.
+In Portolan: **Get ingest prompt** on ⚓ My Portfolio lists these three. Paste into Claude Code to fill themes, one-liners, and `builder/deepdives/`.
 
 ## Docks (`builder/docks.yaml`)
 

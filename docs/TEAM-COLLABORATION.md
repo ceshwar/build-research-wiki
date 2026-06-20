@@ -27,7 +27,7 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 | `builder/entries/` | **Yes** | Chart entry notes (themes, abstract, one-liner). |
 | `builder/templates/` | **Yes** | Default scaffolds (engine; rarely edited per vault). |
 | `builder/auto_papers.json`, `auto_sources.json` | **Yes** | Auto-registry from Quick Dip / map_channel. |
-| `manager/` | **Yes** | SCUBA Ideaverse UI (optional for CLI-only teams). |
+| `manager/` | **Yes** | Portolan UI (optional for CLI-only teams). |
 | `builder/cache/` | **No** | Regenerable PDF text; gitignored. |
 | `.obsidian/workspace*.json` | **No** | Per-machine UI state; gitignored. |
 
@@ -44,17 +44,17 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 5. Open a PR. A teammate spot-checks summaries and links.
 6. Merge; append-only `log.md` entry documents the ingest.
 
-### Adding papers (SCUBA / builder path)
+### Adding papers (Portolan / builder path)
 
 1. Dock PDF to `raw/papers/` (UI or copy manually).
-2. Run **Update chart** in SCUBA or `python3 builder/map_channel.py --channel my-portfolio`.
+2. Run **Update chart** in Portolan or `python3 builder/map_channel.py --channel my-portfolio`.
 3. Edit `builder/entries/my-portfolio/<slug>.md` (themes, abstract, one-liner).
 4. Fill `builder/deepdives/<slug>.md` (or wait for LLM Deep Dive in a future release).
 5. Run `python3 builder/build.py` — exit code **0** means no red links.
 6. Update `wiki/overview.md` if threads shifted.
 7. PR with `builder/entries/`, `builder/deepdives/`, and generated `wiki/`.
 
-Check **Chart status**: **On chart** (deep dive done) = ready for the team to read; **Enrich next** / **Quick dip** = still incomplete.
+Check **Status**: **On chart** (deep dive done) = ready for the team to read; **Enrich next** / **Quick dip** = still incomplete.
 
 ### Avoiding merge conflicts
 
@@ -123,7 +123,7 @@ python3 builder/build.py   # exit 1 = red links to fix
 
 ## See also
 
-- [SCUBA Ideaverse](SCUBA-IDEAVERSE.md) — UI workflow for the team
+- [Portolan](PORTOLAN.md) — UI workflow for the team
 - [Getting started](GETTING-STARTED.md)
 - [Changelog](CHANGELOG.md)
 - [CLAUDE.md](../CLAUDE.md) — full schema

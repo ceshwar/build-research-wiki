@@ -47,4 +47,4 @@ Tracked in GitHub issue **#13 — v0.4 Ideaverse control panel — shipped** (cl
 
 Upload always works. **Update chart** on ingest docks shows an in-development callout and confirmation dialog; Phase 3 replaces preview with full LLM ingest per `CLAUDE.md` §6 INGEST.
 
-See also: [SCUBA Ideaverse](SCUBA-IDEAVERSE.md) · [Paper chart spec](PAPER-CHART-SPEC.md)
+See also: [Portolan](PORTOLAN.md) · [Paper chart spec](PAPER-CHART-SPEC.md)

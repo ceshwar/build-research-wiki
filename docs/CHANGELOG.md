@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.5.0 — Portolan rebrand (2026-06-20)
+
+### Changed
+
+- **Product name** — SCUBA Ideaverse → **Portolan** (SCUBA Lab remains author/org)
+- **Workspace tabs** — Map → **Navigate**, Chart status → **Status** (Actions unchanged)
+- **Navigate render modes** — List · By theme · Graph (unchanged)
+- **Positioning copy** — README, in-app Docs, `docs/PORTOLAN.md` (replaces `docs/SCUBA-IDEAVERSE.md` stub redirect)
+- **Graph** — theme slug alias resolution (`algorithmic-and-ai-audits` → `algorithmic-ai-audits`); Docs explain edge types
+
+### Unchanged
+
+- Pipeline: dock → chart → enrich → Obsidian
+- Nautical terms: reef, dock, Quick Dip, Deep Dive
+- **Chart** as corpus noun and build verb
+
+---
+
 ## v0.4.6 — Map Graph view (2026-06-20)
 
 ### Added

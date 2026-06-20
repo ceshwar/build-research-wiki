@@ -122,7 +122,13 @@ def _parse_theme_links(text):
         if s.startswith("<!--") or not s:
             continue
         for m in re.finditer(r"\[\[([^\]|]+)", s):
-            slug = m.group(1).strip().lower()
+            slug = m.group(1).strip()
+            slug = slug.split("#")[0].strip()
+            try:
+                from slug_util import canonical_slug
+                slug = canonical_slug(slug)
+            except ImportError:
+                slug = slug.lower()
             if slug and slug not in ("theme-slug", "theme-slug-one", "theme-slug-two"):
                 themes.append(slug)
         if not s.startswith("[["):

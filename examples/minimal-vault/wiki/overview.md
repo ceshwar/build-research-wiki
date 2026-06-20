@@ -1,6 +1,6 @@
 # Research Wiki — Overview (Demo)
 
-> A **Shallow reef** demo: three **finished** lab papers plus three **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
+> A **Shallow reef** demo: three **finished** lab papers plus three **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use Portolan **Get ingest prompt** to Deep Dive the latter.
 
 ## Finished trio (Reddit reward + curation)
 

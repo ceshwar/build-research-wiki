@@ -4,9 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import build, dock, jobs, surface, vaults
 
 app = FastAPI(
-    title="SCUBA Ideaverse",
-    version="0.3.0",
-    description="Your research world, mapped and connected.",
+    title="Portolan",
+    version="0.5.0",
+    description="Read what you dock. Chart the connections.",
 )
 
 app.add_middleware(
@@ -26,7 +26,7 @@ app.include_router(jobs.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "product": "SCUBA Ideaverse"}
+    return {"status": "ok", "product": "Portolan"}
 
 
 @app.get("/dive_computer")

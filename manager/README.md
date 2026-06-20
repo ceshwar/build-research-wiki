@@ -1,6 +1,8 @@
-# SCUBA Ideaverse
+# Portolan
 
-**Your research world, mapped and connected.**
+**Read what you dock. Chart the connections.**
+
+Built for reading, in a world built for writing — Portolan keeps you oriented as the ocean of research keeps rising. The research assistant that actually reads your papers.
 
 A research memory control panel for Obsidian vaults. Dock artifacts into reef channels, run **Quick Dip** to chart PDF facts, then **Deep Dive** to enrich — open the result in Obsidian.
 
@@ -14,11 +16,11 @@ Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in th
 
 ## Workflow
 
-1. **Pick a dock** — hover pills for channel purpose; workspace opens on **Map**
-2. **Workspace** — `Reef › Dock` path + tabs (Map · Chart status · Actions)
+1. **Pick a dock** — hover pills for channel purpose; workspace opens on **Navigate**
+2. **Workspace** — `Reef › Dock` path + tabs (Navigate · Status · Actions)
 3. **Dock** — click dock name in path or **Upload PDFs** in Actions
-4. **Chart status** — track on chart / quick dip / enrich next for this dock
-5. **Map** — List or By theme (portfolio); expand **Note**; **Edit** → mark **−** → **Done** to remove from chart
+4. **Status** — track on chart / quick dip / enrich next for this dock
+5. **Navigate** — List, By theme, or Graph (portfolio); expand **Note**; **Edit** → mark **−** → **Done** to remove from chart
 6. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
 7. **Open reef in Obsidian**
 
@@ -41,13 +43,13 @@ Selecting a dock hides the dock picker and shows one shell:
 
 | Tab | Purpose |
 |-----|---------|
-| **Map** | List (sortable) or By theme (portfolio); **Edit** → mark **−** → **Done** / **Cancel** |
-| **Chart status** | Pipeline stats, next-step banner; stat cards filter Map |
+| **Navigate** | List (sortable), By theme (portfolio), or Graph; **Edit** → mark **−** → **Done** / **Cancel** |
+| **Status** | Pipeline stats, next-step banner; stat cards filter Navigate |
 | **Actions** | Update chart, Get ingest prompt, upload shortcut |
 
 Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload. The onboarding guide dismisses per reef (browser `localStorage`).
 
-## Chart status stats
+## Status stats
 
 | Stat | Meaning |
 |------|---------|
@@ -58,7 +60,7 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 
 **Chart updated** (top right) = when the wiki was last rebuilt — not a count.
 
-## SCUBA vocabulary
+## Key terms
 
 | Term | Meaning |
 |------|---------|
@@ -67,8 +69,8 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | **Deep Dive** | Tier 2+ enrichment (themes, analysis) |
 | **Channel** | A reef corpus — portfolio or ingest profile |
 | **Chart** | Generated map (`wiki/` + `index.md`) |
-| **Chart status** | Per-dock charting tracker |
-| **Map** | Browse chart for the active dock |
+| **Status** | Per-dock pipeline tracker |
+| **Navigate** | Browse chart for the active dock |
 | **Reef** | The Obsidian vault |
 
 ## API
@@ -85,7 +87,7 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | POST | `/vaults/validate` — check folder |
 | POST | `/vaults/pick-folder` — native folder picker |
 | DELETE | `/vaults/{id}` — remove user-added reef |
-| DELETE | `/chart-entry?vault_id=&channel_id=&slug=` — remove one paper from map |
+| DELETE | `/chart-entry?vault_id=&channel_id=&slug=` — remove one paper from chart |
 | POST | `/chart-remove?vault_id=&channel_id=` — batch remove `{ "slugs": [...] }` |
 
 Legacy aliases: `/airlock`, `/upload`, `/update-map`

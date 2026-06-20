@@ -296,10 +296,10 @@ const DOCK_WORKSPACE_SECTIONS: {
   hint: string
   badge?: (ctx: { enrich: number; pending: number }) => number | null
 }[] = [
-  { id: 'section-map', label: 'Map', hint: 'Browse chart' },
+  { id: 'section-map', label: 'Navigate', hint: 'Browse your chart' },
   {
     id: 'section-dive',
-    label: 'Chart status',
+    label: 'Status',
     hint: 'Track progress',
     badge: (c) => (c.enrich > 0 ? c.enrich : null),
   },
@@ -965,7 +965,7 @@ export default function App() {
             type="button"
             className="header-icon-btn header-docs-btn"
             onClick={() => setHowToOpen(true)}
-            title="How to use SCUBA Ideaverse"
+            title="How to use Portolan"
           >
             Docs
           </button>
@@ -987,8 +987,11 @@ export default function App() {
         <div className="page-intro__brand">
           <img src="/scuba-logo.png" alt="" width={36} height={36} />
           <div>
-            <h1 className="page-intro__title">SCUBA Ideaverse</h1>
-            <p className="page-intro__tagline">Your research world, mapped and connected.</p>
+            <h1 className="page-intro__title">Portolan</h1>
+            <p className="page-intro__tagline">Read what you dock. Chart the connections.</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Built for reading, in a world built for writing — stay oriented as the ocean of research keeps rising.
+            </p>
           </div>
         </div>
       </div>
@@ -997,7 +1000,7 @@ export default function App() {
         <section className="panel-card panel-card--accent mb-6">
           <SectionLabel>Connect your reef</SectionLabel>
           <p className="mb-3 text-xs text-[var(--muted)]">
-            Point SCUBA at a reef already on this machine. Different from{' '}
+            Point Portolan at a reef already on this machine. Different from{' '}
             <strong>Shallow reef</strong> (demo) or <strong>Blank reef</strong> (repo scaffold) —
             you are registering <em>your</em> Obsidian folder.
           </p>
@@ -1357,7 +1360,7 @@ export default function App() {
             {!dockGuideDismissed && (
               <div className="workspace-shell__guide">
                 <span>
-                  <strong>Map</strong> browses your chart · <strong>Chart status</strong> tracks
+                  <strong>Navigate</strong> browses your chart · <strong>Status</strong> tracks
                   pipeline progress · <strong>Actions</strong> uploads, updates the chart, and runs
                   Deep Dive. Click <strong>/</strong> to switch reefs or the reef name to choose a dock.
                 </span>

@@ -14,13 +14,13 @@ export function HowToPanel({ open, onClose }: { open: boolean; onClose: () => vo
   if (!open) return null
 
   return (
-    <div className="howto-overlay" role="dialog" aria-modal="true" aria-label="How to use SCUBA Ideaverse">
+    <div className="howto-overlay" role="dialog" aria-modal="true" aria-label="How to use Portolan">
       <button type="button" className="howto-overlay__backdrop" aria-label="Close" onClick={onClose} />
       <aside className="howto-panel">
         <div className="howto-panel__head">
           <div>
             <h2 className="howto-panel__title">How to</h2>
-            <p className="howto-panel__subtitle">SCUBA Ideaverse in five minutes</p>
+            <p className="howto-panel__subtitle">Portolan in five minutes</p>
           </div>
           <button type="button" className="icon-btn" onClick={onClose}>
             Close
