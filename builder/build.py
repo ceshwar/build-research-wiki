@@ -79,7 +79,7 @@ def main():
 
     data_mtime = os.path.getmtime(data_path) if os.path.exists(data_path) else 0.0
 
-    import engine_papers, engine_web, engine_ingest
+    import engine_papers, engine_web, engine_ingest, engine_lit
 
     if mode == "up-to-date":
         s1 = {"papers": len(data.P), "themes": len(data.THEMES),
@@ -92,7 +92,8 @@ def main():
               "concepts_skipped": len(data.CONCEPTS),
               "entities_skipped": len(data.PEOPLE) + len(data.PLATFORMS) + len(data.METHODS)}
         s3 = engine_ingest.build(vault, data, today)
-        if s3["sources_built"] > 0:
+        s4 = engine_lit.build(vault, today)
+        if s3["sources_built"] > 0 or s4["lit_built"] > 0:
             mode = "incremental"
     else:
         s1 = engine_papers.build(vault, deepdives, data, today,
@@ -102,6 +103,7 @@ def main():
                               rebuild_papers=rebuild_papers,
                               data_mtime=data_mtime)
         s3 = engine_ingest.build(vault, data, today)
+        s4 = engine_lit.build(vault, today)
 
     red = link_check(vault)
     unmapped = incremental.unmapped_pdfs(vault, data)
@@ -120,6 +122,8 @@ def main():
         print(f"  papers {s1['papers']} · themes {s1['themes']} · concepts {s2['concepts']} · entities {s2['entities']}")
     if getattr(data, "S", []):
         print(f"  docked sources {s3['sources']} (built {s3['sources_built']})")
+    if s4.get("lit"):
+        print(f"  field lit {s4['lit']} (built {s4['lit_built']})")
     if unmapped:
         print(f"  unmapped PDFs ({len(unmapped)}): {', '.join(unmapped)}")
         print(f"  → run: python3 builder/map_channel.py --vault {vault}")
