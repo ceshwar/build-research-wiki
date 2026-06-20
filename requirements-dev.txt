@@ -1,0 +1,2 @@
+# Dev/test dependencies. Install with: pip install -r requirements-dev.txt
+pytest>=5.3

@@ -5,8 +5,8 @@ builder/__pycache__/
 *.pyc
 
 # Obsidian's per-machine UI state (keep the rest of .obsidian if you commit your config)
-.obsidian/workspace.json
-.obsidian/workspace*.json
+**/.obsidian/workspace.json
+**/.obsidian/workspace*.json
 
 # OS noise
 .DS_Store

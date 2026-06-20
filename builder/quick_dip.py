@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """Quick Dip (Tier 1) — extract only factual fields from artifacts. No guessing."""
 
+import datetime
 import os
 import re
 import subprocess
+
+# Plausible publication-year window. Anything outside is a mis-parse (e.g. a digit
+# run inside an arXiv id), and per the no-guessing contract we drop it rather than chart it.
+MIN_YEAR = 1990
+MAX_YEAR = datetime.date.today().year + 1
+
+
+def _sane_year(year):
+    return year is not None and MIN_YEAR <= year <= MAX_YEAR
 
 # Venue tokens found on first pages — matched as whole words / phrases only.
 VENUE_PATTERNS = [
@@ -158,14 +168,17 @@ def _extract_venue_year(text, filename=""):
             if m.lastindex and m.group(1) and re.match(r"^\d{4}$", m.group(1)):
                 year = int(m.group(1))
             break
+    # \b on both sides so digit runs inside an arXiv id (2502.20491 -> 2049) don't match.
     if year is None and filename:
-        m = re.search(r"(20\d{2}|19\d{2})", filename)
+        m = re.search(r"\b(20\d{2}|19\d{2})\b", filename)
         if m:
             year = int(m.group(1))
     if year is None:
         ym = re.search(r"(?i)\b(20\d{2}|19\d{2})\b", blob[:3000])
         if ym:
             year = int(ym.group(1))
+    if not _sane_year(year):
+        year = None
     return venue, year
 
 
