@@ -107,15 +107,9 @@ def _write_auto(builder_dir, entries, auto_file, auto_key, channel_id):
     for e in entries:
         lines.append("    dict(")
         for key, val in e.items():
-            if isinstance(val, str):
-                lines.append('        {}="{}",'.format(key, val.replace('"', "'")))
-            elif isinstance(val, int):
-                lines.append("        {}={},".format(key, val))
-            elif isinstance(val, list):
-                inner = ", ".join('"{}"'.format(x) for x in val) if val else ""
-                lines.append("        {}=[{}],".format(key, inner))
-            elif val is None:
-                lines.append("        {}=None,".format(key))
+            # repr() emits a valid Python literal that round-trips exactly — so a title
+            # with quotes/backslashes/newlines can't corrupt or break the generated module.
+            lines.append("        {}={!r},".format(key, val))
         lines.append("    ),")
     lines.append("]")
     lines.append("")
