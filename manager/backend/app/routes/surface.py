@@ -2,7 +2,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import BuildResponse, ChannelSummary, DockCreateRequest
+from app.models.schemas import (
+    BuildResponse,
+    ChannelSummary,
+    DockCreateRequest,
+    IngestPromptResponse,
+)
 from app.services.channel_registry import channel_registry
 from app.services.map_service import MapService
 from app.services.vault_manager import VaultManager
@@ -54,6 +59,18 @@ def surface_interval(vault_id: str, channel_id: str = "my-portfolio", mode: str 
     except FileNotFoundError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return BuildResponse(job_id=job_id, mode="surface_interval", channel_id=channel_id)
+
+
+@router.get("/ingest-prompt", response_model=IngestPromptResponse)
+def ingest_prompt(vault_id: str, channel_id: str = "my-portfolio"):
+    """Paste-ready prompt for the user's own coding agent (manual-agent ingest)."""
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault not found")
+    import ingest_prompt as ip  # builder/ is on sys.path (via channel_registry import)
+    text, count = ip.build_prompt(str(vault_path), channel_id)
+    return IngestPromptResponse(prompt=text, count=count, channel_id=channel_id)
 
 
 @router.post("/map", response_model=BuildResponse)

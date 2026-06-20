@@ -6,6 +6,7 @@ import {
   createDock,
   dockArtifacts,
   fetchChannels,
+  fetchIngestPrompt,
   fetchJob,
   fetchJobLogs,
   fetchVaults,
@@ -106,6 +107,8 @@ export default function App() {
   const [reefPreview, setReefPreview] = useState<VaultValidateResult | null>(null)
   const [dockName, setDockName] = useState('')
   const [dockEmoji, setDockEmoji] = useState('📁')
+  const [ingestPrompt, setIngestPrompt] = useState<string | null>(null)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -131,6 +134,12 @@ export default function App() {
       setChannelId(channels[0].id)
     }
   }, [channels, channelId])
+
+  // The ingest prompt is per vault+dock; clear it when either changes.
+  useEffect(() => {
+    setIngestPrompt(null)
+    setPromptCopied(false)
+  }, [vaultId, channelId])
 
   const jobQuery = useQuery({
     queryKey: ['job', activeJobId],
@@ -203,6 +212,22 @@ export default function App() {
     mutationFn: () => startBuild(vaultId, 'full'),
     onSuccess: (data) => setActiveJobId(data.job_id),
   })
+
+  const ingestPromptMutation = useMutation({
+    mutationFn: () => fetchIngestPrompt(vaultId, channelId),
+    onSuccess: (data) => {
+      setIngestPrompt(data.prompt)
+      setPromptCopied(false)
+    },
+  })
+
+  const copyPrompt = useCallback(() => {
+    if (!ingestPrompt) return
+    navigator.clipboard.writeText(ingestPrompt).then(() => {
+      setPromptCopied(true)
+      setTimeout(() => setPromptCopied(false), 2000)
+    })
+  }, [ingestPrompt])
 
   const addDockMutation = useMutation({
     mutationFn: () => createDock(vaultId, { name: dockName.trim(), emoji: dockEmoji }),
@@ -629,6 +654,38 @@ export default function App() {
           <p className="mt-2 text-xs text-red-400">
             {(surfaceMutation.error ?? rebuildMutation.error)?.message}
           </p>
+        )}
+      </section>
+
+      {/* Manual-agent ingest — paste-ready prompt for the user's own coding agent */}
+      <section className="mb-6">
+        <SectionLabel>Deep Dive with your agent</SectionLabel>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Quick Dip pulls the facts; the enrichment — themes, one-liners, deep dives — is done by
+          your own coding agent. Generate a ready-to-paste prompt for {channel?.emoji}{' '}
+          {channel?.name}, open this vault in Claude Code or Cursor, and paste it.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => ingestPromptMutation.mutate()}
+            disabled={ingestPromptMutation.isPending}
+            className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
+          </button>
+          {ingestPrompt && (
+            <button onClick={copyPrompt} className="btn-secondary px-4 py-2 text-sm">
+              {promptCopied ? 'Copied ✓' : 'Copy prompt'}
+            </button>
+          )}
+        </div>
+        {ingestPrompt && (
+          <pre className="panel-card mt-3 max-h-72 overflow-auto whitespace-pre-wrap p-3 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
+            {ingestPrompt}
+          </pre>
+        )}
+        {ingestPromptMutation.isError && (
+          <p className="mt-2 text-xs text-red-400">{ingestPromptMutation.error.message}</p>
         )}
       </section>
 

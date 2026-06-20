@@ -103,6 +103,12 @@ class BuildResponse(BaseModel):
     channel_id: str = "my-portfolio"
 
 
+class IngestPromptResponse(BaseModel):
+    prompt: str
+    count: int
+    channel_id: str = "my-portfolio"
+
+
 class UploadResponse(BaseModel):
     files_added: int
     filenames: List[str]

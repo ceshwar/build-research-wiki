@@ -100,6 +100,12 @@ export function startBuild(vaultId: string, mode: 'auto' | 'incremental' | 'full
   )
 }
 
+export function fetchIngestPrompt(vaultId: string, channelId: string) {
+  return request<{ prompt: string; count: number; channel_id: string }>(
+    `/ingest-prompt?vault_id=${vaultId}&channel_id=${channelId}`,
+  )
+}
+
 export function fetchJob(jobId: string) {
   return request<Job>(`/jobs/${jobId}`)
 }
