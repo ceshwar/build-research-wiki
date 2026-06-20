@@ -12,6 +12,11 @@ papers and notes. Implements the
 [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) by Andrej
 Karpathy — compile knowledge once and keep it current.
 
+<p align="center">
+  <img src="docs/images/scuba-main-ui.png" alt="SCUBA Ideaverse control panel — docks, Dive Computer, and portfolio map on Shallow reef" width="900">
+</p>
+<p align="center"><em>Shallow reef demo — dock papers, track completion, browse the portfolio map, then open in Obsidian.</em></p>
+
 ---
 
 ## The control panel (v0.4)
