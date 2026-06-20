@@ -13,7 +13,7 @@ import {
   fetchJobLogs,
   fetchVaults,
   pickVaultFolder,
-  removeFromChart,
+  removeFromChartBatch,
   removeVault,
   startBuild,
   surfaceInterval,
@@ -331,6 +331,8 @@ function chartStatusPill(status: string) {
       return { icon: '🤿', label: 'Quick dip', className: 'status-pill status-pill--quick' }
     case 'needs_deep_dive':
       return { icon: '✎', label: 'Enrich next', className: 'status-pill status-pill--enrich' }
+    case 'scaffolded':
+      return { icon: '○', label: 'Scaffolded', className: 'status-pill status-pill--scaffold' }
     case 'charted':
       return { icon: '📝', label: 'Charted', className: 'status-pill status-pill--quick' }
     default:
@@ -466,6 +468,7 @@ export default function App() {
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
   const [expandedPaperSlugs, setExpandedPaperSlugs] = useState<Set<string>>(() => new Set())
   const [mapEditMode, setMapEditMode] = useState(false)
+  const [pendingRemovalSlugs, setPendingRemovalSlugs] = useState<Set<string>>(() => new Set())
   const [mapSort, setMapSort] = useState<{ key: MapSortKey; dir: MapSortDir }>({
     key: 'paper',
     dir: 'desc',
@@ -518,6 +521,7 @@ export default function App() {
     setActiveWorkspaceSection('section-map')
     setExpandedPaperSlugs(new Set())
     setMapEditMode(false)
+    setPendingRemovalSlugs(new Set())
   }, [vaultId, channelId])
 
   useEffect(() => {
@@ -673,24 +677,24 @@ export default function App() {
   })
 
   const removeFromChartMutation = useMutation({
-    mutationFn: (slug: string) => removeFromChart(vaultId, channelId, slug),
+    mutationFn: (slugs: string[]) => removeFromChartBatch(vaultId, channelId, slugs),
     onSuccess: (data) => {
+      setPendingRemovalSlugs(new Set())
+      setMapEditMode(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map', vaultId, channelId] })
       if (data.job_id) setActiveJobId(data.job_id)
     },
   })
 
-  const handleRemoveFromChart = useCallback(
-    (entry: ChartEntry) => {
-      const ok = window.confirm(
-        `Remove "${entry.title}" from the map?\n\nThe PDF stays in the dock — you can chart it again with Update chart.`,
-      )
-      if (!ok) return
-      removeFromChartMutation.mutate(entry.slug)
-    },
-    [removeFromChartMutation],
-  )
+  const togglePendingRemoval = useCallback((slug: string) => {
+    setPendingRemovalSlugs((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }, [])
 
   const handleUpdateChart = useCallback(() => {
     if (isIngestPreview) {
@@ -840,6 +844,38 @@ export default function App() {
     () => sortChartEntries(filteredEntries, mapSort.key, mapSort.dir, chartMap?.themes ?? []),
     [filteredEntries, mapSort, chartMap?.themes],
   )
+
+  const handleFinishMapEdit = useCallback(() => {
+    if (pendingRemovalSlugs.size === 0) {
+      setMapEditMode(false)
+      return
+    }
+    const titles = sortedEntries
+      .filter((e) => pendingRemovalSlugs.has(e.slug))
+      .map((e) => e.title)
+    const preview = titles.slice(0, 6)
+    const more =
+      titles.length > preview.length ? `\n…and ${titles.length - preview.length} more` : ''
+    const ok = window.confirm(
+      `Remove ${pendingRemovalSlugs.size} paper${pendingRemovalSlugs.size === 1 ? '' : 's'} from the chart?\n\n` +
+        `${preview.map((t) => `• ${t}`).join('\n')}${more}\n\n` +
+        'PDFs stay in the dock — you can chart them again with Update chart.',
+    )
+    if (!ok) return
+    removeFromChartMutation.mutate([...pendingRemovalSlugs])
+  }, [pendingRemovalSlugs, sortedEntries, removeFromChartMutation])
+
+  const handleCancelMapEdit = useCallback(() => {
+    if (pendingRemovalSlugs.size > 0) {
+      const ok = window.confirm(
+        `Discard ${pendingRemovalSlugs.size} pending removal${pendingRemovalSlugs.size === 1 ? '' : 's'}?`,
+      )
+      if (!ok) return
+    }
+    setPendingRemovalSlugs(new Set())
+    setMapEditMode(false)
+  }, [pendingRemovalSlugs.size])
+
   const filteredThemeGroups = filterThemeGroups(themeGroups, statFilter)
   const enrichEntries =
     chartMap?.entries.filter(
@@ -1316,6 +1352,7 @@ export default function App() {
                   onClick={() => {
                     setMapTab('theme')
                     setMapEditMode(false)
+                    setPendingRemovalSlugs(new Set())
                   }}
                 >
                   By theme
@@ -1380,19 +1417,40 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        className={`map-edit-toggle ${mapEditMode ? 'map-edit-toggle--active' : ''}`}
-                        aria-pressed={mapEditMode}
-                        onClick={() => setMapEditMode((on) => !on)}
-                      >
-                        Edit
-                      </button>
+                      {!mapEditMode ? (
+                        <button
+                          type="button"
+                          className="map-edit-toggle"
+                          onClick={() => setMapEditMode(true)}
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <div className="map-edit-actions">
+                          <button
+                            type="button"
+                            className="map-edit-cancel"
+                            onClick={handleCancelMapEdit}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="map-edit-done"
+                            disabled={removeFromChartMutation.isPending}
+                            onClick={handleFinishMapEdit}
+                          >
+                            {pendingRemovalSlugs.size > 0
+                              ? `Done · remove ${pendingRemovalSlugs.size}`
+                              : 'Done'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     {mapEditMode && (
                       <p className="map-edit-hint">
-                        Click <span aria-hidden="true">−</span> to remove a paper from the chart. PDFs
-                        stay in the dock.
+                        Mark papers with <span aria-hidden="true">−</span> to remove, then click{' '}
+                        <strong>Done</strong>. PDFs stay in the dock.
                       </p>
                     )}
                   <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
@@ -1435,17 +1493,26 @@ export default function App() {
                             const pill = chartStatusPill(entry.status)
                             const expanded = expandedPaperSlugs.has(entry.slug)
                             const canExpand = !!(entry.overview?.trim() || entry.pdf_path)
+                            const marked = pendingRemovalSlugs.has(entry.slug)
                             return (
-                              <tr key={entry.slug} className="chart-table__row">
+                              <tr
+                                key={entry.slug}
+                                className={`chart-table__row${marked ? ' chart-table__row--marked' : ''}`}
+                              >
                                 {mapEditMode && (
                                   <td className="chart-table__action-col">
                                     <button
                                       type="button"
-                                      className="chart-table__remove"
+                                      className={`chart-table__remove${marked ? ' chart-table__remove--marked' : ''}`}
                                       disabled={removeFromChartMutation.isPending}
-                                      aria-label={`Remove ${entry.title} from map`}
-                                      title="Remove from map"
-                                      onClick={() => handleRemoveFromChart(entry)}
+                                      aria-label={
+                                        marked
+                                          ? `Undo remove ${entry.title}`
+                                          : `Mark ${entry.title} for removal`
+                                      }
+                                      aria-pressed={marked}
+                                      title={marked ? 'Undo' : 'Mark for removal'}
+                                      onClick={() => togglePendingRemoval(entry.slug)}
                                     >
                                       −
                                     </button>

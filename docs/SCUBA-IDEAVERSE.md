@@ -118,12 +118,12 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 
 | View | When | What it shows |
 |------|------|----------------|
-| **List** | Always (portfolio + ingest docks) | Sortable table: Status, Paper (with **Note**), Themes. Toggle **Edit** to show **−** remove controls (PDF stays in dock) |
+| **List** | Always (portfolio + ingest docks) | Sortable table; **Edit** → mark **−** → **Done** / **Cancel** to remove from chart |
 | **By theme** | Portfolio reefs only | Papers grouped by research theme (read-only) |
 
 Map status chips: **All**, **Deep dive**, **Quick dip**. Chart status **stat cards** also filter the map when clicked (e.g. **Enrich next** shows papers needing Deep Dive).
 
-**Edit mode** (List view only): toggle **Edit** next to the status chips to reveal a **−** column. Removing a paper takes it off the chart but leaves the PDF in `raw/` (awaiting chart). Run **Update chart** to map it again. Off by default — safe for demos and presentations.
+**Edit mode** (List view only): click **Edit**, mark rows with **−**, then **Done** to confirm removals (or **Cancel** to discard). PDFs stay in `raw/` until **Update chart** maps them again. Off by default — safe for demos.
 
 ---
 
@@ -133,7 +133,8 @@ Map status chips: **All**, **Deep dive**, **Quick dip**. Chart status **stat car
 |--------|---------|------------|
 | **Awaiting chart** | File in `raw/` but not on chart | Run **Update chart** |
 | **Quick dip** | Tier 1 — PDF title/abstract/venue/year on chart | Deep Dive: add themes, one-liner, analysis |
-| **Enrich next** | On chart but themes/deep dive incomplete | **Get ingest prompt** or edit entries + deepdives |
+| **Scaffolded** | On chart from `data.py` but entry lacks themes, abstract, and one-liner | Edit `builder/entries/` or run Deep Dive |
+| **Enrich next** | Themes/abstract present but deep dive incomplete | **Get ingest prompt** or edit `builder/deepdives/` |
 | **On chart** (deep dive done) | Fully enriched paper page | Refine in Obsidian if needed |
 
 Portfolio uploads trigger Quick Dip automatically after **Confirm Upload**. Stat cards filter the Map.

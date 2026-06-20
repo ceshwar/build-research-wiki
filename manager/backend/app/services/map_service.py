@@ -78,3 +78,29 @@ class MapService:
                 cwd=build_plan["cwd"],
             )
         return result, job_id
+
+    def remove_many_from_chart(self, vault_id, channel_id, slugs):
+        # type: (str, str, list) -> tuple
+        vault_path = self.vaults.resolve_path(vault_id)
+        ch = channel_registry.get(channel_id, vault_path)
+        if not ch:
+            raise KeyError("Unknown channel: {}".format(channel_id))
+
+        import remove_from_chart as rfc  # builder/ on sys.path
+
+        removed = []
+        for slug in slugs:
+            result = rfc.remove(str(vault_path), channel_id, slug)
+            removed.append(result["slug"])
+
+        job_id = None
+        if removed:
+            build_plan = self.vaults.build_plan(vault_id, mode="incremental")
+            if build_plan:
+                job_id = process_manager.start(
+                    job_type="build",
+                    vault_id=vault_id,
+                    command=build_plan["command"],
+                    cwd=build_plan["cwd"],
+                )
+        return removed, job_id

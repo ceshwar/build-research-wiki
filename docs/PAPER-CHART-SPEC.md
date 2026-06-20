@@ -97,7 +97,7 @@ Re-run **Update chart** after edits to refresh `wiki/`.
 2. **Quick Dip runs automatically** (same as **Update chart (Quick Dip)**)
 3. Chart status shows **Quick dip** / **Enrich next** / **On chart** counts
 4. User edits entries and deep dives in Obsidian or repo; re-surfaces when ready
-5. **Edit mode** on the Map (List view) — toggle **Edit** to remove a paper from the chart; PDF stays in `raw/` until **Update chart** maps it again
+5. **Edit mode** on the Map (List view) — **Edit** → mark **−** → **Done** confirms removals ( **Cancel** discards); PDF stays in `raw/` until **Update chart**
 
 Ingest channels (lit-review, lab-memory, ideas) also get Quick Dip shells in `builder/entries/` → `wiki/sources/`; Deep Dive fills generative sections later.
 

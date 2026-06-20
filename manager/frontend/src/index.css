@@ -660,6 +660,18 @@ code {
   background: rgba(27, 42, 74, 0.06);
 }
 
+.chart-table__row--marked {
+  background: rgba(214, 69, 69, 0.06);
+}
+
+.chart-table__row--marked .chart-table__action-col {
+  background: rgba(214, 69, 69, 0.08);
+}
+
+.chart-table__row--marked .map-paper-cell {
+  opacity: 0.72;
+}
+
 .chart-table__remove {
   display: inline-flex;
   align-items: center;
@@ -698,16 +710,19 @@ code {
 
 .chart-table--edit .chart-table__remove {
   opacity: 1;
-  color: #d64545;
+  color: #b84a4a;
   font-weight: 600;
-  border-color: rgba(214, 69, 69, 0.55);
-  background: rgba(214, 69, 69, 0.16);
+  border-color: rgba(184, 74, 74, 0.4);
+  background: rgba(214, 69, 69, 0.1);
 }
 
-.chart-table--edit .chart-table__row:hover .chart-table__remove,
-.chart-table--edit .chart-table__remove:focus-visible,
+.chart-table--edit .chart-table__remove--marked {
+  color: #fff;
+  border-color: #b83838;
+  background: #c43c3c;
+}
+
 .chart-table--edit .chart-table__remove:hover:not(:disabled) {
-  opacity: 1;
   color: #fff;
   border-color: #b83838;
   background: #c43c3c;
@@ -771,10 +786,47 @@ code {
   border-color: var(--accent);
 }
 
-.map-edit-toggle--active {
-  background: rgba(196, 92, 92, 0.1);
-  border-color: rgba(196, 92, 92, 0.45);
-  color: #c45c5c;
+.map-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.map-edit-cancel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.map-edit-cancel:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.map-edit-done {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.map-edit-done:hover:not(:disabled) {
+  background: rgba(234, 88, 12, 0.18);
+}
+
+.map-edit-done:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .map-edit-hint {
@@ -1138,6 +1190,11 @@ code {
 .status-pill--enrich {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.status-pill--scaffold {
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--muted);
 }
 
 .theme-chip {

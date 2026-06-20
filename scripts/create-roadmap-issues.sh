@@ -61,8 +61,13 @@ ensure_label "phase-2" "1B2A4A" "Near-term chart pipeline"
 ensure_label "phase-3" "EA580C" "Full ingest for non-portfolio docks"
 ensure_label "phase-4" "0E7490" "Discovery and synthesis"
 ensure_label "phase-5" "64748B" "Product and team polish"
+ensure_label "v0.4" "22C55E" "Shipped in v0.4 Ideaverse UI"
+ensure_label "shipped" "86EFAC" "Completed and documented"
 
 echo "Creating roadmap issues on $REPO …"
+
+create_issue "v0.4 Ideaverse control panel — shipped" "v0.4,shipped" \
+  "${ISSUES_DIR}/00-v04-shipped.md"
 
 create_issue "Phase 2: LLM Deep Dive for portfolio PDFs" "enhancement,phase-2" \
   "${ISSUES_DIR}/01-llm-deep-dive.md"

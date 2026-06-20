@@ -120,6 +120,18 @@ export function removeFromChart(vaultId: string, channelId: string, slug: string
   )
 }
 
+export function removeFromChartBatch(vaultId: string, channelId: string, slugs: string[]) {
+  const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId })
+  return request<{ channel_id: string; removed: string[]; job_id: string | null }>(
+    `/chart-remove?${params}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slugs }),
+    },
+  )
+}
+
 export function fetchJob(jobId: string) {
   return request<Job>(`/jobs/${jobId}`)
 }

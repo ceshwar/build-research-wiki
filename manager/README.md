@@ -18,7 +18,7 @@ Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in th
 2. **Workspace** — `Reef › Dock` path + tabs (Map · Chart status · Actions)
 3. **Dock** — click dock name in path or **Upload PDFs** in Actions
 4. **Chart status** — track on chart / quick dip / enrich next for this dock
-5. **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF; toggle **Edit** to remove papers from the chart
+5. **Map** — List or By theme (portfolio); expand **Note**; **Edit** → mark **−** → **Done** to remove from chart
 6. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
 7. **Open reef in Obsidian**
 
@@ -41,7 +41,7 @@ Selecting a dock hides the dock picker and shows one shell:
 
 | Tab | Purpose |
 |-----|---------|
-| **Map** | List (sortable) or By theme (portfolio); **Note** + PDF per paper; **Edit** to remove rows |
+| **Map** | List (sortable) or By theme (portfolio); **Edit** → mark **−** → **Done** / **Cancel** |
 | **Chart status** | Pipeline stats, next-step banner; stat cards filter Map |
 | **Actions** | Update chart, Get ingest prompt, upload shortcut |
 
@@ -85,7 +85,8 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | POST | `/vaults/validate` — check folder |
 | POST | `/vaults/pick-folder` — native folder picker |
 | DELETE | `/vaults/{id}` — remove user-added reef |
-| DELETE | `/chart-entry?vault_id=&channel_id=&slug=` — remove paper from map (PDF stays in dock) |
+| DELETE | `/chart-entry?vault_id=&channel_id=&slug=` — remove one paper from map |
+| POST | `/chart-remove?vault_id=&channel_id=` — batch remove `{ "slugs": [...] }` |
 
 Legacy aliases: `/airlock`, `/upload`, `/update-map`
 

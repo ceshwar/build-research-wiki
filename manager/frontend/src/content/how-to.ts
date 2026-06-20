@@ -52,6 +52,7 @@ export const HOW_TO_SECTIONS = [
     terms: [
       { name: 'Awaiting chart', desc: 'File docked in `raw/` but not mapped yet — run Update chart.' },
       { name: 'Quick dip 🤿', desc: 'On chart with PDF facts only — needs Deep Dive.' },
+      { name: 'Scaffolded', desc: 'On chart from data.py but the entry file is still thin — missing themes, abstract, or one-liner. Not an error; needs Deep Dive.' },
       { name: 'Enrich next', desc: 'Themes/abstract present but deep dive sections missing.' },
       { name: 'Deep dive 📄', desc: 'Fully enriched — refine in Obsidian if needed.' },
     ],

@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.4.5 — Staged map edits (2026-06-20)
+
+### Changed
+
+- **Map Edit flow** — **Edit** → mark rows with **−** → **Done** confirms batch removal (or **Cancel** discards); no per-click confirm
+- **Done** shows count (`Done · remove 3`); marked rows tint red until applied or cancelled
+- **Scaffolded** status pill on Map (portfolio rows from `data.py` still missing themes/abstract/one-liner)
+
+### Added
+
+- **Batch remove** — `POST /chart-remove` removes multiple slugs with one incremental rebuild
+
+### Docs
+
+- Scaffolded + Edit flow documented in `docs/SCUBA-IDEAVERSE.md`, in-app Docs, `docs/ROADMAP.md`
+
+---
+
 ## v0.4.4 — Map edit mode & remove from chart (2026-06-20)
 
 ### Added

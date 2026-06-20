@@ -19,7 +19,7 @@ Karpathy — compile knowledge once and keep it current.
 
 ---
 
-## The control panel (v0.4.2)
+## The control panel (v0.4.5)
 
 A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, per-dock **Map** browsing, and **Chart status** tracking.
 
@@ -33,7 +33,7 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 | 2 | Work in the **workspace** — `Reef › Dock` path, tabs for Map / Chart status / Actions |
 | 3 | **Dock** files — click the dock name in the path, or **Upload PDFs** in Actions |
 | 4 | Check **Chart status** — on chart, quick dip, enrich next |
-| 5 | Browse the **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF; **Edit** to remove papers from the chart |
+| 5 | Browse the **Map** — List or By theme; **Edit** → mark **−** → **Done** to remove from chart (PDFs stay in dock) |
 | 6 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
 | 7 | Open reef in Obsidian |
 

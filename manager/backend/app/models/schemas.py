@@ -104,6 +104,16 @@ class RemoveFromChartResponse(BaseModel):
     job_id: Optional[str] = None
 
 
+class RemoveFromChartBatchRequest(BaseModel):
+    slugs: List[str]
+
+
+class RemoveFromChartBatchResponse(BaseModel):
+    channel_id: str
+    removed: List[str] = []
+    job_id: Optional[str] = None
+
+
 class BuildResponse(BaseModel):
     job_id: str
     mode: str = "auto"

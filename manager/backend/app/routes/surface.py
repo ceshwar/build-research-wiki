@@ -10,6 +10,8 @@ from app.models.schemas import (
     DockCreateRequest,
     IngestPromptResponse,
     RemoveFromChartResponse,
+    RemoveFromChartBatchRequest,
+    RemoveFromChartBatchResponse,
 )
 from app.services.channel_registry import channel_registry
 from app.services.map_service import MapService
@@ -100,6 +102,28 @@ def remove_chart_entry(vault_id: str, channel_id: str, slug: str):
         slug=result["slug"],
         channel_id=result["channel_id"],
         deleted_files=[os.path.basename(p) for p in result.get("deleted", [])],
+        job_id=job_id,
+    )
+
+
+@router.post("/chart-remove", response_model=RemoveFromChartBatchResponse)
+def remove_chart_entries_batch(
+    vault_id: str,
+    channel_id: str,
+    body: RemoveFromChartBatchRequest,
+):
+    """Remove multiple papers from the chart; one rebuild at the end."""
+    if not body.slugs:
+        raise HTTPException(status_code=400, detail="No slugs provided.")
+    try:
+        removed, job_id = map_service.remove_many_from_chart(vault_id, channel_id, body.slugs)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return RemoveFromChartBatchResponse(
+        channel_id=channel_id,
+        removed=removed,
         job_id=job_id,
     )
 
