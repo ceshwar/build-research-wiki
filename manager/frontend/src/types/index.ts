@@ -41,6 +41,9 @@ export interface Vault {
   id: string
   name: string
   path: string
+  obsidian_vault_id?: string | null
+  obsidian_links_ok?: boolean
+  obsidian_link_path?: string | null
   artifact_count: number
   pdf_count: number
   paper_count: number

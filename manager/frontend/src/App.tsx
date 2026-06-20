@@ -340,10 +340,35 @@ function chartStatusPill(status: string) {
   }
 }
 
-function obsidianReefHref(vaultPath: string, reefPath: string) {
-  const base = vaultPath.replace(/\/$/, '')
+function obsidianReefHref(
+  reefPath: string,
+  opts: { vaultPath: string; obsidianVaultId?: string | null },
+) {
   const rel = reefPath.replace(/^\//, '')
+  if (opts.obsidianVaultId) {
+    return `obsidian://open?vault=${encodeURIComponent(opts.obsidianVaultId)}&file=${encodeURIComponent(rel)}`
+  }
+  const base = opts.vaultPath.replace(/\/$/, '')
   return `obsidian://open?path=${encodeURIComponent(`${base}/${rel}`)}`
+}
+
+function obsidianOpenVaultHref(vault: Pick<Vault, 'path' | 'obsidian_vault_id'>) {
+  if (vault.obsidian_vault_id) {
+    return `obsidian://open?vault=${encodeURIComponent(vault.obsidian_vault_id)}`
+  }
+  return `obsidian://open?path=${encodeURIComponent(vault.path)}`
+}
+
+function obsidianLinkNotice(vault: Vault | undefined): string | null {
+  if (!vault) return null
+  if (!vault.obsidian_links_ok) {
+    return `Open this reef folder in Obsidian (File → Open folder as vault) to enable map links.`
+  }
+  if (vault.obsidian_link_path && vault.obsidian_link_path !== vault.path) {
+    const name = vault.obsidian_link_path.split('/').filter(Boolean).pop() ?? vault.obsidian_link_path
+    return `Obsidian links open in ${name} — your registered vault with matching wiki paths.`
+  }
+  return null
 }
 
 function themeWikiPage(slug: string) {
@@ -368,11 +393,13 @@ function themeDisplayTitle(slug: string, themes: { slug: string; title: string }
 
 function ReefLink({
   vaultPath,
+  obsidianVaultId,
   reefPath,
   children,
   className = 'link-accent',
 }: {
   vaultPath?: string
+  obsidianVaultId?: string | null
   reefPath?: string
   children: ReactNode
   className?: string
@@ -382,7 +409,7 @@ function ReefLink({
   }
   return (
     <a
-      href={obsidianReefHref(vaultPath, reefPath)}
+      href={obsidianReefHref(reefPath, { vaultPath, obsidianVaultId })}
       className={className}
       title={`Open ${reefPath} in Obsidian`}
     >
@@ -468,6 +495,7 @@ export default function App() {
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
   const [expandedPaperSlugs, setExpandedPaperSlugs] = useState<Set<string>>(() => new Set())
   const [mapEditMode, setMapEditMode] = useState(false)
+  const [mapEditError, setMapEditError] = useState<string | null>(null)
   const [pendingRemovalSlugs, setPendingRemovalSlugs] = useState<Set<string>>(() => new Set())
   const [mapSort, setMapSort] = useState<{ key: MapSortKey; dir: MapSortDir }>({
     key: 'paper',
@@ -679,11 +707,15 @@ export default function App() {
   const removeFromChartMutation = useMutation({
     mutationFn: (slugs: string[]) => removeFromChartBatch(vaultId, channelId, slugs),
     onSuccess: (data) => {
+      setMapEditError(null)
       setPendingRemovalSlugs(new Set())
       setMapEditMode(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map', vaultId, channelId] })
       if (data.job_id) setActiveJobId(data.job_id)
+    },
+    onError: (err) => {
+      setMapEditError(err instanceof Error ? err.message : 'Could not remove papers from chart.')
     },
   })
 
@@ -873,6 +905,7 @@ export default function App() {
       if (!ok) return
     }
     setPendingRemovalSlugs(new Set())
+    setMapEditError(null)
     setMapEditMode(false)
   }, [pendingRemovalSlugs.size])
 
@@ -882,6 +915,7 @@ export default function App() {
       (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
     ) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
+  const obsidianNotice = obsidianLinkNotice(vault)
   const inWorkspace = !!(vault && channel && !showDockPicker && !showReefPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
@@ -926,7 +960,7 @@ export default function App() {
           </button>
           {vault && (
             <a
-              href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
+              href={obsidianOpenVaultHref(vault)}
               className="header-icon-btn"
               title="Open reef in Obsidian"
               aria-label="Open reef in Obsidian"
@@ -1365,11 +1399,15 @@ export default function App() {
             {chartMapLoading && (
               <p className="text-sm text-[var(--muted)]">Loading chart…</p>
             )}
+            {obsidianNotice && (
+              <p className="obsidian-link-notice">{obsidianNotice}</p>
+            )}
             {chartMap && statFilter === 'pending' && pendingCount > 0 && (
               <div className="empty-map">
                 <p>
                   {pendingCount} file{pendingCount === 1 ? '' : 's'} in{' '}
-                  <ReefLink vaultPath={vault?.path} reefPath={chartMap.raw_path} className="link-accent">
+                  <ReefLink vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id} reefPath={chartMap.raw_path} className="link-accent">
                     {chartMap.raw_path}/
                   </ReefLink>{' '}
                   awaiting chart.
@@ -1421,7 +1459,10 @@ export default function App() {
                         <button
                           type="button"
                           className="map-edit-toggle"
-                          onClick={() => setMapEditMode(true)}
+                          onClick={() => {
+                            setMapEditError(null)
+                            setMapEditMode(true)
+                          }}
                         >
                           Edit
                         </button>
@@ -1451,6 +1492,11 @@ export default function App() {
                       <p className="map-edit-hint">
                         Mark papers with <span aria-hidden="true">−</span> to remove, then click{' '}
                         <strong>Done</strong>. PDFs stay in the dock.
+                      </p>
+                    )}
+                    {mapEditError && (
+                      <p className="map-edit-error" role="alert">
+                        {mapEditError}
                       </p>
                     )}
                   <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
@@ -1528,6 +1574,7 @@ export default function App() {
                                     <div className="font-medium text-[var(--text)]">
                                       <ReefLink
                                         vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                                         reefPath={entry.wiki_page}
                                         className="link-accent obsidian-mark"
                                       >
@@ -1562,6 +1609,7 @@ export default function App() {
                                         {entry.pdf_path && (
                                           <ReefLink
                                             vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                                             reefPath={entry.pdf_path}
                                             className="map-paper-pdf-link obsidian-mark"
                                           >
@@ -1578,6 +1626,7 @@ export default function App() {
                                       <ReefLink
                                         key={t}
                                         vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                                         reefPath={themeWikiPage(t)}
                                         className={`theme-chip ${themeGradientClass(t)} obsidian-mark`}
                                       >
@@ -1616,6 +1665,7 @@ export default function App() {
                             ) : (
                               <ReefLink
                                 vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                                 reefPath={themeWikiPage(group.slug)}
                                 className="theme-map__title-link obsidian-mark"
                               >
@@ -1633,6 +1683,7 @@ export default function App() {
                                 <span>{pill.icon}</span>
                                 <ReefLink
                                   vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                                   reefPath={entry.wiki_page}
                                   className="link-accent theme-map__paper-link obsidian-mark"
                                 >
@@ -1720,7 +1771,7 @@ export default function App() {
                     </button>
                     {vault && (
                       <a
-                        href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
+                        href={obsidianOpenVaultHref(vault)}
                         className="btn-secondary px-4 py-2 text-sm obsidian-mark"
                       >
                         Open reef
@@ -1740,6 +1791,7 @@ export default function App() {
                       <li key={item.slug}>
                         <ReefLink
                           vaultPath={vault?.path}
+                    obsidianVaultId={vault?.obsidian_vault_id}
                           reefPath={
                             isPortfolio
                               ? `wiki/papers/${item.slug}.md`

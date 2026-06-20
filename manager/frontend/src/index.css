@@ -829,10 +829,38 @@ code {
   cursor: not-allowed;
 }
 
+.obsidian-link-notice {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.06);
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .map-edit-hint {
   margin: -0.35rem 0 0.55rem;
   font-size: 0.6875rem;
   color: var(--muted);
+}
+
+.map-edit-error {
+  margin: 0 0 0.55rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  font-size: 0.75rem;
+  color: #b91c1c;
+  line-height: 1.45;
+}
+
+@media (prefers-color-scheme: dark) {
+  .map-edit-error {
+    color: #fca5a5;
+  }
 }
 
 .map-status-chip {

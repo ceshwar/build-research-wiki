@@ -2,6 +2,7 @@
 
 import glob
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -60,6 +61,59 @@ class VaultManager:
         if not p.is_absolute():
             p = REPO_ROOT / p
         return p.resolve()
+
+    def _obsidian_config_path(self) -> Optional[Path]:
+        home = Path.home()
+        if sys.platform == "darwin":
+            cfg = home / "Library/Application Support/obsidian/obsidian.json"
+        elif sys.platform == "win32":
+            appdata = os.environ.get("APPDATA", "")
+            cfg = Path(appdata) / "obsidian/obsidian.json" if appdata else None
+        else:
+            cfg = home / ".config/obsidian/obsidian.json"
+        return cfg if cfg and cfg.exists() else None
+
+    def _load_obsidian_vaults(self) -> Dict[str, dict]:
+        cfg = self._obsidian_config_path()
+        if not cfg:
+            return {}
+        try:
+            with open(cfg) as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            return {}
+        return data.get("vaults", {}) or {}
+
+    def _obsidian_link_meta(self, vault: dict, vault_path: Path) -> dict:
+        """Resolve Obsidian URI target: registered vault id + path links open in."""
+        registered = self._load_obsidian_vaults()
+        override_id = vault.get("obsidian_vault_id")
+        if override_id:
+            meta = registered.get(str(override_id), {})
+            link_path = meta.get("path")
+            return {
+                "obsidian_vault_id": str(override_id),
+                "obsidian_links_ok": bool(link_path),
+                "obsidian_link_path": str(Path(link_path).resolve()) if link_path else None,
+            }
+        for vid, meta in registered.items():
+            p = meta.get("path")
+            if not p:
+                continue
+            try:
+                if Path(p).expanduser().resolve() == vault_path:
+                    return {
+                        "obsidian_vault_id": vid,
+                        "obsidian_links_ok": True,
+                        "obsidian_link_path": str(vault_path),
+                    }
+            except OSError:
+                continue
+        return {
+            "obsidian_vault_id": None,
+            "obsidian_links_ok": False,
+            "obsidian_link_path": None,
+        }
 
     def _slugify(self, name: str) -> str:
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
@@ -229,6 +283,7 @@ class VaultManager:
             "name": vault["name"],
             "path": str(path),
             "user_added": vault.get("user_added", False),
+            **self._obsidian_link_meta(vault, path),
             **stats,
         }
 

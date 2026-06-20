@@ -30,7 +30,7 @@ if [[ ! -d "$FRONTEND/node_modules" ]]; then
 fi
 
 echo "Starting backend on http://127.0.0.1:8000"
-(cd "$BACKEND" && .venv/bin/uvicorn app.main:app --port 8000) &
+(cd "$BACKEND" && .venv/bin/uvicorn app.main:app --reload --port 8000) &
 BACKEND_PID=$!
 
 echo "Starting frontend on http://127.0.0.1:5173"

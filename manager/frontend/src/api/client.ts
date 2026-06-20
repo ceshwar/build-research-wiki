@@ -2,11 +2,19 @@ import type { Channel, ChannelStats, Job, JobLogs, UploadResult, Vault } from '.
 
 const API = '/api'
 
+function formatApiError(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (typeof d === 'object' && d && 'msg' in d ? String(d.msg) : String(d))).join('; ')
+  }
+  return fallback
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, init)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || 'Request failed')
+    throw new Error(formatApiError(err.detail, res.statusText || 'Request failed'))
   }
   return res.json()
 }
@@ -120,16 +128,30 @@ export function removeFromChart(vaultId: string, channelId: string, slug: string
   )
 }
 
-export function removeFromChartBatch(vaultId: string, channelId: string, slugs: string[]) {
+export async function removeFromChartBatch(vaultId: string, channelId: string, slugs: string[]) {
   const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId })
-  return request<{ channel_id: string; removed: string[]; job_id: string | null }>(
-    `/chart-remove?${params}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slugs }),
-    },
-  )
+  try {
+    return await request<{ channel_id: string; removed: string[]; job_id: string | null }>(
+      `/chart-remove?${params}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs }),
+      },
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : ''
+    if (!/not found/i.test(msg)) throw e
+    // Older backends only expose DELETE /chart-entry — fall back per slug.
+    const removed: string[] = []
+    let job_id: string | null = null
+    for (const slug of slugs) {
+      const r = await removeFromChart(vaultId, channelId, slug)
+      removed.push(r.slug)
+      if (r.job_id) job_id = r.job_id
+    }
+    return { channel_id: channelId, removed, job_id }
+  }
 }
 
 export function fetchJob(jobId: string) {

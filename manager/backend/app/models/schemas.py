@@ -55,6 +55,9 @@ class VaultSummary(BaseModel):
     id: str
     name: str
     path: str
+    obsidian_vault_id: Optional[str] = None
+    obsidian_links_ok: bool = False
+    obsidian_link_path: Optional[str] = None
     user_added: bool = False
     artifact_count: int = 0
     pdf_count: int = 0
