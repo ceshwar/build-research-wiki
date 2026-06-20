@@ -14,12 +14,13 @@ Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in th
 
 ## Workflow
 
-1. **Pick a dock** — ⚓ My Portfolio, 🌊 Literature Review, …
-2. **Dock** — drop files, **Confirm Upload** → `raw/{channel}/`
-3. **Chart status** — track on chart / quick dip / enrich next for this dock
-4. **Map** — browse charted items; concepts and syntheses from ingest
-5. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
-6. **Open reef in Obsidian**
+1. **Pick a dock** — hover pills for channel purpose; workspace opens on **Map**
+2. **Workspace** — `Reef › Dock` path + tabs (Map · Chart status · Actions)
+3. **Dock** — click dock name in path or **Upload PDFs** in Actions
+4. **Chart status** — track on chart / quick dip / enrich next for this dock
+5. **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF
+6. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
+7. **Open reef in Obsidian**
 
 See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2 rules.
 
@@ -32,19 +33,19 @@ See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2
 | 🤿 Dive Log | `raw/dive-log/` | Quick Dip → `wiki/sources/` |
 | 💡 Ideas & Notes | `raw/notes/inbox/` | Quick Dip → `wiki/sources/` |
 
-Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/docks.yaml` per vault.
+Hover a dock pill in the picker for its description. Use **+ Add dock** to create custom folders. Config lives in `builder/docks.yaml` per vault.
 
-## Dock workspace
+## Focused workspace
 
-Selecting a dock shows a rail with **Map** (primary) and a **Chart & enrich** group (Chart status + Actions). The rail scrolls away so Map stays unobstructed.
+Selecting a dock hides the dock picker and shows one shell:
 
 | Tab | Purpose |
 |-----|---------|
-| **Chart status** | Pipeline stats, next-step banner |
-| **Map** | List / By theme; concepts, syntheses, PDF in paper row |
-| **Actions** | Update chart, Get ingest prompt |
+| **Map** | List (sortable) or By theme (portfolio); **Note** + PDF per paper |
+| **Chart status** | Pipeline stats, next-step banner; stat cards filter Map |
+| **Actions** | Update chart, Get ingest prompt, upload shortcut |
 
-First visit to a dock on a reef auto-expands **Map**. The onboarding guide dismisses per reef (stored in browser `localStorage`).
+Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload. The onboarding guide dismisses per reef (browser `localStorage`).
 
 ## Chart status stats
 
@@ -89,4 +90,4 @@ Legacy aliases: `/airlock`, `/upload`, `/update-map`
 
 ## Team setup
 
-See [docs/SCUBA-IDEAVERSE.md](../docs/SCUBA-IDEAVERSE.md) for the full guide.
+See [docs/TEAM-COLLABORATION.md](../docs/TEAM-COLLABORATION.md).

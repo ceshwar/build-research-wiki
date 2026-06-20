@@ -13,7 +13,7 @@ This guide helps you go from **clone** to **working research wiki** in one sessi
 
 - [ ] **Clone** the repo and open the folder in your LLM coding agent (Cursor, Claude Code, Codex, etc.).
 - [ ] **Start SCUBA** — `./manager/scripts/dev.sh` → **http://127.0.0.1:5173**.
-- [ ] **Pick Shallow reef** — explore docks, the workspace rail (**Chart status · Map · Actions**), and **Docs**.
+- [ ] **Pick Shallow reef** — explore the workspace (`Reef › Dock` path, Map / Chart status / Actions tabs) and **Docs**.
 - [ ] **Browse in Obsidian** — open `examples/minimal-vault`; read `index.md` → `wiki/overview.md` → one paper page.
 - [ ] **Try Get ingest prompt** — on Shallow reef, ⚓ My Portfolio → **Get ingest prompt** → paste into your agent to Deep Dive the four Quick Dip papers.
 - [ ] **Spawn your own reef** — **+ Connect your reef…** or `python3 builder/new_vault.py ~/path "Lab Name"`.
@@ -67,12 +67,13 @@ Best for teams who want a visual dock-and-chart workflow without typing ingest c
 1. Clone the repo and run `./manager/scripts/dev.sh`.
 2. Open **http://127.0.0.1:5173**.
 3. Pick **Shallow reef** (demo) or **Blank reef** (empty scaffold). Use **+ Connect your reef…** to register your own Obsidian folder (saved locally, gitignored).
-4. **Dock** — collapse-open the upload panel, drop PDFs, **Confirm Upload** → `raw/{channel}/`.
-5. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart**.
-6. **Map** — browse charted papers (List or By theme); concepts show after Deep Dive / LLM ingest.
-7. **Deep Dive** — **Get ingest prompt** copies an agent-ready batch prompt; or edit `builder/entries/` and `builder/deepdives/` by hand.
-8. Check **Chart status** — **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** tell you what still needs work.
-9. Open the reef in Obsidian (header icon or map links).
+4. **Workspace** — after picking a dock, you see `Reef › Dock` and tabs. **Map** opens by default.
+5. **Dock** files — click the dock name in the path (or **Upload PDFs** in Actions), drop PDFs, **Confirm Upload** → `raw/{channel}/`.
+6. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart**.
+7. **Map** — **List** (sortable table) or **By theme** (portfolio reefs); expand **Note** for one-liner + PDF.
+8. **Deep Dive** — **Get ingest prompt** copies an agent-ready batch prompt; or edit `builder/entries/` and `builder/deepdives/` by hand.
+9. Check **Chart status** — stat cards filter the map; **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** show what still needs work.
+10. Open the reef in Obsidian (header icon or map links).
 
 See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** panel for SCUBA vocabulary.
 

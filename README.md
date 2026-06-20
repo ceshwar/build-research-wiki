@@ -19,9 +19,9 @@ Karpathy — compile knowledge once and keep it current.
 
 ---
 
-## The control panel (v0.4)
+## The control panel (v0.4.2)
 
-A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, per-dock **Map** browsing (themes, concepts, syntheses), and **Chart status** tracking.
+A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, per-dock **Map** browsing, and **Chart status** tracking.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -29,12 +29,13 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 
 | Step | Action |
 |------|--------|
-| 1 | Pick a **reef**, then a **dock** (portfolio, lit review, …) |
-| 2 | **Dock** files → `raw/{channel}/` (portfolio uploads auto-run Quick Dip) |
-| 3 | Check **Chart status** — on chart, quick dip, enrich next |
-| 4 | Browse the **Map** — papers, themes, concepts; PDF linked in each row |
-| 5 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
-| 6 | Open reef in Obsidian |
+| 1 | Pick a **reef**, then a **dock** (hover pills for what each channel is) |
+| 2 | Work in the **workspace** — `Reef › Dock` path, tabs for Map / Chart status / Actions |
+| 3 | **Dock** files — click the dock name in the path, or **Upload PDFs** in Actions |
+| 4 | Check **Chart status** — on chart, quick dip, enrich next |
+| 5 | Browse the **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF |
+| 6 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
+| 7 | Open reef in Obsidian |
 
 Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)** · Chart spec: **[docs/PAPER-CHART-SPEC.md](docs/PAPER-CHART-SPEC.md)**
 

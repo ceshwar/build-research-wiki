@@ -63,37 +63,18 @@ const MAP_STATUS_CHIPS: { id: StatFilter; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'processed', label: 'Deep dive' },
   { id: 'quick_dip', label: 'Quick dip' },
-  { id: 'needs_deep_dive', label: 'Enrich next' },
-  { id: 'charted', label: 'Charted' },
 ]
 
-function SectionHeader({
-  title,
-  meta,
-  expanded,
-  onToggle,
-  extra,
-}: {
-  title: ReactNode
-  meta?: string
-  expanded: boolean
-  onToggle: () => void
-  extra?: ReactNode
-}) {
-  return (
-    <div className="section-shell__head">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        {title}
-        {meta && <span className="section-shell__meta">{meta}</span>}
-      </div>
-      <div className="section-shell__actions">
-        {extra}
-        <button type="button" className="icon-btn" onClick={onToggle} aria-expanded={expanded}>
-          {expanded ? 'Collapse' : 'Expand'}
-        </button>
-      </div>
-    </div>
-  )
+function dockPillTooltip(
+  ch: { description: string; raw_path: string },
+  count: number,
+  awaiting: number,
+): string {
+  const files =
+    awaiting > 0
+      ? `${count} file${count === 1 ? '' : 's'} · ${awaiting} awaiting chart`
+      : `${count} file${count === 1 ? '' : 's'} in ${ch.raw_path}/`
+  return `${ch.description} — ${files}`
 }
 
 function PipelineLegend() {
@@ -301,6 +282,45 @@ function FlowTrail({
   )
 }
 
+function PathBreadcrumb({
+  reefName,
+  dock,
+  onReefClick,
+  onDockClick,
+  meta,
+}: {
+  reefName: string
+  dock: { emoji: string; name: string }
+  onReefClick?: () => void
+  onDockClick?: () => void
+  meta?: ReactNode
+}) {
+  return (
+    <nav className="path-breadcrumb" aria-label="Current reef and dock">
+      {onReefClick ? (
+        <button type="button" className="path-breadcrumb__part path-breadcrumb__part--link" onClick={onReefClick}>
+          {reefName}
+        </button>
+      ) : (
+        <span className="path-breadcrumb__part">{reefName}</span>
+      )}
+      <span className="path-breadcrumb__sep" aria-hidden>
+        ›
+      </span>
+      {onDockClick ? (
+        <button type="button" className="path-breadcrumb__part path-breadcrumb__part--link" onClick={onDockClick}>
+          {dock.emoji} {dock.name}
+        </button>
+      ) : (
+        <span className="path-breadcrumb__part path-breadcrumb__part--current">
+          {dock.emoji} {dock.name}
+        </span>
+      )}
+      {meta}
+    </nav>
+  )
+}
+
 function filterThemeGroups(
   groups: ReturnType<typeof groupEntriesByTheme>,
   filter: StatFilter,
@@ -321,7 +341,6 @@ const DOCK_WORKSPACE_SECTIONS: {
   id: WorkspaceSectionId
   label: string
   hint: string
-  group?: 'enrich'
   badge?: (ctx: { enrich: number; pending: number }) => number | null
 }[] = [
   { id: 'section-map', label: 'Map', hint: 'Browse chart' },
@@ -329,14 +348,12 @@ const DOCK_WORKSPACE_SECTIONS: {
     id: 'section-dive',
     label: 'Chart status',
     hint: 'Track progress',
-    group: 'enrich',
     badge: (c) => (c.enrich > 0 ? c.enrich : null),
   },
   {
     id: 'section-actions',
     label: 'Actions',
     hint: 'Update & enrich',
-    group: 'enrich',
     badge: (c) => (c.pending > 0 ? c.pending : c.enrich > 0 ? c.enrich : null),
   },
 ]
@@ -495,13 +512,11 @@ export default function App() {
   const [promptCopied, setPromptCopied] = useState(false)
   const [statFilter, setStatFilter] = useState<StatFilter>('all')
   const [mapTab, setMapTab] = useState<'list' | 'theme'>('list')
-  const [diveExpanded, setDiveExpanded] = useState(false)
-  const [mapExpanded, setMapExpanded] = useState(true)
-  const [actionsExpanded, setActionsExpanded] = useState(false)
   const [promptExpanded, setPromptExpanded] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  const [showDockPicker, setShowDockPicker] = useState(false)
   const [activeWorkspaceSection, setActiveWorkspaceSection] =
     useState<WorkspaceSectionId>('section-map')
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
@@ -510,8 +525,6 @@ export default function App() {
     key: 'paper',
     dir: 'desc',
   })
-  const [docksExpanded, setDocksExpanded] = useState(true)
-  const [stickyTrailVisible, setStickyTrailVisible] = useState(false)
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -555,6 +568,8 @@ export default function App() {
     setPromptExpanded(false)
     setStatFilter('all')
     setUploadExpanded(false)
+    setShowDockPicker(false)
+    setActiveWorkspaceSection('section-map')
     setExpandedPaperSlugs(new Set())
   }, [vaultId, channelId])
 
@@ -568,20 +583,6 @@ export default function App() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
-  useEffect(() => {
-    const el = document.getElementById('section-docks')
-    if (!el || !vaultId || !channelId) {
-      setStickyTrailVisible(false)
-      return
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => setStickyTrailVisible(!entry.isIntersecting),
-      { threshold: 0 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [vaultId, channelId, docksExpanded, uploadExpanded])
 
   useEffect(() => {
     if (!navOpen) return
@@ -606,66 +607,40 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey)
   }, [howToOpen])
 
-  useEffect(() => {
-    const sectionIds: WorkspaceSectionId[] = ['section-map', 'section-dive', 'section-actions']
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
-        const top = visible[0]?.target.id as WorkspaceSectionId | undefined
-        if (top && sectionIds.includes(top)) {
-          setActiveWorkspaceSection(top)
-        }
-      },
-      { rootMargin: '-12% 0px -50% 0px', threshold: [0, 0.2, 0.4, 0.6, 0.8] },
-    )
-    sectionIds.forEach((id) => {
-      const el = document.getElementById(id)
-      if (el) observer.observe(el)
-    })
-    return () => observer.disconnect()
-  }, [vaultId, channelId, diveExpanded, mapExpanded, actionsExpanded])
-
   const scrollToReefTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  const openDockPicker = useCallback((opts?: { expandUpload?: boolean }) => {
+    setShowDockPicker(true)
+    if (opts?.expandUpload) setUploadExpanded(true)
+    setNavOpen(false)
+    requestAnimationFrame(() => {
+      document.getElementById('section-docks')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }, [])
 
   const scrollToSection = useCallback(
     (id: SectionId, opts?: { expandUpload?: boolean; expandActions?: boolean }) => {
       if (id === 'section-docks') {
-        setDocksExpanded(true)
-      } else if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
-        setDocksExpanded(false)
-        setUploadExpanded(false)
+        openDockPicker({ expandUpload: opts?.expandUpload })
+        return
       }
-      if (id === 'section-dive') setDiveExpanded(true)
-      if (id === 'section-map') setMapExpanded(true)
-      if (id === 'section-actions') setActionsExpanded(true)
-      if (opts?.expandUpload) {
-        setDocksExpanded(true)
-        setUploadExpanded(true)
-      }
-      if (opts?.expandActions) setActionsExpanded(true)
+      setShowDockPicker(false)
+      setUploadExpanded(false)
       if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
         setActiveWorkspaceSection(id)
       }
       setNavOpen(false)
-      requestAnimationFrame(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
     },
-    [],
+    [openDockPicker],
   )
 
-  const focusWorkspaceSection = useCallback(
-    (id: WorkspaceSectionId) => {
-      setDocksExpanded(false)
-      setUploadExpanded(false)
-      scrollToSection(id, { expandActions: id === 'section-actions' })
-    },
-    [scrollToSection],
-  )
+  const focusWorkspaceSection = useCallback((id: WorkspaceSectionId) => {
+    setShowDockPicker(false)
+    setActiveWorkspaceSection(id)
+    setNavOpen(false)
+  }, [])
 
   const dismissDockGuide = useCallback(() => {
     localStorage.setItem(dockGuideDismissedKey(vaultId), '1')
@@ -675,20 +650,16 @@ export default function App() {
   const selectDock = useCallback(
     (nextChannelId: string) => {
       const isFirstVisit = localStorage.getItem(dockSeenKey(vaultId, nextChannelId)) !== '1'
-      setDocksExpanded(true)
+      setShowDockPicker(false)
       setChannelId(nextChannelId)
+      setActiveWorkspaceSection('section-map')
       requestAnimationFrame(() => {
-        document.querySelector('.dock-workspace__rail')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-        })
         if (isFirstVisit) {
           localStorage.setItem(dockSeenKey(vaultId, nextChannelId), '1')
-          focusWorkspaceSection('section-map')
         }
       })
     },
-    [vaultId, focusWorkspaceSection],
+    [vaultId],
   )
 
   const toggleMapSort = useCallback((key: MapSortKey) => {
@@ -701,7 +672,6 @@ export default function App() {
 
   const setMapStatusFilter = useCallback((filter: StatFilter) => {
     setStatFilter(filter)
-    setMapExpanded(true)
     setMapTab('list')
     focusWorkspaceSection('section-map')
   }, [focusWorkspaceSection])
@@ -719,7 +689,6 @@ export default function App() {
     (filter: StatFilter) => {
       const next = statFilter === filter ? 'all' : filter
       setStatFilter(next)
-      setMapExpanded(true)
       setMapTab('list')
       focusWorkspaceSection('section-map')
     },
@@ -808,7 +777,8 @@ export default function App() {
       setIngestPrompt(data.prompt)
       setPromptCopied(false)
       setPromptExpanded(true)
-      setActionsExpanded(true)
+      setShowDockPicker(false)
+      setActiveWorkspaceSection('section-actions')
     },
   })
 
@@ -919,8 +889,7 @@ export default function App() {
       (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
     ) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
-  const activeWorkspaceLabel =
-    DOCK_WORKSPACE_SECTIONS.find((s) => s.id === activeWorkspaceSection)?.label ?? 'Map'
+  const inWorkspace = !!(vault && channel && !showDockPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
 
@@ -1040,7 +1009,6 @@ export default function App() {
                         onClick={() =>
                           scrollToSection(item.id, {
                             expandUpload: item.id === 'section-docks',
-                            expandActions: item.id === 'section-actions',
                           })
                         }
                       >
@@ -1057,25 +1025,6 @@ export default function App() {
           </div>
         </div>
       </header>
-
-      {vault && channel && (
-        <div
-          className={`sticky-flow-trail ${stickyTrailVisible ? 'sticky-flow-trail--visible' : ''}`}
-          aria-hidden={!stickyTrailVisible}
-        >
-          <div className="sticky-flow-trail__inner">
-            <FlowTrail
-              reefName={vault.name}
-              dock={{ emoji: channel.emoji, name: channel.name }}
-              activeLabel={activeWorkspaceLabel}
-              onReefClick={scrollToReefTop}
-              onDockClick={() => scrollToSection('section-docks')}
-              className="flow-breadcrumb--sticky"
-              ariaLabel="Current location"
-            />
-          </div>
-        </div>
-      )}
 
       <div className="main-content">
 
@@ -1147,7 +1096,7 @@ export default function App() {
         </section>
       )}
 
-      {vault?.user_added && (
+      {vault?.user_added && !inWorkspace && (
         <div className="panel-card mb-5 flex items-center justify-between px-3 py-2 text-xs text-[var(--muted)]">
           <span className="truncate" title={vault.path}>{vault.path}</span>
           <button
@@ -1160,35 +1109,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Docks + optional upload */}
-      <section
-        id="section-docks"
-        className={`workflow-panel mb-6 scroll-mt-4 ${docksExpanded ? '' : 'workflow-panel--collapsed'}`}
-      >
+      {/* Dock picker — switch dock or upload; hidden once a dock workspace is active */}
+      {vault && showDockPicker && (
+      <section id="section-docks" className="workflow-panel mb-6 scroll-mt-4">
         <div className="workflow-panel__head">
-          <FlowTrail reefName={vault?.name ?? 'Reef'} activeLabel="Docks" ariaLabel="Reef to docks" />
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => setDocksExpanded((e) => !e)}
-            aria-expanded={docksExpanded}
-          >
-            {docksExpanded ? 'Collapse' : 'Expand'}
-          </button>
+          <FlowTrail reefName={vault.name} activeLabel="Docks" ariaLabel="Reef to docks" />
+          {channel && (
+            <button type="button" className="icon-btn" onClick={() => setShowDockPicker(false)}>
+              Back to workspace
+            </button>
+          )}
         </div>
-        {!docksExpanded && channel && (
-          <button
-            type="button"
-            className="workflow-panel__summary"
-            onClick={() => setDocksExpanded(true)}
-          >
-            <span>
-              {channel.emoji} {channel.name}
-            </span>
-            <span className="workflow-panel__summary-hint">Switch dock or upload</span>
-          </button>
-        )}
-        {docksExpanded && (
         <div className="workflow-panel__docks">
           <SectionLabel>Docks</SectionLabel>
           <div className="flex flex-wrap gap-2">
@@ -1202,11 +1133,7 @@ export default function App() {
                   type="button"
                   onClick={() => selectDock(ch.id)}
                   className={`dock-pill ${channelId === ch.id ? 'dock-pill--active' : ''}`}
-                  title={
-                    awaiting > 0
-                      ? `${count} file${count === 1 ? '' : 's'} · ${awaiting} awaiting chart`
-                      : `${count} file${count === 1 ? '' : 's'} in ${ch.raw_path}/`
-                  }
+                  title={dockPillTooltip(ch, count, awaiting)}
                 >
                   <span className="dock-pill__label text-sm font-medium text-[var(--text)]">
                     {ch.emoji} {ch.name}
@@ -1223,14 +1150,6 @@ export default function App() {
               + Add dock
             </button>
           </div>
-          {channel && (
-            <p className="mt-2 text-xs text-[var(--muted)]">
-              {channel.description} ·{' '}
-              <ReefLink vaultPath={vault?.path} reefPath={channel.raw_path} className="link-secondary obsidian-mark">
-                <code className="bg-transparent p-0 text-inherit">{channel.raw_path}/</code>
-              </ReefLink>
-            </p>
-          )}
           {isIngestPreview && (
             <div className="notice-callout mt-3">
               <strong>In development.</strong> Files dock safely in <code>{channel?.raw_path}/</code>.
@@ -1259,7 +1178,7 @@ export default function App() {
                 <button
                   type="button"
                   className="link-accent text-xs underline"
-                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
+                  onClick={() => scrollToSection('section-actions')}
                 >
                   update chart
                 </button>
@@ -1321,8 +1240,8 @@ export default function App() {
             </div>
           )}
         </div>
-        )}
       </section>
+      )}
 
       {showAddDock && (
         <section className="panel-card mb-5">
@@ -1365,132 +1284,97 @@ export default function App() {
         </section>
       )}
 
-      {/* Dock workspace — chart status, map, actions for the selected dock */}
-      {vault && channel && (
-        <div className="dock-workspace">
-          <div className="dock-workspace__rail">
-            <FlowTrail
+      {inWorkspace && vault && channel && (
+        <div className="workspace-shell">
+          <div className="workspace-shell__header">
+            <PathBreadcrumb
               reefName={vault.name}
               dock={{ emoji: channel.emoji, name: channel.name }}
-              activeLabel={activeWorkspaceLabel}
-              onDockClick={() => scrollToSection('section-docks', { expandUpload: false })}
-              className="flow-breadcrumb--workspace"
+              onReefClick={scrollToReefTop}
+              onDockClick={() => openDockPicker()}
               meta={
-                <span className="dock-workspace__meta">
+                <span className="workspace-shell__meta">
                   {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
                   {(channelStats?.pending ?? pendingCount) > 0 &&
                     ` · ${channelStats?.pending ?? pendingCount} awaiting`}
                 </span>
               }
             />
-            <div className="dock-workspace__tabs" role="tablist" aria-label="Dock workspace">
-              {(() => {
-                const mapTab = DOCK_WORKSPACE_SECTIONS.find((s) => s.id === 'section-map')!
-                const enrichTabs = DOCK_WORKSPACE_SECTIONS.filter((s) => s.group === 'enrich')
-                const renderTab = (item: (typeof DOCK_WORKSPACE_SECTIONS)[number], primary?: boolean) => {
-                  const badge = item.badge?.({
-                    enrich: enrichEntries.length,
-                    pending: pendingCount,
-                  })
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeWorkspaceSection === item.id}
-                      className={`dock-workspace__tab ${
-                        primary ? 'dock-workspace__tab--primary' : ''
-                      } ${activeWorkspaceSection === item.id ? 'dock-workspace__tab--active' : ''}`}
-                      onClick={() => focusWorkspaceSection(item.id)}
-                    >
-                      <span className="dock-workspace__tab-label">
-                        {item.label}
-                        {badge != null && badge > 0 && (
-                          <span className="dock-workspace__tab-badge">{badge}</span>
-                        )}
-                      </span>
-                      <span className="dock-workspace__tab-hint">{item.hint}</span>
-                    </button>
-                  )
-                }
+            <div className="workspace-shell__tabs" role="tablist" aria-label="Dock workspace">
+              {DOCK_WORKSPACE_SECTIONS.map((item) => {
+                const badge = item.badge?.({
+                  enrich: enrichEntries.length,
+                  pending: pendingCount,
+                })
                 return (
-                  <>
-                    {renderTab(mapTab, true)}
-                    <div className="dock-workspace__tabs-enrich">
-                      <span className="dock-workspace__group-label">Chart & enrich</span>
-                      <div className="dock-workspace__tabs-row">
-                        {enrichTabs.map((item) => renderTab(item))}
-                      </div>
-                    </div>
-                  </>
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeWorkspaceSection === item.id}
+                    className={`workspace-shell__tab ${
+                      activeWorkspaceSection === item.id ? 'workspace-shell__tab--active' : ''
+                    }`}
+                    title={item.hint}
+                    onClick={() => focusWorkspaceSection(item.id)}
+                  >
+                    <span>{item.label}</span>
+                    {badge != null && badge > 0 && (
+                      <span className="workspace-shell__tab-badge">{badge}</span>
+                    )}
+                  </button>
                 )
-              })()}
+              })}
             </div>
             {!dockGuideDismissed && (
-              <div className="dock-workspace__guide">
+              <div className="workspace-shell__guide">
                 <span>
-                  <strong>Map</strong> is your chart browser · <strong>Chart status</strong> tracks
-                  progress · <strong>Actions</strong> updates the chart and runs Deep Dive. Collapse
-                  sections you do not need.
+                  <strong>Map</strong> browses your chart · <strong>Chart status</strong> tracks
+                  pipeline progress · <strong>Actions</strong> uploads, updates the chart, and runs
+                  Deep Dive. Click the dock name above to switch docks.
                 </span>
-                <button type="button" className="dock-workspace__guide-dismiss" onClick={dismissDockGuide}>
+                <button type="button" className="workspace-shell__guide-dismiss" onClick={dismissDockGuide}>
                   Got it
                 </button>
               </div>
             )}
           </div>
 
-      {/* Map — tabbed exploration for active dock */}
-      <section
-        id="section-map"
-        className={`section-shell mb-6 scroll-mt-4 ${
-          activeWorkspaceSection === 'section-map' ? 'section-shell--in-view' : ''
-        }`}
-      >
-        <SectionHeader
-          title={<SectionLabel>Map</SectionLabel>}
-          expanded={mapExpanded}
-          onToggle={() => setMapExpanded((e) => !e)}
-          extra={
-            <>
-              {statFilter !== 'all' && (
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => setStatFilter('all')}
-                >
-                  Clear filter
-                </button>
-              )}
-              {chartMap && chartMap.entries.length > 0 ? (
-                <div className="view-tabs" role="tablist">
+          <div className="workspace-shell__body">
+      {activeWorkspaceSection === 'section-map' && (
+      <div id="section-map" className="workspace-panel">
+        <div className="workspace-panel__toolbar">
+          {statFilter !== 'all' && (
+            <button type="button" className="icon-btn" onClick={() => setStatFilter('all')}>
+              Clear filter
+            </button>
+          )}
+          {chartMap && chartMap.entries.length > 0 ? (
+            <div className="view-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mapTab === 'list'}
+                className={`view-tabs__tab ${mapTab === 'list' ? 'view-tabs__tab--active' : ''}`}
+                onClick={() => setMapTab('list')}
+              >
+                List
+              </button>
+              {isPortfolio && (
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={mapTab === 'list'}
-                  className={`view-tabs__tab ${mapTab === 'list' ? 'view-tabs__tab--active' : ''}`}
-                  onClick={() => setMapTab('list')}
+                  aria-selected={mapTab === 'theme'}
+                  className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
+                  onClick={() => setMapTab('theme')}
                 >
-                  List
+                  By theme
                 </button>
-                {isPortfolio && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mapTab === 'theme'}
-                    className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
-                    onClick={() => setMapTab('theme')}
-                  >
-                    By theme
-                  </button>
-                )}
-              </div>
-              ) : null}
-            </>
-          }
-        />
-        {mapExpanded && (
-          <div className={`section-shell__body ${mapTab === 'list' ? '' : ''}`}>
+              )}
+            </div>
+          ) : null}
+        </div>
+          <div className="workspace-panel__content">
             {chartMapLoading && (
               <p className="text-sm text-[var(--muted)]">Loading chart…</p>
             )}
@@ -1506,7 +1390,7 @@ export default function App() {
                 <button
                   type="button"
                   className="btn-primary mt-3 px-4 py-2 text-sm"
-                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
+                  onClick={() => scrollToSection('section-actions')}
                 >
                   Update chart
                 </button>
@@ -1514,7 +1398,7 @@ export default function App() {
             )}
             {chartMap && chartMap.entries.length === 0 && statFilter !== 'pending' && (
               <div className="empty-map">
-                <p>No papers on chart yet. Upload PDFs above, then run Update chart.</p>
+                <p>No papers on chart yet. Upload PDFs to this dock, then run Update chart.</p>
                 <button
                   type="button"
                   className="btn-secondary mt-3 px-4 py-2 text-sm"
@@ -1713,24 +1597,15 @@ export default function App() {
               </>
             )}
           </div>
-        )}
-      </section>
+      </div>
+      )}
 
-      {/* Chart status — pipeline, stats, next step */}
-      <section
-        id="section-dive"
-        className={`section-shell mb-6 scroll-mt-4 ${
-          activeWorkspaceSection === 'section-dive' ? 'section-shell--in-view' : ''
-        }`}
-      >
-          <SectionHeader
-            title={<SectionLabel>Chart status</SectionLabel>}
-            meta={`Chart updated ${formatChartUpdated(vault.last_build)}`}
-            expanded={diveExpanded}
-            onToggle={() => setDiveExpanded((e) => !e)}
-          />
-          {diveExpanded && (
-            <div className="section-shell__body">
+      {activeWorkspaceSection === 'section-dive' && (
+      <div id="section-dive" className="workspace-panel">
+        <p className="workspace-panel__meta">
+          Chart updated {formatChartUpdated(vault.last_build)}
+        </p>
+        <div className="workspace-panel__content">
               <PipelineLegend />
 
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -1783,9 +1658,8 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
-                        setActionsExpanded(true)
                         ingestPromptMutation.mutate()
-                        scrollToSection('section-actions', { expandActions: true })
+                        focusWorkspaceSection('section-actions')
                       }}
                       disabled={ingestPromptMutation.isPending}
                       className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
@@ -1831,24 +1705,22 @@ export default function App() {
                   </ul>
                 </div>
               )}
-            </div>
-          )}
-        </section>
+        </div>
+      </div>
+      )}
 
-      {/* Actions — chart + agent */}
-      <section
-        id="section-actions"
-        className={`section-shell mb-6 scroll-mt-4 ${
-          activeWorkspaceSection === 'section-actions' ? 'section-shell--in-view' : ''
-        }`}
-      >
-        <SectionHeader
-          title={<SectionLabel>Actions</SectionLabel>}
-          expanded={actionsExpanded}
-          onToggle={() => setActionsExpanded((e) => !e)}
-        />
-        {actionsExpanded && (
-          <div className="section-shell__body">
+      {activeWorkspaceSection === 'section-actions' && (
+      <div id="section-actions" className="workspace-panel">
+        <div className="workspace-panel__content">
+            <div className="workspace-panel__upload-hint">
+              <button
+                type="button"
+                className="btn-secondary px-3 py-1.5 text-sm"
+                onClick={() => openDockPicker({ expandUpload: true })}
+              >
+                Upload PDFs to {channel.emoji} {channel.name}
+              </button>
+            </div>
             <div className="action-grid">
               <div className="action-block">
                 <h4>Update chart</h4>
@@ -1932,9 +1804,11 @@ export default function App() {
                 )}
               </div>
             )}
+        </div>
+      </div>
+      )}
+
           </div>
-        )}
-      </section>
         </div>
       )}
 

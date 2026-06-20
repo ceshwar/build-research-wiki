@@ -44,13 +44,14 @@ Dock (raw/)  →  Quick Dip (Update chart)  →  Chart (wiki/)  →  Obsidian
 ```
 
 1. **Pick a reef** — Shallow reef for demo, Blank reef or your own for real work.
-2. **Pick a dock** — ⚓ My Portfolio, 🌊 Literature Review, … (first visit opens **Chart status**).
-3. **Dock** — expand upload, drop files, **Confirm Upload** → `raw/{channel}/`
-4. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart** in Actions
-5. **Chart status** — pipeline stats and next-step banner for this dock
-6. **Map** — browse charted items (List or By theme); concepts and syntheses from LLM ingest
-7. **Deep Dive** — **Get ingest prompt** for your coding agent, or edit entries by hand
-8. **Open reef in Obsidian** (header icon or map links)
+2. **Pick a dock** — hover dock pills for what each channel is for; first dock auto-opens **Map**.
+3. **Workspace** — path header shows `Reef › Dock`; tabs switch between **Map**, **Chart status**, and **Actions** (one panel at a time).
+4. **Dock** — click the dock name in the path to switch docks or upload → `raw/{channel}/`
+5. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart** in Actions
+6. **Chart status** — pipeline stats and next-step banner for this dock
+7. **Map** — browse charted items (**List** table or **By theme** on portfolio reefs); expand **Note** for one-liner + PDF
+8. **Deep Dive** — **Get ingest prompt** for your coding agent, or edit entries by hand
+9. **Open reef in Obsidian** (header icon or map links)
 
 Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 
@@ -61,22 +62,21 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 | Area | What it does |
 |------|----------------|
 | **Header** | Reef dropdown (Starter reefs / Your reefs / Connect), Obsidian link, **Docs**, burger menu |
-| **Docks** | Dock pills + collapsible upload |
-| **Dock workspace rail** | **Map** first, then **Chart & enrich** (Chart status + Actions) — scrolls with the page |
+| **Dock picker** | Opens when you click the dock name in the path — dock pills (hover for description), upload |
+| **Workspace shell** | `Reef › Dock` path + tabs; only one of Map / Chart status / Actions visible |
 | **Chart status** | Pipeline legend, clickable stat cards, next-step banner |
-| **Map** | List \| By theme; paper row links PDF; **Concepts** column shows ingest output |
-| **Actions** | **Update chart**, **Get ingest prompt** |
+| **Map** | **List** (sortable table) or **By theme** (portfolio only); **Note** expands one-liner + PDF |
+| **Actions** | **Update chart**, **Get ingest prompt**, upload shortcut |
 
 Open **Docs** for in-app glossary (reefs, SCUBA terms, pipeline states).
 
-### Dock workspace (focus + discoverability)
+### Focused dock workspace
 
-When you select a dock, everything below the dock pills scopes to that channel:
+When a reef and dock are selected, you work inside one card:
 
-- **Rail** — shows `⚓ My Portfolio · 7 on chart` and tabs. **Map** is primary; **Chart status** and **Actions** are grouped under **Chart & enrich**. Click a tab to jump; scroll updates the active tab.
-- **Collapsible sections** — collapse Map or Actions if you only need Chart status.
-- **Per-reef guide** — a one-line explainer appears until you dismiss it (**Got it**); it resets when you switch to a different reef.
-- **First dock visit** — the first time you open a dock on a reef, **Map** expands automatically.
+- **Path** — `Shallow reef › ⚓ My Portfolio`. Click the reef name to scroll to the header picker; click the dock name to open the dock picker (switch dock or upload).
+- **Tabs** — **Map** (default), **Chart status**, **Actions**. Hover a tab for a short hint. Only the active tab’s content is shown.
+- **Per-reef guide** — one-line explainer until dismissed (**Got it**); resets when you switch reefs.
 
 ---
 
@@ -113,13 +113,14 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 
 ---
 
-## Map columns
+## Map views
 
-| Column | Source |
-|--------|--------|
-| **Status** | Quick dip / Deep dive / Enrich next |
-| **Paper** | Wiki page link; **Note** expands one-liner + **View PDF** |
-| **Themes** | `builder/entries/` wikilinks + `data.py` |
+| View | When | What it shows |
+|------|------|----------------|
+| **List** | Always (portfolio + ingest docks) | Sortable table: Status, Paper (with **Note**), Themes |
+| **By theme** | Portfolio reefs only | Papers grouped by research theme |
+
+Map status chips: **All**, **Deep dive**, **Quick dip**. Chart status **stat cards** also filter the map when clicked (e.g. **Enrich next** shows papers needing Deep Dive).
 
 ---
 

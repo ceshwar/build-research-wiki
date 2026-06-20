@@ -333,6 +333,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   min-width: 10.5rem;
+  cursor: help;
 }
 
 .dock-pill__label {
@@ -357,6 +358,7 @@ body {
 .dock-pill:hover {
   border-color: var(--accent);
   color: var(--accent);
+  cursor: pointer;
 }
 
 .dock-pill--active {
@@ -364,6 +366,7 @@ body {
   border-color: var(--accent);
   color: var(--navy);
   font-weight: 600;
+  cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -760,6 +763,159 @@ code {
   font-size: 0.6875rem;
   font-weight: 500;
   color: var(--muted);
+}
+
+/* ---- Focused dock workspace (single panel) ---- */
+
+.path-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.path-breadcrumb__part {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.path-breadcrumb__part--current {
+  color: var(--accent);
+}
+
+.path-breadcrumb__part--link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+}
+
+.path-breadcrumb__part--link:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+.path-breadcrumb__sep {
+  color: var(--muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+.workspace-shell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: 0 4px 18px var(--shadow);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.workspace-shell__header {
+  padding: 0.85rem 1.125rem 0;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(160deg, var(--card) 0%, rgba(27, 42, 74, 0.04) 100%);
+}
+
+.workspace-shell__meta {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.workspace-shell__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  margin-top: 0.7rem;
+}
+
+.workspace-shell__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.workspace-shell__tab:hover {
+  color: var(--text);
+}
+
+.workspace-shell__tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.workspace-shell__tab-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: rgba(234, 88, 12, 0.12);
+  color: var(--accent);
+}
+
+.workspace-shell__guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: rgba(27, 42, 74, 0.05);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.workspace-shell__guide-dismiss {
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.workspace-shell__body {
+  padding: 1rem 1.125rem 1.125rem;
+}
+
+.workspace-panel__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-panel__meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.workspace-panel__upload-hint {
+  margin-bottom: 1rem;
 }
 
 .status-pill {

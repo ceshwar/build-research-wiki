@@ -1,19 +1,37 @@
 # Changelog
 
-## v0.4.1 — Dock workspace & Map concepts (2026-06-20)
+## v0.4.2 — Focused dock workspace (2026-06-20)
+
+### Changed
+
+- **Focused workspace** — once a reef and dock are selected, the UI shows a single panel: path header (`Reef › Dock`), tabs (**Map · Chart status · Actions**), and only the active tab’s content. Docks/upload open when you click the dock name in the path.
+- **Map filters** — status chips trimmed to **All**, **Deep dive**, and **Quick dip** (Chart status stat cards still filter the map).
+- **Dock picker** — descriptions removed from the panel; hover a dock pill for purpose + file counts.
+- **Map** — expandable **Note** per paper (wiki one-liner + View PDF); sortable columns; no Concepts column.
 
 ### Added
 
-- **Dock workspace rail** — sticky **Chart status · Map · Actions** tabs scoped to the active dock
-- **Map concepts column** — concept chips + synthesis links from `wiki/`; PDF moved into paper row
+- **Path breadcrumb** — `Reef › Dock` header in the workspace shell; workspace tab tooltips on hover.
+
+### Docs
+
+- Aligned `README.md`, `docs/SCUBA-IDEAVERSE.md`, `docs/GETTING-STARTED.md`, `manager/README.md`, and in-app **Docs** to the focused workspace layout.
+
+---
+
+## v0.4.1 — Dock workspace & Map notes (2026-06-20)
+
+### Added
+
+- **Dock workspace** — per-dock **Map · Chart status · Actions** tabs
+- **Map Note column** — expandable one-liner + **View PDF** from wiki overview
 - **Per-reef onboarding guide** — dismissible hint resets when you switch reefs
-- **First dock visit** — auto-expands Chart status the first time you open each dock on a reef
 
 ### Changed
 
 - **Dive Computer** renamed to **Chart status** in the UI
 - **Portfolio map** renamed to **Map** (dock-scoped)
-- `GET /chart-map` returns `concepts` and `syntheses` per entry
+- `GET /chart-map` returns `overview` per entry (replaces concepts column)
 
 ---
 
