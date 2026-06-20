@@ -9,6 +9,7 @@
 - **Navigate render modes** — List · By theme · Graph (unchanged)
 - **Positioning copy** — README, in-app Docs, `docs/PORTOLAN.md` (replaces `docs/SCUBA-IDEAVERSE.md` stub redirect)
 - **Graph** — theme slug alias resolution (`algorithmic-and-ai-audits` → `algorithmic-ai-audits`); Docs explain edge types
+- **Hero screenshot** — `docs/images/portolan-hero.png` (Navigate · Graph view)
 
 ### Unchanged
 

@@ -11,9 +11,9 @@ Portolan is the layer between Zotero and Obsidian. Zotero stores, Obsidian links
 Built by the [SCUBA Lab](https://eshwarchandrasekharan.com/lab.html) at UIUC and shared openly under [MIT](LICENSE). Implements the [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) by Andrej Karpathy. The system (**dock → chart → enrich → Obsidian**) is corpus-agnostic: point it at your own papers and notes.
 
 <p align="center">
-  <img src="docs/images/scuba-main-ui.png" alt="Portolan — docks, Status, and Navigate on Shallow reef" width="900">
+  <img src="docs/images/portolan-hero.png" alt="Portolan — Shallow reef, My Portfolio, Navigate List view" width="900">
 </p>
-<p align="center"><em>Shallow reef · My Portfolio — Navigate filtered to Deep dive (3 charted papers).</em></p>
+<p align="center"><em>Shallow reef · My Portfolio — Navigate · List with status, papers, and themes.</em></p>
 
 ---
 
@@ -127,4 +127,4 @@ Sessions forget when you close the tab. Portolan keeps a persistent, inspectable
 
 ## Credits
 
-Built by the **[SCUBA Lab](https://eshwarchandrasekharan.com/lab.html)** (Social Computing, User Behavior, and AI) at UIUC. Implements the **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** pattern by Andrej Karpathy, adding research-specific formats, a portfolio chart builder, and team docs. Shared openly so other labs can run it on their own corpus.
+Built by the **[SCUBA Lab](https://eshwarchandrasekharan.com/lab.html)** at UIUC. Implements the **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** pattern by Andrej Karpathy, adding research-specific formats, a portfolio chart builder, and team docs. Shared openly so other labs can run it on their own corpus.
