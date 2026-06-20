@@ -29,11 +29,11 @@ ID (never title)** and **MUST include a local-PDF reference fallback** for paper
   extension of `builder/ingest_prompt.py`. No automated tagger.
 - **§5 locked:** one vault + separate `wiki/lit/`; single JSON store; one-directional `seed_from`
   bridge first; slug `lastname-year-keyword` (`-b/-c` on collision, canonical identity = `ids.openalex`).
-- **Scope cap (⚠ B-flag — needs your confirm):** A's v2 = *hop-1 only, no snowball*; **materialize
-  ALL hop-1 refs as stubs**, promote to **mapped** at `seed_from ≥ 2`, **deep-dive** the top ~5–10 by
-  in-KB citation count. **This overrides the "top-N stubs" answer from B's interview** — Eshwar to
-  confirm "all hop-1 stubs" vs "top-N stubs" (stubs are cheap, so A's call is reasonable; the real
-  cost cap is at mapped/deepdive).
+- **Hop-1 scope (locked 2026-06-19):** *hop-1 only, no snowball.* After dedupe by OpenAlex ID and
+  `seed_from` accumulation, **materialize only the top N candidates as stubs** — default
+  **`sort_by: year` (desc, most recent first), `limit: 10`**. Users may override `sort_by` and
+  `limit` (`limit: all` = no cap). See **§1.1 Hop-1 stub selection** below. Promotion to
+  **mapped** / **deepdive** is a separate, smaller cap (agent-driven; unchanged).
 
 ---
 
@@ -80,12 +80,67 @@ so A's golden store only needs to supply `cites` (refs that are themselves in th
 - **mapped:** + one-liner · `themes`/`concepts` wikilinks (resolve to existing pages) · "How it relates to the portfolio."
 - **deepdive:** + standard deep-dive block (RQ · method · findings w/ numbers · claims & evidence · limitations).
 
+### §1.1 Hop-1 stub selection (configurable cap)
+
+After `fetch_lit.py` resolves portfolio papers → OpenAlex `referenced_works[]` → batched metadata,
+records are **deduped** (canonical `ids.openalex`), **`seed_from[]` merged**, then **ranked and
+truncated** before write to `builder/lit/store.json`.
+
+| Setting | Default | Values | Notes |
+|---------|---------|--------|-------|
+| **`sort_by`** | `year` | `year` · `seed_count` · `cited_by_count` | Descending. `year` = `publication_year` (missing year → sort last). `seed_count` = &#124;`seed_from`&#124;. `cited_by_count` = OpenAlex field. **Tie-break** (when the primary key ties): `cited_by_count` desc, then `seed_count` desc. |
+| **`limit`** | `10` | positive integer · `all` | Max stubs **materialized** this run. `all` = every deduped hop-1 candidate. |
+
+**Rationale:** Recent cited work is the usual priority for lit review; older classics remain
+reachable via `sort_by: cited_by_count` or `limit: all`. The expensive step is agent **mapped/deepdive**,
+not stub metadata.
+
+**Sort key (implementation):** Python-style tuple sort, descending:
+
+```python
+# sort_by selects which field is primary; ties always break the same way:
+primary = {"year": year_or_0, "seed_count": len(seed_from), "cited_by_count": cited_by_count}[sort_by]
+key = (primary, cited_by_count, len(seed_from))   # all descending; missing year → 0 (last)
+```
+
+Example: `sort_by: year`, two 2021 papers → higher `cited_by_count` wins; if still tied, higher `seed_count`.
+
+**Config surfaces (all must agree on defaults):**
+
+```yaml
+# builder/lit/config.yaml  (per vault; created on first expand if missing)
+hop1:
+  sort_by: year      # year | seed_count | cited_by_count
+  limit: 10            # integer or "all"
+mailto: you@example.edu   # OpenAlex polite pool (required for live fetch)
+```
+
+CLI mirrors config: `fetch_lit.py --sort-by year --limit 10` · `--limit all`  
+UI (planned): **Expand from my citations** → advanced row with the same two fields.
+
+**Merge policy on re-run:** Replace only records where `discovered_via: portfolio-citation` and
+`depth: stub` that are **not** in the new top-N set (demote to archive or drop — B implements
+**drop** for MVP; log count of dropped stubs). Preserve `manual-upload`, `mapped`, and `deepdive`
+records regardless of rank.
+
+**Store metadata (optional, on each stub record):**
+
+```json
+"selection": { "sort_by": "year", "limit": 10, "rank": 3, "candidates_total": 184 }
+```
+
+`rank` = 1-based position after sort (for UI/debug). `candidates_total` = hop-1 pool size before truncation.
+
+**Worked example (moderation thread, illustrative):** 4 seeds → 184 unique hop-1 refs. Default
+`year` + `limit: 10` might surface 2016–2021 Reddit/governance papers; `cited_by_count` + `limit: 10`
+might surface Lessig 1999; `limit: all` materializes all 184 stubs (user opt-in).
+
 ### Tiers
 | Tier | Produced by | Volume |
 |---|---|---|
-| **stub** | `engine_lit.py` from `store.json` (deterministic) | all hop-1 refs (coverage) |
-| **mapped** | manual agent via `ingest_prompt.py` (`seed_from ≥ 2`) | the cited-twice subset |
-| **deepdive** | manual agent, full PDF read | top ~5–10 by in-KB citations |
+| **stub** | `fetch_lit.py` → `engine_lit.py` | top **N** hop-1 by `sort_by` (default **10**, `year`) |
+| **mapped** | manual agent via `ingest_prompt.py` (`seed_from ≥ 2`) | subset of stubs — agent chooses |
+| **deepdive** | manual agent, full PDF read | small hand-picked set (e.g. top 5 by `seed_count` or user list) |
 
 ---
 
@@ -119,14 +174,17 @@ portfolio paper (data.py slug)
   → IF empty (arXiv preprint / recent):  parse local raw/papers/<pdf> References
         (GROBID/anystyle/LLM over the section, NOT regex) → reconcile each to OpenAlex   [required fallback]
   → fetch metadata per ref (batched): title/authors/venue/year/abstract/ids/cited_by_count/oa_url
-  → dedupe by canonical OpenAlex ID; accumulate seed_from[]; rank |seed_from| desc, then cited_by_count
+  → dedupe by canonical OpenAlex ID; accumulate seed_from[]
+  → rank by sort_by (default year desc); truncate to limit (default 10; or all)
   → builder/lit/store.json → engine_lit.py → wiki/lit/ stubs (deterministic)
   → (mapped)   agent tags themes/concepts + one-liner + bridge via ingest_prompt.py (manual model)
   → (deepdive) fetch OA pdf_url → builder/cache/lit-pdfs/ → full read → deep-dive block
 ```
 
 ## 5. Open inputs
-Confirm OpenAlex `mailto` = `eshwarchandrasekharan@gmail.com`; golden thread = content moderation;
-**resolve the stub scope ⚠ (all hop-1 vs top-N)**. Snowball / forward-citations = post-pilot.
+Confirm OpenAlex `mailto` for polite pool; golden thread = content moderation (acceptance slice).
+**Hop-1 stub scope: locked** — default `sort_by: year`, `limit: 10`, user-overridable incl. `all`.
+Snowball / forward-citations = post-pilot. **Pending:** `fetch_lit.py` + UI must implement §1.1
+(current code ranks by `seed_count` then `cited_by_count` and has no limit).
 
 See also: `CLAUDE.md` · `builder/README.md` · `docs/SCUBA-IDEAVERSE.md` · `second_brain/LIT-EXPANSION-SPEC.md` (canonical).

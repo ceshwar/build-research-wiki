@@ -12,3 +12,8 @@ Append-only record. Demo vault — see repo root `log.md` for your own vault.
 - `builder/docks.yaml`: ⚓ My Portfolio, 🌊 Literature Review, 🤿 Dive Log, 💡 Ideas & Notes.
 - Removed auto-mapped extras (choi-convex, cscw2024); entries moved to `builder/entries/my-portfolio/`.
 - Rebuilt chart from three PDFs in `raw/papers/` only.
+
+## [2026-06-19] pre-seed | Four HOB papers (Quick Dip only)
+- Added PDFs + Tier-1 chart entries: [[creator-hearts]], [[hidden-values-upvoted]], [[mod-perspectives-pos-reinforcement]], [[mind-your-ps-and-qs]].
+- Registry: `builder/auto_papers.json` (status `quick-dip`; no deepdives).
+- Tour vault now 7 papers: 3 charted + 4 enrich-next — demo **Get ingest prompt** in SCUBA.

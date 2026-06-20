@@ -18,18 +18,24 @@ CHARTED_ENTRY = "builder/entries/my-portfolio/language-of-approval.md"
 
 # ---- end-to-end on the demo vault ---------------------------------------
 
-def test_demo_vault_fully_processed():
+def test_demo_vault_counts():
     rep = completion.assess_vault(EXAMPLE_VAULT, {})
     totals = rep["totals"]
-    assert totals["on_chart"] == 3
+    assert totals["on_chart"] == 7
     assert totals["processed"] == 3
-    for key in ("quick_dip", "needs_deep_dive", "scaffolded", "pending"):
+    assert totals["quick_dip"] == 4
+    for key in ("needs_deep_dive", "scaffolded", "pending"):
         assert totals[key] == 0, "expected 0 {}, got {}".format(key, totals[key])
 
 
-def test_demo_entries_each_processed():
+def test_demo_entries_mix_processed_and_quick_dip():
     rep = completion.assess_vault(EXAMPLE_VAULT, {})
-    assert all(e["status"] == "processed" for e in rep["entries"])
+    statuses = {e["slug"]: e["status"] for e in rep["entries"]}
+    assert statuses["positive-reinforcement-reddit"] == "processed"
+    assert statuses["language-of-approval"] == "processed"
+    assert statuses["popular-feed-audit"] == "processed"
+    assert statuses["creator-hearts"] == "quick_dip"
+    assert sum(1 for e in rep["entries"] if e["status"] == "quick_dip") == 4
 
 
 # ---- assess_entry state transitions -------------------------------------

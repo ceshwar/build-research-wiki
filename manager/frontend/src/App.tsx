@@ -6,6 +6,7 @@ import {
   createDock,
   dockArtifacts,
   fetchChannels,
+  fetchChartMap,
   fetchIngestPrompt,
   fetchJob,
   fetchJobLogs,
@@ -16,7 +17,7 @@ import {
   surfaceInterval,
   validateVaultPath,
 } from './api/client'
-import type { Channel, Vault } from './types'
+import type { Channel, ChartEntry, ChartMap, Vault } from './types'
 import type { VaultValidateResult } from './api/client'
 
 const MIME: Record<string, string> = {
@@ -93,6 +94,58 @@ function statusColor(status: string) {
   }
 }
 
+function chartStatusPill(status: string) {
+  switch (status) {
+    case 'processed':
+      return { icon: '📄', label: 'Deep dive', className: 'status-pill status-pill--done' }
+    case 'quick_dip':
+      return { icon: '🤿', label: 'Quick dip', className: 'status-pill status-pill--quick' }
+    case 'needs_deep_dive':
+      return { icon: '✎', label: 'Enrich next', className: 'status-pill status-pill--enrich' }
+    case 'charted':
+      return { icon: '📝', label: 'Charted', className: 'status-pill status-pill--quick' }
+    default:
+      return { icon: '○', label: status.replace(/_/g, ' '), className: 'status-pill' }
+  }
+}
+
+function groupEntriesByTheme(map: ChartMap | undefined) {
+  if (!map) return []
+  const themeTitle = new Map(map.themes.map((t) => [t.slug, t.title]))
+  const buckets = new Map<string, { slug: string; title: string; entries: ChartEntry[] }>()
+
+  for (const t of map.themes) {
+    buckets.set(t.slug, { slug: t.slug, title: t.title, entries: [] })
+  }
+  const unassigned: ChartEntry[] = []
+
+  for (const entry of map.entries) {
+    const themes = entry.themes.length ? entry.themes : []
+    if (!themes.length) {
+      unassigned.push(entry)
+      continue
+    }
+    for (const slug of themes) {
+      const bucket = buckets.get(slug)
+      if (bucket) bucket.entries.push(entry)
+      else {
+        buckets.set(slug, {
+          slug,
+          title: themeTitle.get(slug) ?? slug,
+          entries: [entry],
+        })
+      }
+    }
+  }
+
+  const groups = [...buckets.values()].filter((g) => g.entries.length > 0)
+  groups.sort((a, b) => b.entries.length - a.entries.length || a.title.localeCompare(b.title))
+  if (unassigned.length) {
+    groups.push({ slug: '_unassigned', title: 'Awaiting themes', entries: unassigned })
+  }
+  return groups
+}
+
 export default function App() {
   const queryClient = useQueryClient()
   const [vaultId, setVaultId] = useState('demo')
@@ -119,6 +172,12 @@ export default function App() {
     queryKey: ['channels', vaultId],
     queryFn: () => fetchChannels(vaultId),
     enabled: !!vaultId,
+  })
+
+  const { data: chartMap, isLoading: chartMapLoading } = useQuery<ChartMap>({
+    queryKey: ['chart-map', vaultId, channelId],
+    queryFn: () => fetchChartMap(vaultId, channelId),
+    enabled: !!vaultId && !!channelId,
   })
 
   const vault = vaults.find((v) => v.id === vaultId)
@@ -172,6 +231,7 @@ export default function App() {
     if (status === 'completed' || status === 'failed') {
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['channels'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-map'] })
     }
   }, [jobQuery.data?.status, logsQuery.data?.status, queryClient])
 
@@ -202,6 +262,7 @@ export default function App() {
       ])
       setQueuedFiles([])
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-map'] })
       if (isPortfolio && data.files_added > 0) {
         surfaceMutation.mutate()
       }
@@ -296,6 +357,10 @@ export default function App() {
   const isDiving = jobStatus === 'running' || jobStatus === 'queued'
   const enrichCount =
     (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
+  const themeGroups = groupEntriesByTheme(chartMap)
+  const chartedFileSet = new Set(
+    (chartMap?.entries ?? []).map((e) => e.pdf).filter(Boolean),
+  )
 
   if (vaultsLoading) {
     return (
@@ -502,6 +567,140 @@ export default function App() {
             <code>{channel?.raw_path}/</code> and stay safe. Full LLM ingest (faithful summaries,
             entity links, takeaways) ships in Phase 3. Until then, <strong>Update chart</strong>{' '}
             only creates a thin placeholder shell, not a finished source page.
+          </div>
+        )}
+      </section>
+
+      {/* Portfolio / channel map */}
+      <section className="mb-6">
+        <SectionLabel>
+          {isPortfolio ? 'Portfolio map' : `${channel?.emoji ?? ''} ${channel?.name ?? 'Dock'} map`}
+        </SectionLabel>
+        {chartMapLoading && (
+          <p className="text-xs text-[var(--muted)]">Loading chart…</p>
+        )}
+        {chartMap && (
+          <div className="chart-map">
+            <div className="panel-card">
+              <h3 className="text-xs font-semibold text-[var(--text)]">
+                Files in {channel?.raw_path ?? 'dock'}/
+              </h3>
+              <p className="mt-1 text-[11px] text-[var(--muted)]">
+                {chartMap.raw_files.length} file{chartMap.raw_files.length === 1 ? '' : 's'} docked
+                {chartMap.awaiting_chart.length > 0 &&
+                  ` · ${chartMap.awaiting_chart.length} awaiting chart`}
+              </p>
+              {chartMap.raw_files.length > 0 ? (
+                <div className="chart-map__files mt-2">
+                  {chartMap.raw_files.map((f) => (
+                    <span
+                      key={f}
+                      className={`chart-file ${
+                        chartMap.awaiting_chart.includes(f) || !chartedFileSet.has(f)
+                          ? 'chart-file--awaiting'
+                          : ''
+                      }`}
+                      title={
+                        chartMap.awaiting_chart.includes(f)
+                          ? 'Uploaded — run Update chart'
+                          : chartedFileSet.has(f)
+                            ? 'On chart'
+                            : 'In dock'
+                      }
+                    >
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-[var(--muted)]">No files docked yet.</p>
+              )}
+            </div>
+
+            {chartMap.entries.length > 0 && (
+              <div className="panel-card overflow-x-auto">
+                <h3 className="text-xs font-semibold text-[var(--text)]">On chart</h3>
+                <p className="mt-1 text-[11px] text-[var(--muted)]">
+                  {chartMap.entries.length} paper{chartMap.entries.length === 1 ? '' : 's'} mapped
+                  to wiki pages
+                </p>
+                <table className="chart-table mt-3">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Paper</th>
+                      <th>Themes</th>
+                      <th>File</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartMap.entries.map((entry) => {
+                      const pill = chartStatusPill(entry.status)
+                      return (
+                        <tr key={entry.slug}>
+                          <td>
+                            <span className={pill.className}>
+                              {pill.icon} {pill.label}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="font-medium text-[var(--text)]">{entry.title}</div>
+                            {(entry.year || entry.venue) && (
+                              <div className="text-[11px] text-[var(--muted)]">
+                                {[entry.year, entry.venue].filter(Boolean).join(' · ')}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-[var(--muted)]">{entry.wiki_page}</div>
+                          </td>
+                          <td>
+                            {entry.themes.length ? (
+                              entry.themes.map((t) => (
+                                <span key={t} className="theme-chip">
+                                  {t}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[11px] text-[var(--muted)]">—</span>
+                            )}
+                          </td>
+                          <td className="text-[11px] text-[var(--muted)]">{entry.pdf || '—'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {isPortfolio && themeGroups.length > 0 && (
+              <div className="panel-card">
+                <h3 className="text-xs font-semibold text-[var(--text)]">By theme</h3>
+                <p className="mt-1 text-[11px] text-[var(--muted)]">
+                  Papers grouped by research theme — your portfolio landscape at a glance.
+                </p>
+                <div className="theme-map mt-3">
+                  {themeGroups.map((group) => (
+                    <div
+                      key={group.slug}
+                      className={`theme-map__card ${
+                        group.slug === '_unassigned' ? 'theme-map__card--unassigned' : ''
+                      }`}
+                    >
+                      <div className="theme-map__title">{group.title}</div>
+                      {group.entries.map((entry) => {
+                        const pill = chartStatusPill(entry.status)
+                        return (
+                          <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
+                            <span>{pill.icon}</span>
+                            <span>{entry.title}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

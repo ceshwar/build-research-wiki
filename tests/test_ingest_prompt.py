@@ -31,10 +31,21 @@ def _quick_dip_vault(tmp_path):
     return str(tmp_path)
 
 
-def test_nothing_to_do_on_fully_processed_demo():
+def test_demo_vault_lists_quick_dip_papers_needing_enrichment():
     text, count = ingest_prompt.build_prompt(EXAMPLE_VAULT, "my-portfolio")
-    assert count == 0
-    assert "fully enriched" in text
+    assert count == 4
+    assert "creator-hearts" in text or "Creator Hearts" in text
+    assert "Read each source PDF in full" in text
+    assert "Allowed theme slugs" in text
+    assert "[[healthy-online-behavior]]" in text
+
+
+def test_collect_skips_processed_keeps_quick_dip():
+    items = ingest_prompt.collect(EXAMPLE_VAULT, "my-portfolio")
+    assert len(items) == 4
+    slugs = {i["slug"] for i in items}
+    assert "creator-hearts" in slugs
+    assert "positive-reinforcement-reddit" not in slugs
 
 
 def test_quick_dip_paper_is_listed_with_paths(tmp_path):
@@ -55,8 +66,3 @@ def test_lists_only_actually_missing_pieces(tmp_path):
     assert "One-liner" in missing        # no one-liner yet
     assert "deep dive" in missing        # no deepdive file
     assert "Abstract" not in missing     # Quick Dip already filled the abstract
-
-
-def test_collect_skips_finished_pages():
-    # Every demo entry is processed → nothing to collect.
-    assert ingest_prompt.collect(EXAMPLE_VAULT, "my-portfolio") == []

@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "slug": "hidden-values-upvoted",
+    "entry": "builder/entries/my-portfolio/hidden-values-upvoted.md",
+    "note": "builder/entries/my-portfolio/hidden-values-upvoted.md",
+    "title": "Uncovering the Internet's Hidden Values: An Empirical Study of Desirable Behavior Using Highly-Upvoted Content on Reddit",
+    "venue": "ICWSM",
+    "year": 2026,
+    "status": "quick-dip",
+    "pdfs": ["2410.13036.pdf"],
+    "themes": [],
+    "one": "",
+    "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+    "channel": "my-portfolio"
+  },
+  {
+    "slug": "mind-your-ps-and-qs",
+    "entry": "builder/entries/my-portfolio/mind-your-ps-and-qs.md",
+    "note": "builder/entries/my-portfolio/mind-your-ps-and-qs.md",
+    "title": "Mind Your Ps and Qs: Supporting Positive Reinforcement in Moderation Through a Positive Queue",
+    "venue": "CSCW",
+    "year": 2027,
+    "status": "quick-dip",
+    "pdfs": ["2509.18437v1-2.pdf"],
+    "themes": [],
+    "one": "",
+    "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+    "channel": "my-portfolio"
+  },
+  {
+    "slug": "creator-hearts",
+    "entry": "builder/entries/my-portfolio/creator-hearts.md",
+    "note": "builder/entries/my-portfolio/creator-hearts.md",
+    "title": "Creator Hearts: Investigating the Impact of Positive Signals from YouTube Creators in Shaping Comment Section Behavior",
+    "venue": "CHI",
+    "year": 2025,
+    "status": "quick-dip",
+    "pdfs": ["chi2025-creator-hearts-2.pdf"],
+    "themes": [],
+    "one": "",
+    "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+    "channel": "my-portfolio"
+  },
+  {
+    "slug": "mod-perspectives-pos-reinforcement",
+    "entry": "builder/entries/my-portfolio/mod-perspectives-pos-reinforcement.md",
+    "note": "builder/entries/my-portfolio/mod-perspectives-pos-reinforcement.md",
+    "title": "\"Positive reinforcement helps breed positive behavior\": Moderator Perspectives on Encouraging Desirable Behavior",
+    "venue": "CSCW",
+    "year": 2024,
+    "status": "quick-dip",
+    "pdfs": ["cscw2024_positive_reinforcement.pdf"],
+    "themes": [],
+    "one": "",
+    "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+    "channel": "my-portfolio"
+  }
+]

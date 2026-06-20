@@ -106,6 +106,12 @@ export function fetchIngestPrompt(vaultId: string, channelId: string) {
   )
 }
 
+export function fetchChartMap(vaultId: string, channelId: string) {
+  return request<import('../types').ChartMap>(
+    `/chart-map?vault_id=${vaultId}&channel_id=${channelId}`,
+  )
+}
+
 export function fetchJob(jobId: string) {
   return request<Job>(`/jobs/${jobId}`)
 }

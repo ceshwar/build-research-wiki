@@ -89,3 +89,30 @@ export interface DockCreatePayload {
   description?: string
   profile?: 'portfolio' | 'ingest'
 }
+
+export interface ChartEntry {
+  slug: string
+  title: string
+  status: string
+  year: number | null
+  venue: string
+  pdf: string
+  themes: string[]
+  entry: string
+  wiki_page: string
+}
+
+export interface ChartTheme {
+  slug: string
+  title: string
+}
+
+export interface ChartMap {
+  channel_id: string
+  channel_name: string
+  profile: string
+  themes: ChartTheme[]
+  entries: ChartEntry[]
+  raw_files: string[]
+  awaiting_chart: string[]
+}

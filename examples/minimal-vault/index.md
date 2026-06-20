@@ -7,7 +7,7 @@ updated: 2026-06-19
 
  A catalog of the research-portfolio map. **Read this first** to navigate, then open a [[overview|portfolio overview]] for the cross-cutting threads.
 
-**Totals:** 3 papers (3 charted, 0 quick dip, 0 abstract-only, 0 legacy) · 5 themes
+**Totals:** 7 papers (3 charted, 4 quick dip, 0 abstract-only, 0 legacy) · 5 themes
 
 **Legend:** 📄 charted · 🤿 quick dip (PDF facts) · 📝 abstract only · 🔎 legacy scaffold
 
@@ -23,12 +23,20 @@ updated: 2026-06-19
 
 ## Papers by year
 
+### 2027
+- 🤿 [[mind-your-ps-and-qs|Mind Your Ps and Qs: Supporting Positive Reinforcement in Moderation Through a Positive Queue]] — CSCW 2027. 
+
 ### 2026
 - 📄 [[popular-feed-audit|Examining Algorithmic Curation on Social Media: An Empirical Audit of Reddit's r/popular Feed]] — ICWSM 2026. 11-month audit of r/popular: recent comments help posts climb; cliff below rank 80; toxicity doesn't extend feed life.
 - 📄 [[language-of-approval|The Language of Approval: Identifying the Drivers of Positive Feedback Online]] — CHI 2026. Quasi-experiment + prediction on 11M posts identifies linguistic drivers of upvotes/awards and a policy-practice gap.
+- 🤿 [[hidden-values-upvoted|Uncovering the Internet's Hidden Values: An Empirical Study of Desirable Behavior Using Highly-Upvoted Content on Reddit]] — ICWSM 2026. 
 
 ### 2025
+- 🤿 [[creator-hearts|Creator Hearts: Investigating the Impact of Positive Signals from YouTube Creators in Shaping Comment Section Behavior]] — CHI 2025. 
 - 📄 [[positive-reinforcement-reddit|Does Positive Reinforcement Work? A Quasi-Experimental Study of the Effects of Positive Feedback on Reddit]] — CHI 2025. Causal study of 11M Reddit posts: positive feedback makes users post more frequently and at higher quality.
+
+### 2024
+- 🤿 [[mod-perspectives-pos-reinforcement|"Positive reinforcement helps breed positive behavior": Moderator Perspectives on Encouraging Desirable Behavior]] — CSCW 2024. 
 
 ## See also
 

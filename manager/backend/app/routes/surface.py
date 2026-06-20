@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import (
     BuildResponse,
     ChannelSummary,
+    ChartMapResponse,
     DockCreateRequest,
     IngestPromptResponse,
 )
@@ -71,6 +72,18 @@ def ingest_prompt(vault_id: str, channel_id: str = "my-portfolio"):
     import ingest_prompt as ip  # builder/ is on sys.path (via channel_registry import)
     text, count = ip.build_prompt(str(vault_path), channel_id)
     return IngestPromptResponse(prompt=text, count=count, channel_id=channel_id)
+
+
+@router.get("/chart-map", response_model=ChartMapResponse)
+def chart_map(vault_id: str, channel_id: str = "my-portfolio"):
+    """Papers on chart + raw dock files for portfolio / channel map UI."""
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault not found")
+    import chart_map as cm
+    data = cm.build_map(str(vault_path), channel_id)
+    return ChartMapResponse(**data)
 
 
 @router.post("/map", response_model=BuildResponse)

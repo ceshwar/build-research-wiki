@@ -1,14 +1,23 @@
 # Research Wiki — Overview (Demo)
 
-> A **tour vault** with three real papers from the Chandrasekharan lab (UIUC) on Reddit governance, positive reinforcement, and algorithmic curation. Clone the blank template at the repo root for your own corpus; browse this folder to see what a populated wiki looks like.
+> A **tour vault**: three **finished** lab papers plus four **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
 
-## What these three papers do together
+## Finished trio (Reddit reward + curation)
 
 All three study **Reddit** at scale, but answer different layers of the same design question: *how do platforms shape desirable behavior online?*
 
 - **Behavior change** — [[positive-reinforcement-reddit]]: Does receiving upvotes/gold *cause* users to post more and better?
 - **Language of reward** — [[language-of-approval]]: *What* post attributes causally earn that positive feedback?
 - **Attention allocation** — [[popular-feed-audit]]: How does Reddit's algorithmic trending feed prioritize content?
+
+## Quick Dip queue (Healthy Online Behavior — enrich next)
+
+Tier-1 facts on chart; themes and deep dives pending agent pass:
+
+- [[creator-hearts]] — YouTube creator hearts as positive signals (CHI 2025)
+- [[hidden-values-upvoted]] — Values in highly-upvoted Reddit content (ICWSM 2026)
+- [[mod-perspectives-pos-reinforcement]] — Moderator perspectives on encouraging desirable behavior (CSCW 2024)
+- [[mind-your-ps-and-qs]] — Positive Queue moderation tool (CSCW 2027)
 
 ## Cross-cutting threads
 

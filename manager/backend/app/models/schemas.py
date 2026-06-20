@@ -109,6 +109,33 @@ class IngestPromptResponse(BaseModel):
     channel_id: str = "my-portfolio"
 
 
+class ChartEntry(BaseModel):
+    slug: str
+    title: str
+    status: str
+    year: Optional[int] = None
+    venue: str = ""
+    pdf: str = ""
+    themes: List[str] = []
+    entry: str = ""
+    wiki_page: str = ""
+
+
+class ChartTheme(BaseModel):
+    slug: str
+    title: str
+
+
+class ChartMapResponse(BaseModel):
+    channel_id: str
+    channel_name: str = ""
+    profile: str = "portfolio"
+    themes: List[ChartTheme] = []
+    entries: List[ChartEntry] = []
+    raw_files: List[str] = []
+    awaiting_chart: List[str] = []
+
+
 class UploadResponse(BaseModel):
     files_added: int
     filenames: List[str]

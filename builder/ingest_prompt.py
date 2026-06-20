@@ -119,6 +119,16 @@ def collect(vault, channel_id=None):
     return out
 
 
+def _load_themes(vault):
+    """Return theme slugs + display titles from builder/data.py."""
+    data_path = os.path.join(vault, "builder", "data.py")
+    if not os.path.exists(data_path):
+        return []
+    data = completion._load_module(data_path)
+    themes = getattr(data, "THEMES", {})
+    return [{"slug": slug, "title": meta[0]} for slug, meta in sorted(themes.items())]
+
+
 def build_prompt(vault, channel_id=None):
     """Render the paste-ready agent prompt. Returns (text, item_count)."""
     vault = os.path.abspath(vault)
@@ -143,6 +153,16 @@ def build_prompt(vault, channel_id=None):
     L.append("**Rules:** Sources in `raw/` are immutable — read them, never edit them. Write only "
              "to `builder/entries/` and `builder/deepdives/`. Link liberally with `[[wikilinks]]`.")
     L.append("")
+    L.append("**Read each source PDF in full** (not just the Quick Dip abstract) before writing "
+             "themes, one-liners, or deep-dive sections.")
+    L.append("")
+    themes = _load_themes(vault)
+    if themes and (not channel_id or channels.get(channel_id, {}).get("profile") == "portfolio"):
+        L.append("**Allowed theme slugs** (use only these on line 1 of portfolio entries — pick 1–3 "
+                 "that fit; see `wiki/themes/` for context):")
+        for t in themes:
+            L.append("- `[[{}]]` — {}".format(t["slug"], t["title"]))
+        L.append("")
     L.append("**Vault:** `{}`".format(vault))
     L.append("")
     L.append("## Artifacts to enrich")
