@@ -16,8 +16,8 @@ def test_demo_portfolio_map():
     assert m["channel_id"] == "my-portfolio"
     assert m["raw_path"] == "raw/papers"
     assert m["wiki_folder"] == "wiki/papers"
-    assert len(m["raw_files"]) == 7
-    assert len(m["entries"]) == 7
+    assert len(m["raw_files"]) == 6
+    assert len(m["entries"]) == 6
     assert m["awaiting_chart"] == []
     slugs = {e["slug"] for e in m["entries"]}
     assert "creator-hearts" in slugs
@@ -25,7 +25,7 @@ def test_demo_portfolio_map():
     processed = [e for e in m["entries"] if e["status"] == "processed"]
     quick = [e for e in m["entries"] if e["status"] == "quick_dip"]
     assert len(processed) == 3
-    assert len(quick) == 4
+    assert len(quick) == 3
     assert len(m["themes"]) >= 5
     pr = next(e for e in m["entries"] if e["slug"] == "positive-reinforcement-reddit")
     assert "positive feedback" in pr["overview"].lower()

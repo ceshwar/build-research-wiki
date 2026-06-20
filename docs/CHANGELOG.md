@@ -57,7 +57,7 @@
 ### Changed
 
 - SCUBA UI refactor — workflow panel, collapsible upload, Dive Computer, burger nav
-- Demo reef expanded to **7 papers** (3 deep dive, 4 enrich next) for ingest-prompt walkthrough
+- Demo reef expanded to **6 papers** (3 deep dive, 3 enrich next) for ingest-prompt walkthrough
 - Docs aligned to reef terminology and current UI workflow
 
 ---

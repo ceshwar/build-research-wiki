@@ -465,6 +465,7 @@ export default function App() {
     useState<WorkspaceSectionId>('section-map')
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
   const [expandedPaperSlugs, setExpandedPaperSlugs] = useState<Set<string>>(() => new Set())
+  const [mapEditMode, setMapEditMode] = useState(false)
   const [mapSort, setMapSort] = useState<{ key: MapSortKey; dir: MapSortDir }>({
     key: 'paper',
     dir: 'desc',
@@ -516,6 +517,7 @@ export default function App() {
     setShowReefPicker(false)
     setActiveWorkspaceSection('section-map')
     setExpandedPaperSlugs(new Set())
+    setMapEditMode(false)
   }, [vaultId, channelId])
 
   useEffect(() => {
@@ -1311,7 +1313,10 @@ export default function App() {
                   role="tab"
                   aria-selected={mapTab === 'theme'}
                   className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
-                  onClick={() => setMapTab('theme')}
+                  onClick={() => {
+                    setMapTab('theme')
+                    setMapEditMode(false)
+                  }}
                 >
                   By theme
                 </button>
@@ -1357,30 +1362,51 @@ export default function App() {
               <>
                 {mapTab === 'list' && (
                   <>
-                    <div className="map-status-filters" role="group" aria-label="Filter by status">
-                      {MAP_STATUS_CHIPS.map((chip) => (
-                        <button
-                          key={chip.id}
-                          type="button"
-                          className={`map-status-chip ${
-                            statFilter === chip.id ? 'map-status-chip--active' : ''
-                          }`}
-                          aria-pressed={statFilter === chip.id}
-                          onClick={() =>
-                            setMapStatusFilter(statFilter === chip.id ? 'all' : chip.id)
-                          }
-                        >
-                          {chip.label}
-                        </button>
-                      ))}
+                    <div className="map-toolbar">
+                      <div className="map-status-filters" role="group" aria-label="Filter by status">
+                        {MAP_STATUS_CHIPS.map((chip) => (
+                          <button
+                            key={chip.id}
+                            type="button"
+                            className={`map-status-chip ${
+                              statFilter === chip.id ? 'map-status-chip--active' : ''
+                            }`}
+                            aria-pressed={statFilter === chip.id}
+                            onClick={() =>
+                              setMapStatusFilter(statFilter === chip.id ? 'all' : chip.id)
+                            }
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={`map-edit-toggle ${mapEditMode ? 'map-edit-toggle--active' : ''}`}
+                        aria-pressed={mapEditMode}
+                        onClick={() => setMapEditMode((on) => !on)}
+                      >
+                        Edit
+                      </button>
                     </div>
+                    {mapEditMode && (
+                      <p className="map-edit-hint">
+                        Click <span aria-hidden="true">−</span> to remove a paper from the chart. PDFs
+                        stay in the dock.
+                      </p>
+                    )}
                   <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
                     {sortedEntries.length === 0 ? (
                       <div className="empty-map">No papers match this filter.</div>
                     ) : (
-                      <table className="chart-table">
+                      <table
+                        className={`chart-table${mapEditMode ? ' chart-table--edit' : ''}`}
+                      >
                         <thead>
                           <tr>
+                            {mapEditMode && (
+                              <th className="chart-table__action-col" aria-hidden="true" />
+                            )}
                             <SortableTh
                               label="Status"
                               sortKey="status"
@@ -1410,7 +1436,21 @@ export default function App() {
                             const expanded = expandedPaperSlugs.has(entry.slug)
                             const canExpand = !!(entry.overview?.trim() || entry.pdf_path)
                             return (
-                              <tr key={entry.slug}>
+                              <tr key={entry.slug} className="chart-table__row">
+                                {mapEditMode && (
+                                  <td className="chart-table__action-col">
+                                    <button
+                                      type="button"
+                                      className="chart-table__remove"
+                                      disabled={removeFromChartMutation.isPending}
+                                      aria-label={`Remove ${entry.title} from map`}
+                                      title="Remove from map"
+                                      onClick={() => handleRemoveFromChart(entry)}
+                                    >
+                                      −
+                                    </button>
+                                  </td>
+                                )}
                                 <td>
                                   <span className={pill.className}>
                                     {pill.icon} {pill.label}
@@ -1442,15 +1482,6 @@ export default function App() {
                                           </button>
                                         </>
                                       )}
-                                      {(entry.year || entry.venue || canExpand) && ' · '}
-                                      <button
-                                        type="button"
-                                        className="map-paper-remove"
-                                        disabled={removeFromChartMutation.isPending}
-                                        onClick={() => handleRemoveFromChart(entry)}
-                                      >
-                                        Remove
-                                      </button>
                                     </div>
                                     {expanded && (
                                       <div className="map-paper-detail">

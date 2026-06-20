@@ -33,7 +33,7 @@ def _quick_dip_vault(tmp_path):
 
 def test_demo_vault_lists_quick_dip_papers_needing_enrichment():
     text, count = ingest_prompt.build_prompt(EXAMPLE_VAULT, "my-portfolio")
-    assert count == 4
+    assert count == 3
     assert "creator-hearts" in text or "Creator Hearts" in text
     assert "Read each source PDF in full" in text
     assert "Allowed theme slugs" in text
@@ -42,7 +42,7 @@ def test_demo_vault_lists_quick_dip_papers_needing_enrichment():
 
 def test_collect_skips_processed_keeps_quick_dip():
     items = ingest_prompt.collect(EXAMPLE_VAULT, "my-portfolio")
-    assert len(items) == 4
+    assert len(items) == 3
     slugs = {i["slug"] for i in items}
     assert "creator-hearts" in slugs
     assert "positive-reinforcement-reddit" not in slugs

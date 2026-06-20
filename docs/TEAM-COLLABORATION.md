@@ -127,4 +127,4 @@ python3 builder/build.py   # exit 1 = red links to fix
 - [Getting started](GETTING-STARTED.md)
 - [Changelog](CHANGELOG.md)
 - [CLAUDE.md](../CLAUDE.md) — full schema
-- [Shallow reef (demo)](../examples/minimal-vault/) — trial reef with 7 papers (3 deep dive, 4 enrich next)
+- [Shallow reef (demo)](../examples/minimal-vault/) — trial reef with 6 papers (3 deep dive, 3 enrich next)
