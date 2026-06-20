@@ -848,12 +848,15 @@ code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 700;
   font-size: 0.9375rem;
-  padding: 0 0.1rem;
 }
 
-.path-breadcrumb__part--root.path-breadcrumb__part--link:hover,
 .path-breadcrumb__part--root.path-breadcrumb__part--link {
-  text-decoration: none;
+  padding: 0.1rem 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.path-breadcrumb__part--root.path-breadcrumb__part--link:hover {
+  background: rgba(234, 88, 12, 0.08);
 }
 
 .path-breadcrumb__part--current {

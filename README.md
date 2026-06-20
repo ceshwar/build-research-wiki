@@ -15,7 +15,7 @@ Karpathy — compile knowledge once and keep it current.
 <p align="center">
   <img src="docs/images/scuba-main-ui.png" alt="SCUBA Ideaverse — docks, chart status, and map on Shallow reef" width="900">
 </p>
-<p align="center"><em>Shallow reef — My Portfolio map with path navigation and focused workspace.</em></p>
+<p align="center"><em>Shallow reef · My Portfolio — Map filtered to Deep dive (3 charted papers).</em></p>
 
 ---
 

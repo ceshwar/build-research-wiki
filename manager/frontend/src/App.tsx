@@ -232,7 +232,7 @@ function PathBreadcrumb({
       {onRootClick ? (
         <button
           type="button"
-          className="path-breadcrumb__part path-breadcrumb__part--root"
+          className="path-breadcrumb__part path-breadcrumb__part--root path-breadcrumb__part--link"
           onClick={onRootClick}
           title="Switch reef"
         >
@@ -241,6 +241,9 @@ function PathBreadcrumb({
       ) : (
         <span className="path-breadcrumb__part path-breadcrumb__part--root">/</span>
       )}
+      <span className="path-breadcrumb__sep" aria-hidden>
+        ›
+      </span>
       {onReefClick ? (
         <button
           type="button"
@@ -974,6 +977,9 @@ export default function App() {
             <nav className="path-breadcrumb" aria-label="Reef picker">
               <span className="path-breadcrumb__part path-breadcrumb__part--root path-breadcrumb__part--current">
                 /
+              </span>
+              <span className="path-breadcrumb__sep" aria-hidden>
+                ›
               </span>
               <span className="workflow-panel__head-hint">Choose a reef</span>
             </nav>
