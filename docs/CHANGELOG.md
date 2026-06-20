@@ -1,6 +1,15 @@
 # Changelog
 
-## v0.4.2 — Focused dock workspace (2026-06-20)
+## v0.4.3 — Path navigation & demo trim (2026-06-20)
+
+### Changed
+
+- **Header** slimmed to **Docs** + **Obsidian** only; reef picker moved to **`/`** in the workspace path
+- **Path bar** — `/` switches reefs, reef name opens dock picker, dock name is the current location
+- **Shallow reef** — removed unpublished Positive Queue paper (6 papers: 3 deep dive, 3 quick dip)
+- README hero screenshot updated for focused workspace + Map view
+
+---
 
 ### Changed
 

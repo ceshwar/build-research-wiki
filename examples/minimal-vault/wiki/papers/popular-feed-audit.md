@@ -7,7 +7,7 @@ year: 2026
 status: mapped
 themes: [algorithmic-ai-audits, social-media-online-communities]
 pdfs: ["raw/papers/2502.20491v3.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Examining Algorithmic Curation on Social Media: An Empirical Audit of Reddit's r/popular Feed

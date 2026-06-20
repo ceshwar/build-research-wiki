@@ -3,7 +3,7 @@ type: concept
 title: "Observational Causal Inference"
 slug: causal-inference-observational
 paper_count: 2
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Observational Causal Inference

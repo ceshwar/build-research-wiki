@@ -2,7 +2,7 @@
 
 This guide helps you go from **clone** to **working research wiki** in one session.
 
-- **Shallow reef** — pre-loaded demo at [`examples/minimal-vault/`](../examples/minimal-vault/) (7 papers; safe to explore).
+- **Shallow reef** — pre-loaded demo at [`examples/minimal-vault/`](../examples/minimal-vault/) (6 papers; safe to explore).
 - **Blank reef** — empty scaffold at the repo root (`CLAUDE.md`, `raw/`, starter `builder/`). Copy it or run `new_vault.py` for your lab.
 
 **Pattern credit:** This repo implements the [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern — a persistent, compounding Markdown knowledge base maintained by an LLM assistant, not re-derived from raw PDFs on every question.
@@ -108,7 +108,7 @@ See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** pane
 ## See also
 
 - [SCUBA Ideaverse](SCUBA-IDEAVERSE.md) — dock, chart, completion tracking, reefs
-- [Shallow reef (demo)](../examples/minimal-vault/) — 7 papers on chart
+- [Shallow reef (demo)](../examples/minimal-vault/) — 6 papers on chart
 - [Team collaboration](TEAM-COLLABORATION.md) — shared repos, git norms, privacy
 - [Changelog](CHANGELOG.md) — release notes
 - [README](../README.md) — product overview

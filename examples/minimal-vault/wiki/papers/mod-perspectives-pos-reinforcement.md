@@ -7,7 +7,7 @@ year: 2024
 status: quick-dip
 themes: []
 pdfs: ["raw/papers/cscw2024_positive_reinforcement.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # "Positive reinforcement helps breed positive behavior": Moderator Perspectives on Encouraging Desirable Behavior

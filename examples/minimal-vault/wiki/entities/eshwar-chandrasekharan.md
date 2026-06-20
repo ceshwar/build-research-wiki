@@ -3,7 +3,7 @@ type: entity
 title: "Eshwar Chandrasekharan"
 slug: eshwar-chandrasekharan
 paper_count: 3
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Eshwar Chandrasekharan

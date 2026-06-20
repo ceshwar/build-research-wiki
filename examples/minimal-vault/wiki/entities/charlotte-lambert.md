@@ -3,7 +3,7 @@ type: entity
 title: "Charlotte Lambert"
 slug: charlotte-lambert
 paper_count: 2
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Charlotte Lambert

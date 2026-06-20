@@ -7,7 +7,7 @@ year: 2025
 status: mapped
 themes: [healthy-online-behavior, computational-social-science, social-media-online-communities]
 pdfs: ["raw/papers/chi2025-positive-reinforcement.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Does Positive Reinforcement Work? A Quasi-Experimental Study of the Effects of Positive Feedback on Reddit

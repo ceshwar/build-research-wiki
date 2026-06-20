@@ -7,7 +7,7 @@ year: 2025
 status: quick-dip
 themes: []
 pdfs: ["raw/papers/chi2025-creator-hearts-2.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Creator Hearts: Investigating the Impact of Positive Signals from YouTube Creators in Shaping Comment Section Behavior

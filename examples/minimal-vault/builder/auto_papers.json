@@ -14,20 +14,6 @@
     "channel": "my-portfolio"
   },
   {
-    "slug": "mind-your-ps-and-qs",
-    "entry": "builder/entries/my-portfolio/mind-your-ps-and-qs.md",
-    "note": "builder/entries/my-portfolio/mind-your-ps-and-qs.md",
-    "title": "Mind Your Ps and Qs: Supporting Positive Reinforcement in Moderation Through a Positive Queue",
-    "venue": "CSCW",
-    "year": 2027,
-    "status": "quick-dip",
-    "pdfs": ["2509.18437v1-2.pdf"],
-    "themes": [],
-    "one": "",
-    "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
-    "channel": "my-portfolio"
-  },
-  {
     "slug": "creator-hearts",
     "entry": "builder/entries/my-portfolio/creator-hearts.md",
     "note": "builder/entries/my-portfolio/creator-hearts.md",

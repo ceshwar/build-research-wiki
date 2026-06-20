@@ -3,7 +3,7 @@ type: concept
 title: "Algorithmic Curation"
 slug: algorithmic-curation
 paper_count: 1
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Algorithmic Curation

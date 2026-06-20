@@ -214,107 +214,54 @@ function SortableTh({
   )
 }
 
-function FlowTrail({
-  reefName,
-  dock,
-  activeLabel,
-  onReefClick,
-  onDockClick,
-  meta,
-  className = '',
-  ariaLabel = 'Workspace location',
-}: {
-  reefName: string
-  dock?: { emoji: string; name: string }
-  activeLabel: string
-  onReefClick?: () => void
-  onDockClick?: () => void
-  meta?: ReactNode
-  className?: string
-  ariaLabel?: string
-}) {
-  return (
-    <nav
-      className={['flow-breadcrumb', className].filter(Boolean).join(' ')}
-      aria-label={ariaLabel}
-    >
-      {onReefClick ? (
-        <button
-          type="button"
-          className="flow-breadcrumb__part flow-breadcrumb__part--link"
-          onClick={onReefClick}
-        >
-          {reefName}
-        </button>
-      ) : (
-        <span className="flow-breadcrumb__part">{reefName}</span>
-      )}
-      {dock ? (
-        <>
-          <span className="flow-breadcrumb__sep" aria-hidden>
-            ›
-          </span>
-          {onDockClick ? (
-            <button
-              type="button"
-              className="flow-breadcrumb__part flow-breadcrumb__part--link"
-              onClick={onDockClick}
-            >
-              {dock.emoji} {dock.name}
-            </button>
-          ) : (
-            <span className="flow-breadcrumb__part">
-              {dock.emoji} {dock.name}
-            </span>
-          )}
-          <span className="flow-breadcrumb__sep flow-breadcrumb__sep--arrow" aria-hidden>
-            →
-          </span>
-        </>
-      ) : (
-        <span className="flow-breadcrumb__sep" aria-hidden>
-          ›
-        </span>
-      )}
-      <span className="flow-breadcrumb__part flow-breadcrumb__part--current">{activeLabel}</span>
-      {meta}
-    </nav>
-  )
-}
-
 function PathBreadcrumb({
   reefName,
   dock,
+  onRootClick,
   onReefClick,
-  onDockClick,
   meta,
 }: {
   reefName: string
-  dock: { emoji: string; name: string }
+  dock?: { emoji: string; name: string }
+  onRootClick?: () => void
   onReefClick?: () => void
-  onDockClick?: () => void
   meta?: ReactNode
 }) {
   return (
     <nav className="path-breadcrumb" aria-label="Current reef and dock">
+      {onRootClick ? (
+        <button
+          type="button"
+          className="path-breadcrumb__part path-breadcrumb__part--root"
+          onClick={onRootClick}
+          title="Switch reef"
+        >
+          /
+        </button>
+      ) : (
+        <span className="path-breadcrumb__part path-breadcrumb__part--root">/</span>
+      )}
       {onReefClick ? (
-        <button type="button" className="path-breadcrumb__part path-breadcrumb__part--link" onClick={onReefClick}>
+        <button
+          type="button"
+          className="path-breadcrumb__part path-breadcrumb__part--link"
+          onClick={onReefClick}
+          title="Choose dock"
+        >
           {reefName}
         </button>
       ) : (
         <span className="path-breadcrumb__part">{reefName}</span>
       )}
-      <span className="path-breadcrumb__sep" aria-hidden>
-        ›
-      </span>
-      {onDockClick ? (
-        <button type="button" className="path-breadcrumb__part path-breadcrumb__part--link" onClick={onDockClick}>
-          {dock.emoji} {dock.name}
-        </button>
-      ) : (
-        <span className="path-breadcrumb__part path-breadcrumb__part--current">
-          {dock.emoji} {dock.name}
-        </span>
+      {dock && (
+        <>
+          <span className="path-breadcrumb__sep" aria-hidden>
+            ›
+          </span>
+          <span className="path-breadcrumb__part path-breadcrumb__part--current">
+            {dock.emoji} {dock.name}
+          </span>
+        </>
       )}
       {meta}
     </nav>
@@ -356,13 +303,6 @@ const DOCK_WORKSPACE_SECTIONS: {
     hint: 'Update & enrich',
     badge: (c) => (c.pending > 0 ? c.pending : c.enrich > 0 ? c.enrich : null),
   },
-]
-
-const NAV_SECTIONS: { id: SectionId; label: string; badge?: (ctx: { enrich: number; pending: number }) => number | null }[] = [
-  { id: 'section-docks', label: 'Docks & upload' },
-  { id: 'section-map', label: 'Map' },
-  { id: 'section-dive', label: 'Chart status', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
-  { id: 'section-actions', label: 'Actions', badge: (c) => (c.enrich > 0 ? c.enrich : c.pending > 0 ? c.pending : null) },
 ]
 
 function statusColor(status: string) {
@@ -515,8 +455,8 @@ export default function App() {
   const [promptExpanded, setPromptExpanded] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
-  const [navOpen, setNavOpen] = useState(false)
   const [showDockPicker, setShowDockPicker] = useState(false)
+  const [showReefPicker, setShowReefPicker] = useState(false)
   const [activeWorkspaceSection, setActiveWorkspaceSection] =
     useState<WorkspaceSectionId>('section-map')
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
@@ -569,6 +509,7 @@ export default function App() {
     setStatFilter('all')
     setUploadExpanded(false)
     setShowDockPicker(false)
+    setShowReefPicker(false)
     setActiveWorkspaceSection('section-map')
     setExpandedPaperSlugs(new Set())
   }, [vaultId, channelId])
@@ -585,20 +526,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!navOpen) return
-    const close = () => setNavOpen(false)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('click', close)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('click', close)
-    }
-  }, [navOpen])
-
-  useEffect(() => {
     if (!howToOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setHowToOpen(false)
@@ -607,14 +534,18 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey)
   }, [howToOpen])
 
-  const scrollToReefTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const openReefPicker = useCallback(() => {
+    setShowReefPicker(true)
+    setShowDockPicker(false)
+    requestAnimationFrame(() => {
+      document.getElementById('section-reefs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }, [])
 
   const openDockPicker = useCallback((opts?: { expandUpload?: boolean }) => {
+    setShowReefPicker(false)
     setShowDockPicker(true)
     if (opts?.expandUpload) setUploadExpanded(true)
-    setNavOpen(false)
     requestAnimationFrame(() => {
       document.getElementById('section-docks')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
@@ -627,19 +558,19 @@ export default function App() {
         return
       }
       setShowDockPicker(false)
+      setShowReefPicker(false)
       setUploadExpanded(false)
       if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
         setActiveWorkspaceSection(id)
       }
-      setNavOpen(false)
     },
     [openDockPicker],
   )
 
   const focusWorkspaceSection = useCallback((id: WorkspaceSectionId) => {
     setShowDockPicker(false)
+    setShowReefPicker(false)
     setActiveWorkspaceSection(id)
-    setNavOpen(false)
   }, [])
 
   const dismissDockGuide = useCallback(() => {
@@ -889,18 +820,21 @@ export default function App() {
       (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
     ) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
-  const inWorkspace = !!(vault && channel && !showDockPicker)
+  const inWorkspace = !!(vault && channel && !showDockPicker && !showReefPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
 
   const handleVaultSelect = useCallback(
     (nextId: string) => {
       if (nextId === CONNECT_REEF) {
+        setShowReefPicker(false)
         setShowAddReef(true)
         return
       }
       setVaultId(nextId)
       setShowAddReef(false)
+      setShowReefPicker(false)
+      setShowDockPicker(true)
       setQueuedFiles([])
       setUploadedFiles([])
       setActiveJobId(null)
@@ -918,115 +852,39 @@ export default function App() {
 
   return (
     <>
-      <header className="site-header">
-        <div className="site-header__inner">
-          <div className="site-header__brand">
-            <div className="logo-wrap">
-              <img src="/scuba-logo.png" alt="SCUBA Lab" width={40} height={40} />
-            </div>
-            <div>
-              <h1>SCUBA Ideaverse</h1>
-              <p className="tagline">Your research world, mapped and connected.</p>
-            </div>
-          </div>
-          <div className="header-toolbar">
-            <div className="header-reef-select">
-              <select
-                value={vaultId}
-                onChange={(e) => handleVaultSelect(e.target.value)}
-                aria-label="Select reef"
-              >
-                <optgroup label="Starter reefs">
-                  {builtinVaults.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </optgroup>
-                {userVaults.length > 0 && (
-                  <optgroup label="Your reefs">
-                    {userVaults.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <option value={CONNECT_REEF}>+ Connect your reef…</option>
-              </select>
-            </div>
-            {vault && (
-              <a
-                href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
-                className="header-icon-btn"
-                title="Open reef in Obsidian"
-                aria-label="Open reef in Obsidian"
-              >
-                <img src="/obsidian-icon.svg" alt="" width={18} height={18} />
-              </a>
-            )}
-            <button
-              type="button"
-              className="header-icon-btn header-docs-btn"
-              onClick={() => setHowToOpen(true)}
-              title="How to use SCUBA Ideaverse"
+      <header className="site-header site-header--minimal">
+        <div className="site-header__inner site-header__inner--minimal">
+          <button
+            type="button"
+            className="header-icon-btn header-docs-btn"
+            onClick={() => setHowToOpen(true)}
+            title="How to use SCUBA Ideaverse"
+          >
+            Docs
+          </button>
+          {vault && (
+            <a
+              href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
+              className="header-icon-btn"
+              title="Open reef in Obsidian"
+              aria-label="Open reef in Obsidian"
             >
-              Docs
-            </button>
-            <div className="header-nav">
-              <button
-                type="button"
-                className={`nav-burger ${navOpen ? 'nav-burger--open' : ''}`}
-                aria-expanded={navOpen}
-                aria-haspopup="true"
-                aria-label="Jump to section"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setNavOpen((o) => !o)
-                }}
-              >
-                <span className="nav-burger__bar" aria-hidden />
-                <span className="nav-burger__bar" aria-hidden />
-                <span className="nav-burger__bar" aria-hidden />
-              </button>
-              {navOpen && (
-                <div
-                  className="nav-menu"
-                  role="menu"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {NAV_SECTIONS.map((item) => {
-                    const badge = item.badge?.({
-                      enrich: enrichEntries.length,
-                      pending: pendingCount,
-                    })
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        role="menuitem"
-                        className="nav-menu__item"
-                        onClick={() =>
-                          scrollToSection(item.id, {
-                            expandUpload: item.id === 'section-docks',
-                          })
-                        }
-                      >
-                        <span>{item.label}</span>
-                        {badge != null && badge > 0 && (
-                          <span className="nav-menu__badge">{badge}</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+              <img src="/obsidian-icon.svg" alt="" width={18} height={18} />
+            </a>
+          )}
         </div>
       </header>
 
       <div className="main-content">
+      <div className="page-intro mb-6">
+        <div className="page-intro__brand">
+          <img src="/scuba-logo.png" alt="" width={36} height={36} />
+          <div>
+            <h1 className="page-intro__title">SCUBA Ideaverse</h1>
+            <p className="page-intro__tagline">Your research world, mapped and connected.</p>
+          </div>
+        </div>
+      </div>
 
       {showAddReef && (
         <section className="panel-card panel-card--accent mb-6">
@@ -1109,11 +967,71 @@ export default function App() {
         </div>
       )}
 
+      {/* Reef picker — switch reef or connect your own */}
+      {showReefPicker && (
+        <section id="section-reefs" className="workflow-panel mb-6 scroll-mt-4">
+          <div className="workflow-panel__head">
+            <nav className="path-breadcrumb" aria-label="Reef picker">
+              <span className="path-breadcrumb__part path-breadcrumb__part--root path-breadcrumb__part--current">
+                /
+              </span>
+              <span className="workflow-panel__head-hint">Choose a reef</span>
+            </nav>
+            {vault && channel && (
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowReefPicker(false)}
+              >
+                Back to workspace
+              </button>
+            )}
+          </div>
+          <div className="workflow-panel__docks">
+            <SectionLabel>Reefs</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {builtinVaults.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => handleVaultSelect(v.id)}
+                  className={`reef-pill ${vaultId === v.id ? 'reef-pill--active' : ''}`}
+                  title={v.id === 'demo' ? 'Demo portfolio — safe to explore' : 'Empty scaffold — copy or spawn your own'}
+                >
+                  {v.name}
+                </button>
+              ))}
+              {userVaults.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => handleVaultSelect(v.id)}
+                  className={`reef-pill ${vaultId === v.id ? 'reef-pill--active' : ''}`}
+                  title={v.path}
+                >
+                  {v.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleVaultSelect(CONNECT_REEF)}
+                className="reef-pill reef-pill--action"
+              >
+                + Connect your reef…
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Dock picker — switch dock or upload; hidden once a dock workspace is active */}
       {vault && showDockPicker && (
       <section id="section-docks" className="workflow-panel mb-6 scroll-mt-4">
         <div className="workflow-panel__head">
-          <FlowTrail reefName={vault.name} activeLabel="Docks" ariaLabel="Reef to docks" />
+          <PathBreadcrumb
+            reefName={vault.name}
+            onRootClick={openReefPicker}
+          />
           {channel && (
             <button type="button" className="icon-btn" onClick={() => setShowDockPicker(false)}>
               Back to workspace
@@ -1290,8 +1208,8 @@ export default function App() {
             <PathBreadcrumb
               reefName={vault.name}
               dock={{ emoji: channel.emoji, name: channel.name }}
-              onReefClick={scrollToReefTop}
-              onDockClick={() => openDockPicker()}
+              onRootClick={openReefPicker}
+              onReefClick={() => openDockPicker()}
               meta={
                 <span className="workspace-shell__meta">
                   {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
@@ -1331,7 +1249,7 @@ export default function App() {
                 <span>
                   <strong>Map</strong> browses your chart · <strong>Chart status</strong> tracks
                   pipeline progress · <strong>Actions</strong> uploads, updates the chart, and runs
-                  Deep Dive. Click the dock name above to switch docks.
+                  Deep Dive. Click <strong>/</strong> to switch reefs or the reef name to choose a dock.
                 </span>
                 <button type="button" className="workspace-shell__guide-dismiss" onClick={dismissDockGuide}>
                   Got it

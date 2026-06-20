@@ -1,13 +1,13 @@
 ---
 type: index
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Index
 
  A catalog of the research-portfolio map. **Read this first** to navigate, then open a [[overview|portfolio overview]] for the cross-cutting threads.
 
-**Totals:** 7 papers (3 charted, 4 quick dip, 0 abstract-only, 0 legacy) · 5 themes
+**Totals:** 6 papers (3 charted, 3 quick dip, 0 abstract-only, 0 legacy) · 5 themes
 
 **Legend:** 📄 charted · 🤿 quick dip (PDF facts) · 📝 abstract only · 🔎 legacy scaffold
 
@@ -22,9 +22,6 @@ updated: 2026-06-19
 - [[algorithmic-ai-audits|Algorithmic and AI Audits]] (1) — Auditing how algorithms and AI systems shape attention, information exposure, and user wellbeing.
 
 ## Papers by year
-
-### 2027
-- 🤿 [[mind-your-ps-and-qs|Mind Your Ps and Qs: Supporting Positive Reinforcement in Moderation Through a Positive Queue]] — CSCW 2027. 
 
 ### 2026
 - 📄 [[popular-feed-audit|Examining Algorithmic Curation on Social Media: An Empirical Audit of Reddit's r/popular Feed]] — ICWSM 2026. 11-month audit of r/popular: recent comments help posts climb; cliff below rank 80; toxicity doesn't extend feed life.

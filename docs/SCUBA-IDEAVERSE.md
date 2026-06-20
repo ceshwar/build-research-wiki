@@ -24,7 +24,7 @@ Requirements: **Python 3.7+**, **Node 18+**, optional **poppler** (`brew install
 
 | Reef | Path | Purpose |
 |------|------|---------|
-| **Shallow reef** | `examples/minimal-vault` | Low-stakes trial reef — 7 demo papers (3 deep dive, 4 enrich next). Learn the UI here. |
+| **Shallow reef** | `examples/minimal-vault` | Low-stakes trial reef — 6 demo papers (3 deep dive, 3 quick dip). Learn the UI here. |
 | **Blank reef** | repo root (`.`) | Empty scaffold — copy or run `new_vault.py` to spawn your lab reef. |
 | **Your reefs** | local paths | Register via **+ Connect your reef…** (saved in `manager/backend/config/vaults.user.yaml`, gitignored). |
 
@@ -61,8 +61,9 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 
 | Area | What it does |
 |------|----------------|
-| **Header** | Reef dropdown (Starter reefs / Your reefs / Connect), Obsidian link, **Docs**, burger menu |
-| **Dock picker** | Opens when you click the dock name in the path — dock pills (hover for description), upload |
+| **Header** | **Docs** and **Open in Obsidian** only |
+| **Path bar** | `/` switches reefs · reef name picks dock · dock name is current location |
+| **Reef picker** | Starter reefs, your reefs, **+ Connect your reef…** |
 | **Workspace shell** | `Reef › Dock` path + tabs; only one of Map / Chart status / Actions visible |
 | **Chart status** | Pipeline legend, clickable stat cards, next-step banner |
 | **Map** | **List** (sortable table) or **By theme** (portfolio only); **Note** expands one-liner + PDF |
@@ -74,7 +75,7 @@ Open **Docs** for in-app glossary (reefs, SCUBA terms, pipeline states).
 
 When a reef and dock are selected, you work inside one card:
 
-- **Path** — `Shallow reef › ⚓ My Portfolio`. Click the reef name to scroll to the header picker; click the dock name to open the dock picker (switch dock or upload).
+- **Path** — `/ Shallow reef › ⚓ My Portfolio`. Click **/** to switch reefs; click the reef name to choose a dock.
 - **Tabs** — **Map** (default), **Chart status**, **Actions**. Hover a tab for a short hint. Only the active tab’s content is shown.
 - **Per-reef guide** — one-line explainer until dismissed (**Got it**); resets when you switch reefs.
 
@@ -195,6 +196,6 @@ Full issue list: **[docs/ROADMAP.md](ROADMAP.md)** · create on GitHub: `./scrip
 
 - [Getting started](GETTING-STARTED.md) — onboarding paths
 - [Team collaboration](TEAM-COLLABORATION.md) — git norms, privacy
-- [Shallow reef (demo)](../examples/minimal-vault/) — trial reef with 7 papers
+- [Shallow reef (demo)](../examples/minimal-vault/) — trial reef with 6 papers
 - [manager/README.md](../manager/README.md) — API reference
 - [builder/README.md](../builder/README.md) — builder internals

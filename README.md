@@ -15,7 +15,7 @@ Karpathy — compile knowledge once and keep it current.
 <p align="center">
   <img src="docs/images/scuba-main-ui.png" alt="SCUBA Ideaverse — docks, chart status, and map on Shallow reef" width="900">
 </p>
-<p align="center"><em>Shallow reef demo — pick a dock, track chart status, browse the map, then open in Obsidian.</em></p>
+<p align="center"><em>Shallow reef — My Portfolio map with path navigation and focused workspace.</em></p>
 
 ---
 
@@ -118,7 +118,7 @@ build-research-wiki/
 | [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
 | [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
 | [Changelog](docs/CHANGELOG.md) | Release notes (v0.4.1) |
-| [Shallow reef (demo)](examples/minimal-vault/) | Trial reef — 7 papers (3 deep dive, 4 enrich next) |
+| [Shallow reef (demo)](examples/minimal-vault/) | Trial reef — 6 papers (3 deep dive, 3 quick dip) |
 | [CLAUDE.md](CLAUDE.md) | Full wiki schema |
 | [BUILD.md](BUILD.md) | Deterministic builder |
 | [manager/README.md](manager/README.md) | API reference |

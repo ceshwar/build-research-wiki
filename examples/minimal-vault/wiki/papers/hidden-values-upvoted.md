@@ -7,7 +7,7 @@ year: 2026
 status: quick-dip
 themes: []
 pdfs: ["raw/papers/2410.13036.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Uncovering the Internet's Hidden Values: An Empirical Study of Desirable Behavior Using Highly-Upvoted Content on Reddit

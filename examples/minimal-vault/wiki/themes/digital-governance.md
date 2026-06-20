@@ -3,7 +3,7 @@ type: theme
 title: "Digital Governance"
 slug: digital-governance
 paper_count: 1
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Digital Governance

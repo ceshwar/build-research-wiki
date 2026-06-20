@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shallow reef DATA — demo portfolio (7 papers: 3 deep dive, 4 quick dip).
+"""Shallow reef DATA — demo portfolio (6 papers: 3 deep dive, 3 quick dip).
 Run from repo root: python3 builder/build.py --vault examples/minimal-vault"""
 
 VAULT = {

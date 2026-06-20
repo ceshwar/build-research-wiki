@@ -7,7 +7,7 @@ year: 2026
 status: mapped
 themes: [computational-social-science, social-media-online-communities, digital-governance]
 pdfs: ["raw/papers/chi2026-language-of-approval-2.pdf"]
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # The Language of Approval: Identifying the Drivers of Positive Feedback Online

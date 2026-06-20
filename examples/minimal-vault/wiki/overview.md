@@ -1,6 +1,6 @@
 # Research Wiki — Overview (Demo)
 
-> A **Shallow reef** demo: three **finished** lab papers plus four **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
+> A **Shallow reef** demo: three **finished** lab papers plus three **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
 
 ## Finished trio (Reddit reward + curation)
 
@@ -17,7 +17,6 @@ Tier-1 facts on chart; themes and deep dives pending agent pass:
 - [[creator-hearts]] — YouTube creator hearts as positive signals (CHI 2025)
 - [[hidden-values-upvoted]] — Values in highly-upvoted Reddit content (ICWSM 2026)
 - [[mod-perspectives-pos-reinforcement]] — Moderator perspectives on encouraging desirable behavior (CSCW 2024)
-- [[mind-your-ps-and-qs]] — Positive Queue moderation tool (CSCW 2027)
 
 ## Cross-cutting threads
 

@@ -3,7 +3,7 @@ type: concept
 title: "Distributed Moderation"
 slug: distributed-moderation
 paper_count: 1
-updated: 2026-06-19
+updated: 2026-06-20
 ---
 
 # Distributed Moderation
