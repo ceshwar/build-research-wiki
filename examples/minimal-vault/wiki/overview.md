@@ -1,6 +1,6 @@
 # Research Wiki — Overview (Demo)
 
-> A **tour vault**: three **finished** lab papers plus four **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
+> A **Shallow reef** demo: three **finished** lab papers plus four **Quick Dip** papers on the [[healthy-online-behavior|Healthy Online Behavior]] thread — use SCUBA **Get ingest prompt** to Deep Dive the latter.
 
 ## Finished trio (Reddit reward + curation)
 
@@ -35,4 +35,4 @@ Tier-1 facts on chart; themes and deep dives pending agent pass:
 
 - [[demo-reward-attention-thread|Reward, Language, and Attention on Reddit]] — filed synthesis across these three papers
 - [[index]] — portfolio catalog
-- [Getting started](../../docs/GETTING-STARTED.md) — how to build your own vault from the blank template
+- [Getting started](../../docs/GETTING-STARTED.md) — how to spawn your own reef from the Blank reef scaffold

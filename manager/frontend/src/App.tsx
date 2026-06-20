@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useDropzone, type FileRejection } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { HowToPanel } from './components/HowToPanel'
 import {
   addVault,
   createDock,
@@ -52,33 +53,134 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <h2 className="section-label">{children}</h2>
 }
 
+type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich'
+
+function SectionHeader({
+  title,
+  meta,
+  expanded,
+  onToggle,
+  extra,
+}: {
+  title: ReactNode
+  meta?: string
+  expanded: boolean
+  onToggle: () => void
+  extra?: ReactNode
+}) {
+  return (
+    <div className="section-shell__head">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        {title}
+        {meta && <span className="section-shell__meta">{meta}</span>}
+      </div>
+      <div className="section-shell__actions">
+        {extra}
+        <button type="button" className="icon-btn" onClick={onToggle} aria-expanded={expanded}>
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PipelineLegend() {
+  return (
+    <div className="pipeline-strip" role="note" aria-label="Chart pipeline">
+      <span className="pipeline-strip__step">Dock PDF</span>
+      <span className="pipeline-strip__arrow">→</span>
+      <span className="pipeline-strip__step">Quick Dip</span>
+      <span className="pipeline-strip__arrow">→</span>
+      <span className="pipeline-strip__step">Deep Dive</span>
+      <span className="pipeline-strip__arrow">→</span>
+      <span className="pipeline-strip__step">On chart</span>
+    </div>
+  )
+}
+
 function Stat({
   label,
   hint,
   value,
   highlight,
+  variant = 'chart',
+  selected,
+  onClick,
 }: {
   label: string
   hint?: string
   value: string | number
   highlight?: boolean
+  variant?: 'chart' | 'pending' | 'quick' | 'enrich'
+  selected?: boolean
+  onClick?: () => void
 }) {
-  return (
-    <div className={`stat-card ${highlight ? 'stat-card--active' : ''}`}>
+  const className = [
+    'stat-card',
+    `stat-card--${variant}`,
+    onClick ? 'stat-card--clickable' : '',
+    highlight ? 'stat-card--active' : '',
+    selected ? 'stat-card--selected' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const inner = (
+    <>
       <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--muted)]">
         {label}
       </div>
-      {hint && <div className="mt-0.5 text-[10px] leading-snug text-[var(--muted)]">{hint}</div>}
+      {hint && <div className="mt-0.5 text-[12px] leading-snug text-[var(--muted)]">{hint}</div>}
       <div
         className={`mt-1.5 text-xl font-semibold tabular-nums ${
-          highlight ? 'text-[var(--accent)]' : 'text-[var(--text)]'
+          highlight || selected ? 'text-[var(--accent)]' : 'text-[var(--text)]'
         }`}
       >
         {value}
       </div>
-    </div>
+    </>
   )
+
+  if (onClick) {
+    return (
+      <button type="button" className={className} onClick={onClick}>
+        {inner}
+      </button>
+    )
+  }
+  return <div className={className}>{inner}</div>
 }
+
+function filterChartEntries(entries: ChartEntry[], filter: StatFilter): ChartEntry[] {
+  if (filter === 'all' || filter === 'on_chart') return entries
+  if (filter === 'quick_dip') return entries.filter((e) => e.status === 'quick_dip')
+  if (filter === 'enrich') {
+    return entries.filter((e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive')
+  }
+  return entries
+}
+
+function filterThemeGroups(
+  groups: ReturnType<typeof groupEntriesByTheme>,
+  filter: StatFilter,
+): ReturnType<typeof groupEntriesByTheme> {
+  if (filter === 'all' || filter === 'on_chart' || filter === 'pending') return groups
+  return groups
+    .map((g) => ({
+      ...g,
+      entries: filterChartEntries(g.entries, filter),
+    }))
+    .filter((g) => g.entries.length > 0)
+}
+
+type SectionId = 'section-docks' | 'section-dive' | 'section-map' | 'section-actions'
+
+const NAV_SECTIONS: { id: SectionId; label: string; badge?: (ctx: { enrich: number; pending: number }) => number | null }[] = [
+  { id: 'section-docks', label: 'Docks & upload' },
+  { id: 'section-dive', label: 'Dive Computer', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
+  { id: 'section-map', label: 'Portfolio map' },
+  { id: 'section-actions', label: 'Actions', badge: (c) => (c.enrich > 0 ? c.enrich : c.pending > 0 ? c.pending : null) },
+]
 
 function statusColor(status: string) {
   switch (status) {
@@ -107,6 +209,57 @@ function chartStatusPill(status: string) {
     default:
       return { icon: '○', label: status.replace(/_/g, ' '), className: 'status-pill' }
   }
+}
+
+function obsidianReefHref(vaultPath: string, reefPath: string) {
+  const base = vaultPath.replace(/\/$/, '')
+  const rel = reefPath.replace(/^\//, '')
+  return `obsidian://open?path=${encodeURIComponent(`${base}/${rel}`)}`
+}
+
+function themeWikiPage(slug: string) {
+  return `wiki/themes/${slug}.md`
+}
+
+const THEME_GRADIENT: Record<string, string> = {
+  'digital-governance': 'theme-gradient--governance',
+  'healthy-online-behavior': 'theme-gradient--behavior',
+  'algorithmic-ai-audits': 'theme-gradient--audits',
+  'computational-social-science': 'theme-gradient--csc',
+  'social-media-online-communities': 'theme-gradient--communities',
+}
+
+function themeGradientClass(slug: string) {
+  return THEME_GRADIENT[slug] ?? 'theme-gradient--default'
+}
+
+function themeDisplayTitle(slug: string, themes: { slug: string; title: string }[]) {
+  return themes.find((t) => t.slug === slug)?.title ?? slug
+}
+
+function ReefLink({
+  vaultPath,
+  reefPath,
+  children,
+  className = 'link-accent',
+}: {
+  vaultPath?: string
+  reefPath?: string
+  children: ReactNode
+  className?: string
+}) {
+  if (!vaultPath || !reefPath) {
+    return <>{children}</>
+  }
+  return (
+    <a
+      href={obsidianReefHref(vaultPath, reefPath)}
+      className={className}
+      title={`Open ${reefPath} in Obsidian`}
+    >
+      {children}
+    </a>
+  )
 }
 
 function groupEntriesByTheme(map: ChartMap | undefined) {
@@ -146,6 +299,8 @@ function groupEntriesByTheme(map: ChartMap | undefined) {
   return groups
 }
 
+const CONNECT_REEF = '__connect__'
+
 export default function App() {
   const queryClient = useQueryClient()
   const [vaultId, setVaultId] = useState('demo')
@@ -158,10 +313,21 @@ export default function App() {
   const [reefPath, setReefPath] = useState('')
   const [reefName, setReefName] = useState('')
   const [reefPreview, setReefPreview] = useState<VaultValidateResult | null>(null)
+  const [howToOpen, setHowToOpen] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [dockName, setDockName] = useState('')
   const [dockEmoji, setDockEmoji] = useState('📁')
   const [ingestPrompt, setIngestPrompt] = useState<string | null>(null)
   const [promptCopied, setPromptCopied] = useState(false)
+  const [statFilter, setStatFilter] = useState<StatFilter>('all')
+  const [mapTab, setMapTab] = useState<'list' | 'theme'>('list')
+  const [diveExpanded, setDiveExpanded] = useState(true)
+  const [mapExpanded, setMapExpanded] = useState(true)
+  const [actionsExpanded, setActionsExpanded] = useState(true)
+  const [promptExpanded, setPromptExpanded] = useState(false)
+  const [showBackToTop, setShowBackToTop] = useState(false)
+  const [uploadExpanded, setUploadExpanded] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -198,7 +364,63 @@ export default function App() {
   useEffect(() => {
     setIngestPrompt(null)
     setPromptCopied(false)
+    setPromptExpanded(false)
+    setStatFilter('all')
+    setUploadExpanded(false)
   }, [vaultId, channelId])
+
+  useEffect(() => {
+    if (queuedFiles.length > 0) setUploadExpanded(true)
+  }, [queuedFiles.length])
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 420)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!navOpen) return
+    const close = () => setNavOpen(false)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('click', close)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('click', close)
+    }
+  }, [navOpen])
+
+  useEffect(() => {
+    if (!howToOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHowToOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [howToOpen])
+
+  const scrollToSection = useCallback(
+    (id: SectionId, opts?: { expandUpload?: boolean; expandActions?: boolean }) => {
+      if (opts?.expandUpload) setUploadExpanded(true)
+      if (opts?.expandActions) setActionsExpanded(true)
+      setNavOpen(false)
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    },
+    [],
+  )
+
+  const toggleStatFilter = useCallback((filter: StatFilter) => {
+    setStatFilter((prev) => (prev === filter ? 'all' : filter))
+    setMapExpanded(true)
+    setMapTab('list')
+    requestAnimationFrame(() => scrollToSection('section-map'))
+  }, [scrollToSection])
 
   const jobQuery = useQuery({
     queryKey: ['job', activeJobId],
@@ -261,6 +483,8 @@ export default function App() {
         ...prev,
       ])
       setQueuedFiles([])
+      setUploadError(null)
+      setUploadExpanded(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map'] })
       if (isPortfolio && data.files_added > 0) {
@@ -279,6 +503,8 @@ export default function App() {
     onSuccess: (data) => {
       setIngestPrompt(data.prompt)
       setPromptCopied(false)
+      setPromptExpanded(true)
+      setActionsExpanded(true)
     },
   })
 
@@ -344,11 +570,31 @@ export default function App() {
   })
 
   const onDrop = useCallback((accepted: File[]) => {
-    if (accepted.length) setQueuedFiles((prev) => [...prev, ...accepted])
+    if (accepted.length) {
+      setUploadError(null)
+      setQueuedFiles((prev) => [...prev, ...accepted])
+    }
   }, [])
+
+  const onDropRejected = useCallback(
+    (rejections: FileRejection[]) => {
+      const extList = channel?.extensions.map((e) => `.${e}`).join(', ') ?? '.pdf'
+      const msgs = rejections.map((r) => {
+        const codes = r.errors.map((e) => e.code)
+        if (codes.includes('file-invalid-type')) {
+          return `${r.file.name} is not accepted for ${channel?.name ?? 'this dock'} — use ${extList}.`
+        }
+        return `${r.file.name}: ${r.errors[0]?.message ?? 'upload rejected'}`
+      })
+      setUploadError(msgs.join(' '))
+      setUploadExpanded(true)
+    },
+    [channel],
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: acceptForChannel(channel),
     multiple: true,
   })
@@ -358,8 +604,29 @@ export default function App() {
   const enrichCount =
     (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
   const themeGroups = groupEntriesByTheme(chartMap)
-  const chartedFileSet = new Set(
-    (chartMap?.entries ?? []).map((e) => e.pdf).filter(Boolean),
+  const filteredEntries = filterChartEntries(chartMap?.entries ?? [], statFilter)
+  const filteredThemeGroups = filterThemeGroups(themeGroups, statFilter)
+  const enrichEntries =
+    chartMap?.entries.filter(
+      (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
+    ) ?? []
+  const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
+  const builtinVaults = vaults.filter((v) => !v.user_added)
+  const userVaults = vaults.filter((v) => v.user_added)
+
+  const handleVaultSelect = useCallback(
+    (nextId: string) => {
+      if (nextId === CONNECT_REEF) {
+        setShowAddReef(true)
+        return
+      }
+      setVaultId(nextId)
+      setShowAddReef(false)
+      setQueuedFiles([])
+      setUploadedFiles([])
+      setActiveJobId(null)
+    },
+    [],
   )
 
   if (vaultsLoading) {
@@ -383,30 +650,100 @@ export default function App() {
               <p className="tagline">Your research world, mapped and connected.</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={vaultId}
-              onChange={(e) => {
-                setVaultId(e.target.value)
-                setQueuedFiles([])
-                setUploadedFiles([])
-                setActiveJobId(null)
-              }}
-            >
-            {vaults.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-                {v.user_added ? ' ★' : ''}
-              </option>
-            ))}
-            </select>
+          <div className="header-toolbar">
+            <div className="header-reef-select">
+              <select
+                value={vaultId}
+                onChange={(e) => handleVaultSelect(e.target.value)}
+                aria-label="Select reef"
+              >
+                <optgroup label="Starter reefs">
+                  {builtinVaults.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {userVaults.length > 0 && (
+                  <optgroup label="Your reefs">
+                    {userVaults.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value={CONNECT_REEF}>+ Connect your reef…</option>
+              </select>
+            </div>
+            {vault && (
+              <a
+                href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
+                className="header-icon-btn"
+                title="Open reef in Obsidian"
+                aria-label="Open reef in Obsidian"
+              >
+                <img src="/obsidian-icon.svg" alt="" width={18} height={18} />
+              </a>
+            )}
             <button
               type="button"
-              onClick={() => setShowAddReef((s) => !s)}
-              className="header-btn"
+              className="header-icon-btn header-docs-btn"
+              onClick={() => setHowToOpen(true)}
+              title="How to use SCUBA Ideaverse"
             >
-              {showAddReef ? 'Cancel' : '+ Reef'}
+              Docs
             </button>
+            <div className="header-nav">
+              <button
+                type="button"
+                className={`nav-burger ${navOpen ? 'nav-burger--open' : ''}`}
+                aria-expanded={navOpen}
+                aria-haspopup="true"
+                aria-label="Jump to section"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setNavOpen((o) => !o)
+                }}
+              >
+                <span className="nav-burger__bar" aria-hidden />
+                <span className="nav-burger__bar" aria-hidden />
+                <span className="nav-burger__bar" aria-hidden />
+              </button>
+              {navOpen && (
+                <div
+                  className="nav-menu"
+                  role="menu"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {NAV_SECTIONS.map((item) => {
+                    const badge = item.badge?.({
+                      enrich: enrichEntries.length,
+                      pending: pendingCount,
+                    })
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="menuitem"
+                        className="nav-menu__item"
+                        onClick={() =>
+                          scrollToSection(item.id, {
+                            expandUpload: item.id === 'section-docks',
+                            expandActions: item.id === 'section-actions',
+                          })
+                        }
+                      >
+                        <span>{item.label}</span>
+                        {badge != null && badge > 0 && (
+                          <span className="nav-menu__badge">{badge}</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -415,9 +752,11 @@ export default function App() {
 
       {showAddReef && (
         <section className="panel-card panel-card--accent mb-6">
-          <SectionLabel>Add reef</SectionLabel>
+          <SectionLabel>Connect your reef</SectionLabel>
           <p className="mb-3 text-xs text-[var(--muted)]">
-            Point SCUBA at an existing Obsidian vault on this machine.
+            Point SCUBA at a reef already on this machine. Different from{' '}
+            <strong>Shallow reef</strong> (demo) or <strong>Blank reef</strong> (repo scaffold) —
+            you are registering <em>your</em> Obsidian folder.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
@@ -461,7 +800,14 @@ export default function App() {
               disabled={!reefPreview?.ok || addVaultMutation.isPending}
               className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
             >
-              Add
+              Connect
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddReef(false)}
+              className="btn-secondary px-4 py-2 text-sm text-[var(--muted)]"
+            >
+              Cancel
             </button>
           </div>
           {reefPreview && (
@@ -485,231 +831,147 @@ export default function App() {
         </div>
       )}
 
-      {/* Dive Computer */}
-      {vault && (
-        <section className="mb-6">
-          <div className="mb-3 flex items-baseline justify-between gap-2">
-            <SectionLabel>Dive Computer</SectionLabel>
-            <span className="text-[11px] text-[var(--muted)]">
-              Chart updated {formatChartUpdated(vault.last_build)}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <Stat label="On chart" hint="Artifacts on your wiki" value={vault.on_chart ?? vault.paper_count} />
-            <Stat
-              label="Awaiting chart"
-              hint="Uploaded, not charted yet"
-              value={vault.pending_artifacts}
-              highlight={vault.pending_artifacts > 0}
-            />
-            <Stat
-              label="Quick dip"
-              hint="PDF facts only"
-              value={vault.quick_dip_count ?? 0}
-              highlight={(vault.quick_dip_count ?? 0) > 0}
-            />
-            <Stat
-              label="Enrich next"
-              hint="On chart — needs Deep Dive"
-              value={enrichCount}
-              highlight={enrichCount > 0}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* Dock picker */}
-      <section className="mb-5">
-        <div className="mb-2">
+      {/* Docks + optional upload */}
+      <section id="section-docks" className="workflow-panel mb-6 scroll-mt-4">
+        <div className="workflow-panel__docks">
           <SectionLabel>Docks</SectionLabel>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {channels.map((ch) => {
-            const stats = vault?.channels.find((c) => c.id === ch.id)
-            const count = stats?.artifact_count ?? 0
-            const awaiting = stats?.pending ?? 0
-            return (
-              <button
-                key={ch.id}
-                type="button"
-                onClick={() => setChannelId(ch.id)}
-                className={`dock-pill ${channelId === ch.id ? 'dock-pill--active' : ''}`}
-                title={
-                  awaiting > 0
-                    ? `${count} file${count === 1 ? '' : 's'} · ${awaiting} awaiting chart`
-                    : `${count} file${count === 1 ? '' : 's'} in ${ch.raw_path}/`
-                }
-              >
-                <span className="dock-pill__label text-sm font-medium text-[var(--text)]">
-                  {ch.emoji} {ch.name}
-                </span>
-                <span className="dock-pill__count">{count}</span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => setShowAddDock(true)}
-            className="dock-pill text-[var(--muted)]"
-          >
-            + Add dock
-          </button>
-        </div>
-        {channel && (
-          <p className="mt-2 text-xs text-[var(--muted)]">
-            {channel.description} · <code className="text-[var(--muted)]">{channel.raw_path}/</code>
-          </p>
-        )}
-        {isIngestPreview && (
-          <div className="notice-callout mt-3">
-            <strong>In development.</strong> You can dock files here — they land in{' '}
-            <code>{channel?.raw_path}/</code> and stay safe. Full LLM ingest (faithful summaries,
-            entity links, takeaways) ships in Phase 3. Until then, <strong>Update chart</strong>{' '}
-            only creates a thin placeholder shell, not a finished source page.
+          <div className="flex flex-wrap gap-2">
+            {channels.map((ch) => {
+              const stats = vault?.channels.find((c) => c.id === ch.id)
+              const count = stats?.artifact_count ?? 0
+              const awaiting = stats?.pending ?? 0
+              return (
+                <button
+                  key={ch.id}
+                  type="button"
+                  onClick={() => setChannelId(ch.id)}
+                  className={`dock-pill ${channelId === ch.id ? 'dock-pill--active' : ''}`}
+                  title={
+                    awaiting > 0
+                      ? `${count} file${count === 1 ? '' : 's'} · ${awaiting} awaiting chart`
+                      : `${count} file${count === 1 ? '' : 's'} in ${ch.raw_path}/`
+                  }
+                >
+                  <span className="dock-pill__label text-sm font-medium text-[var(--text)]">
+                    {ch.emoji} {ch.name}
+                  </span>
+                  <span className="dock-pill__count">{count}</span>
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setShowAddDock(true)}
+              className="dock-pill text-[var(--muted)]"
+            >
+              + Add dock
+            </button>
           </div>
-        )}
-      </section>
+          {channel && (
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              {channel.description} ·{' '}
+              <ReefLink vaultPath={vault?.path} reefPath={channel.raw_path} className="link-secondary obsidian-mark">
+                <code className="bg-transparent p-0 text-inherit">{channel.raw_path}/</code>
+              </ReefLink>
+            </p>
+          )}
+          {isIngestPreview && (
+            <div className="notice-callout mt-3">
+              <strong>In development.</strong> Files dock safely in <code>{channel?.raw_path}/</code>.
+              Full ingest ships in Phase 3 — <strong>Update chart</strong> creates placeholder shells only.
+            </div>
+          )}
 
-      {/* Portfolio / channel map */}
-      <section className="mb-6">
-        <SectionLabel>
-          {isPortfolio ? 'Portfolio map' : `${channel?.emoji ?? ''} ${channel?.name ?? 'Dock'} map`}
-        </SectionLabel>
-        {chartMapLoading && (
-          <p className="text-xs text-[var(--muted)]">Loading chart…</p>
-        )}
-        {chartMap && (
-          <div className="chart-map">
-            <div className="panel-card">
-              <h3 className="text-xs font-semibold text-[var(--text)]">
-                Files in {channel?.raw_path ?? 'dock'}/
-              </h3>
-              <p className="mt-1 text-[11px] text-[var(--muted)]">
-                {chartMap.raw_files.length} file{chartMap.raw_files.length === 1 ? '' : 's'} docked
-                {chartMap.awaiting_chart.length > 0 &&
-                  ` · ${chartMap.awaiting_chart.length} awaiting chart`}
-              </p>
-              {chartMap.raw_files.length > 0 ? (
-                <div className="chart-map__files mt-2">
-                  {chartMap.raw_files.map((f) => (
-                    <span
-                      key={f}
-                      className={`chart-file ${
-                        chartMap.awaiting_chart.includes(f) || !chartedFileSet.has(f)
-                          ? 'chart-file--awaiting'
-                          : ''
-                      }`}
-                      title={
-                        chartMap.awaiting_chart.includes(f)
-                          ? 'Uploaded — run Update chart'
-                          : chartedFileSet.has(f)
-                            ? 'On chart'
-                            : 'In dock'
-                      }
-                    >
-                      {f}
-                    </span>
+          <div className="workflow-upload-bar mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className={`text-sm ${uploadExpanded ? 'btn-secondary' : 'btn-primary'} px-3 py-1.5`}
+              onClick={() => setUploadExpanded((e) => !e)}
+            >
+              {uploadExpanded
+                ? 'Hide upload'
+                : `Upload to ${channel?.emoji ?? ''} ${channel?.name ?? 'dock'}`}
+            </button>
+            {queuedFiles.length > 0 && (
+              <span className="text-xs font-medium text-[var(--accent)]">
+                {queuedFiles.length} file{queuedFiles.length === 1 ? '' : 's'} staged
+              </span>
+            )}
+            {!uploadExpanded && pendingCount > 0 && (
+              <span className="text-xs text-[var(--muted)]">
+                {pendingCount} awaiting chart — upload or{' '}
+                <button
+                  type="button"
+                  className="link-accent text-xs underline"
+                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
+                >
+                  update chart
+                </button>
+              </span>
+            )}
+          </div>
+
+          {uploadExpanded && (
+            <div className="workflow-panel__upload workflow-panel__upload--inline">
+              <div
+                {...getRootProps()}
+                className={`dropzone dropzone--compact mt-2 cursor-pointer px-4 py-5 text-center ${isDragActive ? 'dropzone--active' : ''}`}
+              >
+                <input {...getInputProps()} />
+                <p className="text-sm text-[var(--text)]">
+                  {isDragActive ? 'Release to dock…' : 'Drop PDFs here'}
+                </p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {channel?.extensions.map((e) => `.${e}`).join(', ')} · confirm to dock
+                </p>
+              </div>
+
+              {queuedFiles.length > 0 && (
+                <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
+                  {queuedFiles.map((f) => (
+                    <li key={f.name}>{f.name}</li>
                   ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-[var(--muted)]">No files docked yet.</p>
+                </ul>
+              )}
+
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => dockMutation.mutate()}
+                  disabled={queuedFiles.length === 0 || dockMutation.isPending}
+                  className={`px-4 py-2 text-sm font-medium disabled:opacity-50 ${
+                    queuedFiles.length > 0 ? 'btn-primary' : 'btn-secondary'
+                  }`}
+                >
+                  {dockMutation.isPending ? 'Uploading…' : 'Confirm upload'}
+                </button>
+              </div>
+
+              {uploadError && (
+                <p className="upload-error" role="alert">
+                  {uploadError}
+                </p>
+              )}
+
+              {dockMutation.isError && (
+                <p className="mt-2 text-xs text-red-400">{dockMutation.error.message}</p>
+              )}
+              {uploadedFiles.length > 0 && (
+                <ul className="mt-2 space-y-0.5 text-xs text-[var(--success)]">
+                  {uploadedFiles.slice(0, 5).map((f) => (
+                    <li key={`${f.channel}-${f.name}`}>✓ {f.name}</li>
+                  ))}
+                </ul>
               )}
             </div>
-
-            {chartMap.entries.length > 0 && (
-              <div className="panel-card overflow-x-auto">
-                <h3 className="text-xs font-semibold text-[var(--text)]">On chart</h3>
-                <p className="mt-1 text-[11px] text-[var(--muted)]">
-                  {chartMap.entries.length} paper{chartMap.entries.length === 1 ? '' : 's'} mapped
-                  to wiki pages
-                </p>
-                <table className="chart-table mt-3">
-                  <thead>
-                    <tr>
-                      <th>Status</th>
-                      <th>Paper</th>
-                      <th>Themes</th>
-                      <th>File</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartMap.entries.map((entry) => {
-                      const pill = chartStatusPill(entry.status)
-                      return (
-                        <tr key={entry.slug}>
-                          <td>
-                            <span className={pill.className}>
-                              {pill.icon} {pill.label}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="font-medium text-[var(--text)]">{entry.title}</div>
-                            {(entry.year || entry.venue) && (
-                              <div className="text-[11px] text-[var(--muted)]">
-                                {[entry.year, entry.venue].filter(Boolean).join(' · ')}
-                              </div>
-                            )}
-                            <div className="text-[10px] text-[var(--muted)]">{entry.wiki_page}</div>
-                          </td>
-                          <td>
-                            {entry.themes.length ? (
-                              entry.themes.map((t) => (
-                                <span key={t} className="theme-chip">
-                                  {t}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[11px] text-[var(--muted)]">—</span>
-                            )}
-                          </td>
-                          <td className="text-[11px] text-[var(--muted)]">{entry.pdf || '—'}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {isPortfolio && themeGroups.length > 0 && (
-              <div className="panel-card">
-                <h3 className="text-xs font-semibold text-[var(--text)]">By theme</h3>
-                <p className="mt-1 text-[11px] text-[var(--muted)]">
-                  Papers grouped by research theme — your portfolio landscape at a glance.
-                </p>
-                <div className="theme-map mt-3">
-                  {themeGroups.map((group) => (
-                    <div
-                      key={group.slug}
-                      className={`theme-map__card ${
-                        group.slug === '_unassigned' ? 'theme-map__card--unassigned' : ''
-                      }`}
-                    >
-                      <div className="theme-map__title">{group.title}</div>
-                      {group.entries.map((entry) => {
-                        const pill = chartStatusPill(entry.status)
-                        return (
-                          <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
-                            <span>{pill.icon}</span>
-                            <span>{entry.title}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </section>
 
       {showAddDock && (
         <section className="panel-card mb-5">
           <SectionLabel>New dock</SectionLabel>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Creates a folder under <code>raw/</code> in your vault and wires it into the chart pipeline.
+            Creates a folder under <code>raw/</code> in your reef and wires it into the chart pipeline.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
@@ -746,150 +1008,437 @@ export default function App() {
         </section>
       )}
 
-      {/* Upload */}
-      <section className="mb-6">
-        <SectionLabel>
-          Upload to {channel?.emoji} {channel?.name}
-        </SectionLabel>
-        <div
-          {...getRootProps()}
-          className={`dropzone cursor-pointer px-6 py-8 text-center ${isDragActive ? 'dropzone--active' : ''}`}
-        >
-          <input {...getInputProps()} />
-          <p className="text-[var(--text)]">
-            {isDragActive ? 'Release to dock…' : 'Drop files here'}
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            {channel?.extensions.map((e) => `.${e}`).join(', ')} · staged until you confirm
-            {isIngestPreview && ' · full ingest coming in Phase 3'}
-          </p>
-        </div>
+      {/* Dive Computer — expands into stats, next step, needs attention */}
+      {vault && (
+        <section id="section-dive" className="section-shell mb-6 scroll-mt-4">
+          <SectionHeader
+            title={<SectionLabel>Dive Computer</SectionLabel>}
+            meta={`Chart updated ${formatChartUpdated(vault.last_build)}`}
+            expanded={diveExpanded}
+            onToggle={() => setDiveExpanded((e) => !e)}
+          />
+          {diveExpanded && (
+            <div className="section-shell__body">
+              <PipelineLegend />
 
-        {queuedFiles.length > 0 && (
-          <ul className="mt-3 space-y-0.5 text-xs text-[var(--muted)]">
-            {queuedFiles.map((f) => (
-              <li key={f.name}>{f.name}</li>
-            ))}
-          </ul>
-        )}
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                <Stat
+                  label="On chart"
+                  hint="Click to show all"
+                  variant="chart"
+                  value={vault.on_chart ?? vault.paper_count}
+                  selected={statFilter === 'on_chart'}
+                  onClick={() => toggleStatFilter('on_chart')}
+                />
+                <Stat
+                  label="Awaiting chart"
+                  hint="Docked, not mapped"
+                  variant="pending"
+                  value={pendingCount}
+                  highlight={pendingCount > 0}
+                  selected={statFilter === 'pending'}
+                  onClick={() => toggleStatFilter('pending')}
+                />
+                <Stat
+                  label="Quick dip"
+                  hint="PDF facts only"
+                  variant="quick"
+                  value={vault.quick_dip_count ?? 0}
+                  highlight={(vault.quick_dip_count ?? 0) > 0}
+                  selected={statFilter === 'quick_dip'}
+                  onClick={() => toggleStatFilter('quick_dip')}
+                />
+                <Stat
+                  label="Enrich next"
+                  hint="Needs Deep Dive"
+                  variant="enrich"
+                  value={enrichEntries.length || enrichCount}
+                  highlight={enrichEntries.length > 0 || enrichCount > 0}
+                  selected={statFilter === 'enrich'}
+                  onClick={() => toggleStatFilter('enrich')}
+                />
+              </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            onClick={() => dockMutation.mutate()}
-            disabled={queuedFiles.length === 0 || dockMutation.isPending}
-            className="btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-50"
-          >
-            {dockMutation.isPending ? 'Uploading…' : 'Confirm upload'}
-          </button>
-        </div>
+              {enrichEntries.length > 0 && (
+                <div className="next-step-banner mt-4">
+                  <div>
+                    <strong>
+                      {enrichEntries.length} paper{enrichEntries.length === 1 ? '' : 's'} need Deep Dive
+                    </strong>
+                    <p>Themes, one-liners, and analysis — paste a prompt into your coding agent.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsExpanded(true)
+                        ingestPromptMutation.mutate()
+                        scrollToSection('section-actions', { expandActions: true })
+                      }}
+                      disabled={ingestPromptMutation.isPending}
+                      className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                    >
+                      {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
+                    </button>
+                    {vault && (
+                      <a
+                        href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
+                        className="btn-secondary px-4 py-2 text-sm obsidian-mark"
+                      >
+                        Open reef
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
-        {dockMutation.isError && (
-          <p className="mt-2 text-xs text-red-400">{dockMutation.error.message}</p>
-        )}
-        {uploadedFiles.length > 0 && (
-          <ul className="mt-2 space-y-0.5 text-xs text-[var(--success)]">
-            {uploadedFiles.slice(0, 5).map((f) => (
-              <li key={`${f.channel}-${f.name}`}>✓ {f.name}</li>
-            ))}
-          </ul>
-        )}
-      </section>
+              {channelStats?.needs_attention && channelStats.needs_attention.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    Needs attention
+                  </h3>
+                  <ul className="needs-list mt-1">
+                    {channelStats.needs_attention.map((item) => (
+                      <li key={item.slug}>
+                        <ReefLink
+                          vaultPath={vault?.path}
+                          reefPath={
+                            isPortfolio
+                              ? `wiki/papers/${item.slug}.md`
+                              : `wiki/sources/${item.slug}.md`
+                          }
+                          className="link-accent obsidian-mark"
+                        >
+                          {item.title}
+                        </ReefLink>{' '}
+                        <span className="text-[var(--accent)] text-xs">
+                          ({item.status.replace(/_/g, ' ')})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
-      {/* Chart */}
-      <section className="mb-6">
-        <SectionLabel>Chart</SectionLabel>
-        {isIngestPreview && (
-          <div className="notice-callout mb-3">
-            <strong>Preview only.</strong> Chart update for {channel?.emoji} {channel?.name} is not
-            production-ready. Use <strong>⚓ My Portfolio</strong> for full Quick Dip charting today,
-            or dock here and wait for Phase 3 ingest.
+      {/* Portfolio map — tabbed exploration */}
+      <section id="section-map" className="section-shell mb-6 scroll-mt-4">
+        <SectionHeader
+          title={
+            <SectionLabel>
+              {isPortfolio ? 'Portfolio map' : `${channel?.emoji ?? ''} ${channel?.name ?? 'Dock'} map`}
+            </SectionLabel>
+          }
+          expanded={mapExpanded}
+          onToggle={() => setMapExpanded((e) => !e)}
+          extra={
+            <>
+              {statFilter !== 'all' && (
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setStatFilter('all')}
+                >
+                  Clear filter
+                </button>
+              )}
+              {chartMap && chartMap.entries.length > 0 ? (
+                <div className="view-tabs" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapTab === 'list'}
+                  className={`view-tabs__tab ${mapTab === 'list' ? 'view-tabs__tab--active' : ''}`}
+                  onClick={() => setMapTab('list')}
+                >
+                  List
+                </button>
+                {isPortfolio && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mapTab === 'theme'}
+                    className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
+                    onClick={() => setMapTab('theme')}
+                  >
+                    By theme
+                  </button>
+                )}
+              </div>
+              ) : null}
+            </>
+          }
+        />
+        {mapExpanded && (
+          <div className={`section-shell__body ${mapTab === 'list' ? '' : ''}`}>
+            {chartMapLoading && (
+              <p className="text-sm text-[var(--muted)]">Loading chart…</p>
+            )}
+            {chartMap && statFilter === 'pending' && pendingCount > 0 && (
+              <div className="empty-map">
+                <p>
+                  {pendingCount} file{pendingCount === 1 ? '' : 's'} in{' '}
+                  <ReefLink vaultPath={vault?.path} reefPath={chartMap.raw_path} className="link-accent">
+                    {chartMap.raw_path}/
+                  </ReefLink>{' '}
+                  awaiting chart.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary mt-3 px-4 py-2 text-sm"
+                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
+                >
+                  Update chart
+                </button>
+              </div>
+            )}
+            {chartMap && chartMap.entries.length === 0 && statFilter !== 'pending' && (
+              <div className="empty-map">
+                <p>No papers on chart yet. Upload PDFs above, then run Update chart.</p>
+                <button
+                  type="button"
+                  className="btn-secondary mt-3 px-4 py-2 text-sm"
+                  onClick={() => scrollToSection('section-docks', { expandUpload: true })}
+                >
+                  Go to upload
+                </button>
+              </div>
+            )}
+            {chartMap && chartMap.entries.length > 0 && statFilter !== 'pending' && (
+              <>
+                {mapTab === 'list' && (
+                  <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+                    {filteredEntries.length === 0 ? (
+                      <div className="empty-map">No papers match this filter.</div>
+                    ) : (
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <th>Status</th>
+                            <th>Paper</th>
+                            <th>Themes</th>
+                            <th>PDF</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredEntries.map((entry) => {
+                            const pill = chartStatusPill(entry.status)
+                            return (
+                              <tr key={entry.slug}>
+                                <td>
+                                  <span className={pill.className}>
+                                    {pill.icon} {pill.label}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="font-medium text-[var(--text)]">
+                                    <ReefLink
+                                      vaultPath={vault?.path}
+                                      reefPath={entry.wiki_page}
+                                      className="link-accent obsidian-mark"
+                                    >
+                                      {entry.title}
+                                    </ReefLink>
+                                  </div>
+                                  {(entry.year || entry.venue) && (
+                                    <div className="text-[12px] text-[var(--muted)]">
+                                      {[entry.year, entry.venue].filter(Boolean).join(' · ')}
+                                    </div>
+                                  )}
+                                </td>
+                                <td>
+                                  {entry.themes.length ? (
+                                    entry.themes.map((t) => (
+                                      <ReefLink
+                                        key={t}
+                                        vaultPath={vault?.path}
+                                        reefPath={themeWikiPage(t)}
+                                        className={`theme-chip ${themeGradientClass(t)} obsidian-mark`}
+                                      >
+                                        {themeDisplayTitle(t, chartMap.themes)}
+                                      </ReefLink>
+                                    ))
+                                  ) : (
+                                    <span className="text-[12px] text-[var(--muted)]">—</span>
+                                  )}
+                                </td>
+                                <td className="text-[12px]">
+                                  {entry.pdf_path ? (
+                                    <ReefLink
+                                      vaultPath={vault?.path}
+                                      reefPath={entry.pdf_path}
+                                      className="link-secondary obsidian-mark"
+                                    >
+                                      {entry.pdf || entry.pdf_path.split('/').pop()}
+                                    </ReefLink>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {mapTab === 'theme' && isPortfolio && (
+                  <div className="theme-map">
+                    {filteredThemeGroups.length === 0 ? (
+                      <div className="empty-map col-span-full">No papers match this filter.</div>
+                    ) : (
+                      filteredThemeGroups.map((group) => (
+                        <div
+                          key={group.slug}
+                          className={`theme-map__card ${themeGradientClass(group.slug)} ${
+                            group.slug === '_unassigned' ? 'theme-map__card--unassigned' : ''
+                          }`}
+                        >
+                          <div className="theme-map__title">
+                            {group.slug === '_unassigned' ? (
+                              group.title
+                            ) : (
+                              <ReefLink
+                                vaultPath={vault?.path}
+                                reefPath={themeWikiPage(group.slug)}
+                                className="theme-map__title-link obsidian-mark"
+                              >
+                                {group.title}
+                              </ReefLink>
+                            )}
+                            <span className="ml-1 text-[10px] font-normal text-[var(--muted)]">
+                              · {group.entries.length}
+                            </span>
+                          </div>
+                          {group.entries.map((entry) => {
+                            const pill = chartStatusPill(entry.status)
+                            return (
+                              <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
+                                <span>{pill.icon}</span>
+                                <ReefLink
+                                  vaultPath={vault?.path}
+                                  reefPath={entry.wiki_page}
+                                  className="link-accent theme-map__paper-link obsidian-mark"
+                                >
+                                  {entry.title}
+                                </ReefLink>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleUpdateChart}
-            disabled={surfaceMutation.isPending || isDiving}
-            className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {surfaceMutation.isPending || isDiving
-              ? 'Updating…'
-              : isIngestPreview
-                ? 'Update chart (preview)'
-                : 'Update chart'}
-          </button>
-          {isPortfolio && hasReef && (
-            <button
-              onClick={() => rebuildMutation.mutate()}
-              disabled={rebuildMutation.isPending || isDiving}
-              className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
-            >
-              Full rebuild
-            </button>
-          )}
-          {vault && (
-            <a
-              href={`obsidian://open?path=${encodeURIComponent(vault.path)}`}
-              className="btn-secondary px-4 py-2 text-sm link-accent"
-            >
-              Open in Obsidian
-            </a>
-          )}
-        </div>
-        <p className="mt-2 text-xs text-[var(--muted)]">
-          {isIngestPreview ? (
-            <>
-              Placeholder shells land in <code>wiki/sources/</code>. Phase 3 will add full LLM
-              ingest (summary, takeaways, entities).
-            </>
-          ) : (
-            <>
-              Quick Dip pulls PDF facts onto your wiki chart. Deep Dive (in Obsidian) adds themes
-              and analysis.
-              {isPortfolio && ' Portfolio uploads run Quick Dip automatically.'}
-            </>
-          )}
-        </p>
-        {(surfaceMutation.isError || rebuildMutation.isError) && (
-          <p className="mt-2 text-xs text-red-400">
-            {(surfaceMutation.error ?? rebuildMutation.error)?.message}
-          </p>
-        )}
       </section>
 
-      {/* Manual-agent ingest — paste-ready prompt for the user's own coding agent */}
-      <section className="mb-6">
-        <SectionLabel>Deep Dive with your agent</SectionLabel>
-        <p className="mt-1 text-xs text-[var(--muted)]">
-          Quick Dip pulls the facts; the enrichment — themes, one-liners, deep dives — is done by
-          your own coding agent. Generate a ready-to-paste prompt for {channel?.emoji}{' '}
-          {channel?.name}, open this vault in Claude Code or Cursor, and paste it.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            onClick={() => ingestPromptMutation.mutate()}
-            disabled={ingestPromptMutation.isPending}
-            className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
-          </button>
-          {ingestPrompt && (
-            <button onClick={copyPrompt} className="btn-secondary px-4 py-2 text-sm">
-              {promptCopied ? 'Copied ✓' : 'Copy prompt'}
-            </button>
-          )}
-        </div>
-        {ingestPrompt && (
-          <pre className="panel-card mt-3 max-h-72 overflow-auto whitespace-pre-wrap p-3 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
-            {ingestPrompt}
-          </pre>
-        )}
-        {ingestPromptMutation.isError && (
-          <p className="mt-2 text-xs text-red-400">{ingestPromptMutation.error.message}</p>
+      {/* Actions — chart + agent */}
+      <section id="section-actions" className="section-shell mb-6 scroll-mt-4">
+        <SectionHeader
+          title={<SectionLabel>Actions</SectionLabel>}
+          expanded={actionsExpanded}
+          onToggle={() => setActionsExpanded((e) => !e)}
+        />
+        {actionsExpanded && (
+          <div className="section-shell__body">
+            <div className="action-grid">
+              <div className="action-block">
+                <h4>Update chart</h4>
+                <p>
+                  <strong>Update chart</strong> maps new docked PDFs (Quick Dip).{' '}
+                  <strong>Full rebuild</strong> regenerates the entire wiki from entries.
+                </p>
+                {isIngestPreview && (
+                  <p className="text-[var(--accent)]">Preview dock — placeholder shells only.</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleUpdateChart}
+                    disabled={surfaceMutation.isPending || isDiving}
+                    className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    {surfaceMutation.isPending || isDiving
+                      ? 'Updating…'
+                      : isIngestPreview
+                        ? 'Update chart (preview)'
+                        : 'Update chart'}
+                  </button>
+                  {isPortfolio && hasReef && (
+                    <button
+                      onClick={() => rebuildMutation.mutate()}
+                      disabled={rebuildMutation.isPending || isDiving}
+                      className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                    >
+                      Full rebuild
+                    </button>
+                  )}
+                </div>
+                {(surfaceMutation.isError || rebuildMutation.isError) && (
+                  <p className="mt-2 text-xs text-red-400">
+                    {(surfaceMutation.error ?? rebuildMutation.error)?.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="action-block">
+                <h4>Deep Dive with your agent</h4>
+                <p>
+                  Generate a paste-ready prompt for {channel?.emoji} {channel?.name}. Open the reef
+                  in Claude Code or Cursor, paste, and enrich.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => ingestPromptMutation.mutate()}
+                    disabled={ingestPromptMutation.isPending}
+                    className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                  >
+                    {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
+                  </button>
+                  {ingestPrompt && (
+                    <button onClick={copyPrompt} className="btn-secondary px-4 py-2 text-sm">
+                      {promptCopied ? 'Copied ✓' : 'Copy prompt'}
+                    </button>
+                  )}
+                </div>
+                {ingestPromptMutation.isError && (
+                  <p className="mt-2 text-xs text-red-400">{ingestPromptMutation.error.message}</p>
+                )}
+              </div>
+            </div>
+
+            {ingestPrompt && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  className="accordion-toggle"
+                  onClick={() => setPromptExpanded((e) => !e)}
+                  aria-expanded={promptExpanded}
+                >
+                  <span>Full ingest prompt</span>
+                  <span className="text-[var(--muted)]">{promptExpanded ? '▾' : '▸'}</span>
+                </button>
+                {promptExpanded && (
+                  <pre className="accordion-body panel-card max-h-72 overflow-auto whitespace-pre-wrap p-3 font-mono text-[12px] leading-relaxed text-[var(--muted)]">
+                    {ingestPrompt}
+                  </pre>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </section>
 
       {activeJobId && (
-        <section className="panel-card">
+        <section className="panel-card mb-6">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
             <span className="text-xs font-medium text-[var(--text)]">Job log</span>
             {jobStatus && (
@@ -904,20 +1453,19 @@ export default function App() {
         </section>
       )}
 
-      {channelStats?.needs_attention && channelStats.needs_attention.length > 0 && (
-        <section className="panel-card mt-4">
-          <h3 className="text-xs font-medium text-[var(--text)]">Needs attention in this dock</h3>
-          <ul className="mt-1.5 space-y-0.5 text-xs text-[var(--muted)]">
-            {channelStats.needs_attention.slice(0, 4).map((item) => (
-              <li key={item.slug}>
-                {item.title}{' '}
-                <span className="text-[var(--accent)]">({item.status.replace(/_/g, ' ')})</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Back to top"
+        >
+          ↑ Top
+        </button>
       )}
       </div>
+
+      <HowToPanel open={howToOpen} onClose={() => setHowToOpen(false)} />
 
       <footer className="site-footer">
         <div className="site-footer__inner">

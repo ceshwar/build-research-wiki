@@ -1,7 +1,7 @@
 vaults:
   - id: demo
-    name: Tour vault
+    name: Shallow reef
     path: examples/minimal-vault
   - id: template
-    name: Blank template
+    name: Blank reef
     path: .

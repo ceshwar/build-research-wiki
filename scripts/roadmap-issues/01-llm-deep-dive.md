@@ -9,5 +9,5 @@ One-click (or batch) LLM Deep Dive for papers on **⚓ My Portfolio**: fill `bui
 
 ## Context
 - Tier 1 Quick Dip is done (`builder/quick_dip.py`)
-- Demo vault: `examples/minimal-vault/` (3 papers)
+- Demo reef: `examples/minimal-vault/` (7 papers)
 - Spec: `docs/PAPER-CHART-SPEC.md`

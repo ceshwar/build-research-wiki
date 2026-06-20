@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.4.0 — Portfolio map & reef rebrand (2026-06-19)
+
+### Added
+
+- **Portfolio map** in SCUBA — List / By theme tabs, Obsidian links, stat-card filters
+- **Get ingest prompt** — agent-ready batch prompt with allowed themes + full-PDF read instruction
+- **In-app Docs** — SCUBA glossary (reefs, pipeline, completion states)
+- **Shallow reef** / **Blank reef** built-in reefs; **+ Connect your reef…** for local vaults
+- **`GET /chart-map`** API for portfolio map data
+
+### Changed
+
+- SCUBA UI refactor — workflow panel, collapsible upload, Dive Computer, burger nav
+- Demo reef expanded to **7 papers** (3 deep dive, 4 enrich next) for ingest-prompt walkthrough
+- Docs aligned to reef terminology and current UI workflow
+
+---
+
 ## v0.3.0 — SCUBA Ideaverse (2026-06-19)
 
 First shareable release of the research wiki manager.
@@ -13,7 +31,7 @@ First shareable release of the research wiki manager.
 - **Deep dive scaffolds** — `builder/deepdives/<slug>.md` (generative sections for LLM/manual fill)
 - **Completion tracking** — Dive Computer shows processed / needs review / pending counts
 - **Incremental builds** — `builder/build.py --incremental` skips unchanged pages
-- **Tour vault** — `examples/minimal-vault/` with 5 papers on chart
+- **Tour vault** — `examples/minimal-vault/` (superseded by **Shallow reef** in v0.4)
 - **Docs** — Getting started, team collaboration, SCUBA guide
 
 ### Changed

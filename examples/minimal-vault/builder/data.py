@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Demo vault DATA — three papers from the Chandrasekharan lab (UIUC).
+"""Shallow reef DATA — demo portfolio (7 papers: 3 deep dive, 4 quick dip).
 Run from repo root: python3 builder/build.py --vault examples/minimal-vault"""
 
 VAULT = {
-    "name": "Research Wiki (Demo)",
+    "name": "Shallow reef",
     "owner": "Eshwar Chandrasekharan",
     "domain": "HCI · online communities · computational social science",
 }

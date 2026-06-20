@@ -10,7 +10,7 @@ A research memory control panel for Obsidian vaults. Dock artifacts into reef ch
 ./manager/scripts/dev.sh
 ```
 
-Open **http://127.0.0.1:5173**
+Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in the header.
 
 ## Workflow
 
@@ -65,6 +65,7 @@ Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/
 | GET | `/channels?vault_id=` |
 | POST | `/vaults/{id}/docks` — create custom dock |
 | GET | `/vaults` |
+| GET | `/chart-map?vault_id=&channel_id=` |
 | POST | `/vaults` — add reef `{ path, name? }` |
 | POST | `/vaults/validate` — check folder |
 | POST | `/vaults/pick-folder` — native folder picker |

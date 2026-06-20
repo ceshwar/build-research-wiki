@@ -14,9 +14,9 @@ Karpathy — compile knowledge once and keep it current.
 
 ---
 
-## The control panel (v0.3)
+## The control panel (v0.4)
 
-A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, and tracking completion in the Dive Computer.
+A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, portfolio map browsing, and completion tracking in the Dive Computer.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -62,17 +62,18 @@ You can combine all three: SCUBA for docking and chart scaffolding, the agent fo
 git clone https://github.com/ceshwar/build-research-wiki.git
 cd build-research-wiki
 
-# Option A — try the UI + demo vault
+# Option A — try the UI + Shallow reef (demo)
 ./manager/scripts/dev.sh
+# → http://127.0.0.1:5173 — pick **Shallow reef** in the header
 
-# Option B — browse the tour vault in Obsidian
-open examples/minimal-vault   # or: File → Open vault in Obsidian
+# Option B — browse the demo reef in Obsidian
+open examples/minimal-vault   # or: File → Open folder as vault in Obsidian
 
-# Option C — start your own vault
+# Option C — start your own reef
 python3 builder/new_vault.py ~/my-research-wiki "My Lab"
 ```
 
-**New here?** → [Getting started](docs/GETTING-STARTED.md) · [SCUBA Ideaverse](docs/SCUBA-IDEAVERSE.md) · [Tour vault](examples/minimal-vault/) · [Team collaboration](docs/TEAM-COLLABORATION.md)
+**New here?** → [Getting started](docs/GETTING-STARTED.md) · [SCUBA Ideaverse](docs/SCUBA-IDEAVERSE.md) · [Shallow reef (demo)](examples/minimal-vault/) · [Team collaboration](docs/TEAM-COLLABORATION.md)
 
 ---
 
@@ -97,7 +98,7 @@ build-research-wiki/
 └── wiki/                 # generated chart (papers, themes, sources, …)
 ```
 
-**Rule:** `raw/` is never modified by the chart build. Edit `builder/entries/` and `builder/deepdives/`, then re-run Surface Interval or `build.py`.
+**Rule:** `raw/` is never modified by the chart build. Edit `builder/entries/` and `builder/deepdives/`, then re-run **Update chart** in the UI or `build.py`.
 
 ---
 
@@ -109,8 +110,8 @@ build-research-wiki/
 | [Roadmap](docs/ROADMAP.md) | Phased next steps + GitHub issue script |
 | [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
 | [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
-| [Changelog](docs/CHANGELOG.md) | Release notes (v0.3.0) |
-| [Tour vault](examples/minimal-vault/) | Demo with 3 papers on chart |
+| [Changelog](docs/CHANGELOG.md) | Release notes (v0.4.0) |
+| [Shallow reef (demo)](examples/minimal-vault/) | Trial reef — 7 papers (3 deep dive, 4 enrich next) |
 | [CLAUDE.md](CLAUDE.md) | Full wiki schema |
 | [BUILD.md](BUILD.md) | Deterministic builder |
 | [manager/README.md](manager/README.md) | API reference |

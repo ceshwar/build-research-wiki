@@ -26,7 +26,7 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 | `builder/data.py`, `builder/deepdives/` | **Yes** | Corpus definition and deep-dive source text. |
 | `builder/entries/` | **Yes** | Chart entry notes (themes, abstract, one-liner). |
 | `builder/templates/` | **Yes** | Default scaffolds (engine; rarely edited per vault). |
-| `builder/auto_papers.json`, `auto_sources.json` | **Yes** | Auto-registry from Surface Interval. |
+| `builder/auto_papers.json`, `auto_sources.json` | **Yes** | Auto-registry from Quick Dip / map_channel. |
 | `manager/` | **Yes** | SCUBA Ideaverse UI (optional for CLI-only teams). |
 | `builder/cache/` | **No** | Regenerable PDF text; gitignored. |
 | `.obsidian/workspace*.json` | **No** | Per-machine UI state; gitignored. |
@@ -47,14 +47,14 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 ### Adding papers (SCUBA / builder path)
 
 1. Dock PDF to `raw/papers/` (UI or copy manually).
-2. Run **Surface Interval** or `python3 builder/map_channel.py --channel my-portfolio`.
+2. Run **Update chart** in SCUBA or `python3 builder/map_channel.py --channel my-portfolio`.
 3. Edit `builder/entries/my-portfolio/<slug>.md` (themes, abstract, one-liner).
 4. Fill `builder/deepdives/<slug>.md` (or wait for LLM Deep Dive in a future release).
 5. Run `python3 builder/build.py` — exit code **0** means no red links.
 6. Update `wiki/overview.md` if threads shifted.
 7. PR with `builder/entries/`, `builder/deepdives/`, and generated `wiki/`.
 
-Check the Dive Computer: **Processed** = ready for the team to read; **Needs review** = still incomplete.
+Check the Dive Computer: **On chart** (deep dive done) = ready for the team to read; **Enrich next** / **Quick dip** = still incomplete.
 
 ### Avoiding merge conflicts
 
@@ -127,4 +127,4 @@ python3 builder/build.py   # exit 1 = red links to fix
 - [Getting started](GETTING-STARTED.md)
 - [Changelog](CHANGELOG.md)
 - [CLAUDE.md](../CLAUDE.md) — full schema
-- [Tour vault](../examples/minimal-vault/) — demo vault with 5 papers on chart
+- [Shallow reef (demo)](../examples/minimal-vault/) — trial reef with 7 papers (3 deep dive, 4 enrich next)

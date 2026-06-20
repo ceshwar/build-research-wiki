@@ -3,4 +3,4 @@ Expose completion stats inside Obsidian (Dataview queries on frontmatter) so the
 
 ## Acceptance
 - [ ] Frontmatter fields on `wiki/papers/` and `wiki/sources/` for chart tier / status
-- [ ] Example Dataview dashboard in tour vault
+- [ ] Example Dataview dashboard in Shallow reef demo

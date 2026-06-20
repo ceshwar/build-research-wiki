@@ -14,6 +14,8 @@ import chart_map  # noqa: E402
 def test_demo_portfolio_map():
     m = chart_map.build_map(EXAMPLE_VAULT, "my-portfolio")
     assert m["channel_id"] == "my-portfolio"
+    assert m["raw_path"] == "raw/papers"
+    assert m["wiki_folder"] == "wiki/papers"
     assert len(m["raw_files"]) == 7
     assert len(m["entries"]) == 7
     assert m["awaiting_chart"] == []
@@ -25,6 +27,7 @@ def test_demo_portfolio_map():
     assert len(processed) == 3
     assert len(quick) == 4
     assert len(m["themes"]) >= 5
+    assert m["entries"][0]["pdf_path"].startswith("raw/papers/")
 
 
 def test_ingest_prompt_lists_themes_and_full_pdf(tmp_path):

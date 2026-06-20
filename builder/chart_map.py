@@ -22,6 +22,17 @@ def _load_themes(vault):
     return [{"slug": slug, "title": meta[0]} for slug, meta in sorted(themes.items())]
 
 
+def _pdf_path(item, channel_id, channels):
+    pdfs = item.get("pdfs") or []
+    if not pdfs:
+        return ""
+    src = pdfs[0]
+    if "/" not in src:
+        raw_path = channels.get(channel_id, {}).get("raw_path", "raw/papers")
+        src = "{}/{}".format(raw_path, src)
+    return src
+
+
 def _pdf_name(item, channels):
     pdfs = item.get("pdfs") or []
     if not pdfs:
@@ -73,6 +84,8 @@ def build_map(vault, channel_id="my-portfolio"):
     vault = os.path.abspath(vault)
     channels = load_channel_map(vault)
     ch = channels.get(channel_id, {})
+    raw_path = ch.get("raw_path", "raw/papers")
+    wiki_folder = "wiki/papers" if ch.get("profile") == "portfolio" else "wiki/sources"
     corpus = [
         e for e in ingest_prompt._full_corpus(vault)
         if e.get("channel") == channel_id
@@ -90,6 +103,7 @@ def build_map(vault, channel_id="my-portfolio"):
             "year": item.get("year") or None,
             "venue": item.get("venue") or "",
             "pdf": _pdf_name(item, channels),
+            "pdf_path": _pdf_path(item, channel_id, channels),
             "themes": _themes_for(item, vault),
             "entry": item.get("entry") or item.get("note", ""),
             "wiki_page": "wiki/papers/{}.md".format(item["slug"])
@@ -103,6 +117,8 @@ def build_map(vault, channel_id="my-portfolio"):
         "channel_id": channel_id,
         "channel_name": ch.get("name", channel_id),
         "profile": ch.get("profile", "portfolio"),
+        "raw_path": raw_path,
+        "wiki_folder": wiki_folder,
         "themes": _load_themes(vault),
         "entries": entries,
         "raw_files": raw_files,

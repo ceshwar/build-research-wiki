@@ -1,4 +1,6 @@
-# Tour vault (demo)
+# Shallow reef (demo)
+
+Pre-loaded trial reef for SCUBA Ideaverse — demo papers in `examples/minimal-vault`.
 
 A **hybrid demo**: three fully enriched lab papers plus four **Quick Dip** papers on the Healthy Online Behavior thread (ready for agent Deep Dive).
 
@@ -41,4 +43,4 @@ In SCUBA: **Get ingest prompt** on ⚓ My Portfolio lists these four. Paste into
 python3 builder/build.py --vault examples/minimal-vault --full
 ```
 
-See [docs/GETTING-STARTED.md](../docs/GETTING-STARTED.md) for your own vault.
+See [docs/GETTING-STARTED.md](../docs/GETTING-STARTED.md) for spawning your own reef.

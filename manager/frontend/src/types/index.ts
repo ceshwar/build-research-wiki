@@ -97,6 +97,7 @@ export interface ChartEntry {
   year: number | null
   venue: string
   pdf: string
+  pdf_path: string
   themes: string[]
   entry: string
   wiki_page: string
@@ -111,6 +112,8 @@ export interface ChartMap {
   channel_id: string
   channel_name: string
   profile: string
+  raw_path: string
+  wiki_folder: string
   themes: ChartTheme[]
   entries: ChartEntry[]
   raw_files: string[]

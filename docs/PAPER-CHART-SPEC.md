@@ -11,7 +11,7 @@ Chart entries are **product IP**: structured wiki pages we generate for users. T
 | **1** | **Quick Dip** | Dock + **Update chart** (auto after portfolio upload) | PDF-derived facts only |
 | **2+** | **Deep Dive** | User or LLM (Phase 3) | Themes, one-liner, analysis, cross-links |
 
-**Quick Dip** = a first pass on the chart. **Deep Dive** = enrichment to a finished paper page (like `beyond-throughput` in a personal vault).
+**Quick Dip** = a first pass on the chart. **Deep Dive** = enrichment to a finished paper page (see `examples/minimal-vault/wiki/papers/positive-reinforcement-reddit.md`).
 
 ---
 

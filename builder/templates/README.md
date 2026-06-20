@@ -13,7 +13,7 @@ On **Update chart (Quick Dip)**, unmapped dock artifacts get a Tier 1 entry auto
 
 See [`docs/PAPER-CHART-SPEC.md`](../docs/PAPER-CHART-SPEC.md) for the full Tier 1 / Tier 2 spec.
 
-**Paper page shape** (finished state, like *beyond-throughput*):
+**Paper page shape** (finished state — see `examples/minimal-vault/wiki/papers/positive-reinforcement-reddit.md`):
 
 | Section | Quick Dip | Deep Dive |
 |---------|-----------|-----------|

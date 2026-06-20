@@ -1,9 +1,8 @@
 # Literature-Expansion Spec — external "related-work" knowledge base
 
 > **Status:** agreed contract, synced to workstream A's **v2** (2026-06-19). This is the
-> **build-research-wiki mirror**; the canonical copy is `second_brain/LIT-EXPANSION-SPEC.md`
-> (workstream A owns/edits it, B mirrors). Two workstreams build to this one contract:
-> - **(A) reference vault** (`second_brain`) — reference implementation + golden acceptance data.
+> **build-research-wiki mirror** of the literature-expansion spec. Two workstreams build to this one contract:
+> - **(A) reference vault** — reference implementation + golden acceptance data (private).
 > - **(B) app + template** (this repo) — the productized ingest engine + UI.
 
 ---
@@ -144,7 +143,7 @@ might surface Lessig 1999; `limit: all` materializes all 184 stubs (user opt-in)
 
 ---
 
-## 2. Workstream A — reference vault (`second_brain`)
+## 2. Workstream A — reference vault
 Own/maintain the canonical spec; add the external-lit section to `CLAUDE.md`; run the OpenAlex
 extraction on the **content-moderation thread** → the golden `builder/lit/store.json` slice +
 example pages = B's acceptance target; confirm 0 red links + the `seed_from` bridge renders.
@@ -187,4 +186,4 @@ Confirm OpenAlex `mailto` for polite pool; golden thread = content moderation (a
 Snowball / forward-citations = post-pilot. **Pending:** `fetch_lit.py` + UI must implement §1.1
 (current code ranks by `seed_count` then `cited_by_count` and has no limit).
 
-See also: `CLAUDE.md` · `builder/README.md` · `docs/SCUBA-IDEAVERSE.md` · `second_brain/LIT-EXPANSION-SPEC.md` (canonical).
+See also: `CLAUDE.md` · `builder/README.md` · `docs/SCUBA-IDEAVERSE.md`.

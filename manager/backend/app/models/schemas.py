@@ -116,6 +116,7 @@ class ChartEntry(BaseModel):
     year: Optional[int] = None
     venue: str = ""
     pdf: str = ""
+    pdf_path: str = ""
     themes: List[str] = []
     entry: str = ""
     wiki_page: str = ""
@@ -130,6 +131,8 @@ class ChartMapResponse(BaseModel):
     channel_id: str
     channel_name: str = ""
     profile: str = "portfolio"
+    raw_path: str = "raw/papers"
+    wiki_folder: str = "wiki/papers"
     themes: List[ChartTheme] = []
     entries: List[ChartEntry] = []
     raw_files: List[str] = []
