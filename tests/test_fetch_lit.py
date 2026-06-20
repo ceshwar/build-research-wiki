@@ -116,3 +116,52 @@ def test_writes_valid_store_json(tmp_path):
     store = os.path.join(str(tmp_path), "builder", "lit", "store.json")
     data = json.load(open(store))
     assert isinstance(data, list) and data[0]["discovered_via"] == "portfolio-citation"
+
+
+def test_excludes_portfolio_self_citations(tmp_path):
+    """Amendment 4: a seed cites another portfolio paper — it must NOT become a field stub."""
+    pa = _work("WA", "Portfolio A", refs=["WB", "W100"], doi="10.1/pa")
+    pb = _work("WB", "Portfolio B", refs=[], doi="10.1/pb")
+    client = FakeClient(
+        {"10.1/pa": pa, "10.1/pb": pb},
+        {"WB": pb, "W100": _work("W100", "Real Field Work", author="Ann Lee")},
+    )
+    seeds = [{"slug": "pa", "doi": "10.1/pa", "arxiv": None, "pdfs": []}]
+    allp = seeds + [{"slug": "pb", "doi": "10.1/pb", "arxiv": None, "pdfs": []}]
+    res = fetch_lit.expand_from_portfolio(str(tmp_path), seeds, client, all_papers=allp, today="2026-06-19")
+    ids = {r["ids"]["openalex"] for r in res["records"]}
+    assert "W100" in ids
+    assert "WB" not in ids          # portfolio paper excluded
+    assert res["excluded"] == 1
+
+
+def test_sort_by_year_and_limit(tmp_path):
+    seed = _work("WS", "Seed", refs=["WX", "WY", "WZ"], doi="10.1/s")
+    client = FakeClient({"10.1/s": seed}, {
+        "WX": _work("WX", "Old", year=2001, cited=5),
+        "WY": _work("WY", "Mid", year=2010, cited=5),
+        "WZ": _work("WZ", "New", year=2020, cited=5),
+    })
+    seeds = [{"slug": "s", "doi": "10.1/s", "arxiv": None, "pdfs": []}]
+    res = fetch_lit.expand_from_portfolio(
+        str(tmp_path), seeds, client, sort_by="year", limit=2, today="2026-06-19")
+    assert [r["ids"]["openalex"] for r in res["records"]] == ["WZ", "WY"]   # recent first, top-2
+    assert res["candidates_total"] == 3
+    assert res["records"][0]["selection"] == {
+        "sort_by": "year", "limit": 2, "rank": 1, "candidates_total": 3}
+
+
+def test_merge_preserves_enriched_and_drops_stale(tmp_path):
+    lit = os.path.join(str(tmp_path), "builder", "lit")
+    os.makedirs(lit)
+    existing = [
+        {"slug": "keep", "ids": {"openalex": "WM"}, "discovered_via": "portfolio-citation", "depth": "mapped"},
+        {"slug": "stale", "ids": {"openalex": "WOLD"}, "discovered_via": "portfolio-citation", "depth": "stub"},
+    ]
+    json.dump(existing, open(os.path.join(lit, "store.json"), "w"))
+    new = [{"slug": "new", "ids": {"openalex": "WNEW"}, "discovered_via": "portfolio-citation", "depth": "stub"}]
+    dropped = fetch_lit.write_store(str(tmp_path), new)
+    ids = {r["ids"]["openalex"] for r in json.load(open(os.path.join(lit, "store.json")))}
+    assert "WM" in ids and "WNEW" in ids   # enriched preserved + new stub added
+    assert "WOLD" not in ids               # stale stub dropped
+    assert dropped == 1

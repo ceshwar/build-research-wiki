@@ -26,6 +26,14 @@ ID (never title)** and **MUST include a local-PDF reference fallback** for paper
 - **Manual-agent enrichment (Amendment 3).** Stub generation is deterministic (`fetch_lit.py` +
   `engine_lit.py`, no backend LLM). `mapped`/`deepdive` tiers are produced by the user's agent via an
   extension of `builder/ingest_prompt.py`. No automated tagger.
+- **Exclude portfolio papers from the field layer (Amendment 4).** Portfolio papers cite each other,
+  so a seed's `referenced_works` contains *other portfolio papers* — those must NOT become `extpaper`
+  stubs (they already live in the portfolio layer). `fetch_lit.py` builds an **exclusion set from the
+  portfolio's resolved OpenAlex IDs + DOIs** (across the *full* portfolio, not just the seeds) and drops
+  any matching ref. **Coverage caveat:** exclusion is only as good as `data.py`'s `doi`/`arxiv` coverage —
+  a portfolio paper without a resolvable ID can't be excluded and will leak as a stub. Add `doi=` to
+  portfolio entries thread-by-thread. *(Validated 2026-06-19: reproduces the 10-record moderation golden
+  slice exactly once `bag-of-communities` got its DOI.)*
 - **§5 locked:** one vault + separate `wiki/lit/`; single JSON store; one-directional `seed_from`
   bridge first; slug `lastname-year-keyword` (`-b/-c` on collision, canonical identity = `ids.openalex`).
 - **Hop-1 scope (locked 2026-06-19):** *hop-1 only, no snowball.* After dedupe by OpenAlex ID and
