@@ -1432,6 +1432,57 @@ code {
   line-height: inherit;
 }
 
+.chart-graph {
+  margin-top: 0.25rem;
+}
+
+.chart-graph__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.chart-graph__stats {
+  color: var(--text);
+}
+
+.chart-graph__canvas-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.chart-graph__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.55rem;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.chart-graph__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chart-graph__legend-swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.chart-graph__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
 /* ---- Layout: workflow, sections, navigation ---- */
 
 .workflow-panel {

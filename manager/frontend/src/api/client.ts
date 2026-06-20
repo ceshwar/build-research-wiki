@@ -120,6 +120,12 @@ export function fetchChartMap(vaultId: string, channelId: string) {
   )
 }
 
+export function fetchChartGraph(vaultId: string, channelId: string) {
+  return request<import('../types').ChartGraph>(
+    `/chart-graph?vault_id=${vaultId}&channel_id=${channelId}`,
+  )
+}
+
 export function removeFromChart(vaultId: string, channelId: string, slug: string) {
   const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId, slug })
   return request<{ slug: string; channel_id: string; deleted_files: string[]; job_id: string | null }>(

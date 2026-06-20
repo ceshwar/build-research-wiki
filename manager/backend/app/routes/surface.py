@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import (
     BuildResponse,
     ChannelSummary,
+    ChartGraphResponse,
     ChartMapResponse,
     DockCreateRequest,
     IngestPromptResponse,
@@ -87,6 +88,18 @@ def chart_map(vault_id: str, channel_id: str = "my-portfolio"):
     import chart_map as cm
     data = cm.build_map(str(vault_path), channel_id)
     return ChartMapResponse(**data)
+
+
+@router.get("/chart-graph", response_model=ChartGraphResponse)
+def chart_graph(vault_id: str, channel_id: str = "my-portfolio"):
+    """Wikilink graph for charted papers on a portfolio dock."""
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault not found")
+    import chart_graph as cg
+    data = cg.build_graph(str(vault_path), channel_id)
+    return ChartGraphResponse(**data)
 
 
 @router.delete("/chart-entry", response_model=RemoveFromChartResponse)

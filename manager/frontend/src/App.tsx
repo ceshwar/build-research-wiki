@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useDropzone, type FileRejection } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HowToPanel } from './components/HowToPanel'
+import { ChartGraphView } from './components/ChartGraphView'
 import {
   addVault,
   createDock,
   dockArtifacts,
   fetchChannels,
+  fetchChartGraph,
   fetchChartMap,
   fetchIngestPrompt,
   fetchJob,
@@ -19,7 +21,7 @@ import {
   surfaceInterval,
   validateVaultPath,
 } from './api/client'
-import type { Channel, ChartEntry, ChartMap, Vault } from './types'
+import type { Channel, ChartEntry, ChartGraph, ChartMap, Vault } from './types'
 import type { VaultValidateResult } from './api/client'
 
 const MIME: Record<string, string> = {
@@ -484,7 +486,7 @@ export default function App() {
   const [ingestPrompt, setIngestPrompt] = useState<string | null>(null)
   const [promptCopied, setPromptCopied] = useState(false)
   const [statFilter, setStatFilter] = useState<StatFilter>('all')
-  const [mapTab, setMapTab] = useState<'list' | 'theme'>('list')
+  const [mapTab, setMapTab] = useState<'list' | 'theme' | 'graph'>('list')
   const [promptExpanded, setPromptExpanded] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
@@ -526,6 +528,12 @@ export default function App() {
   const isPortfolio = channel?.profile === 'portfolio'
   const chartSupport = channel?.chart_support ?? (isPortfolio ? 'full' : 'preview')
   const isIngestPreview = chartSupport === 'preview'
+
+  const { data: chartGraph, isLoading: chartGraphLoading } = useQuery<ChartGraph>({
+    queryKey: ['chart-graph', vaultId, channelId],
+    queryFn: () => fetchChartGraph(vaultId, channelId),
+    enabled: !!vaultId && !!channelId && isPortfolio,
+  })
 
   useEffect(() => {
     if (channels.length && !channels.find((c) => c.id === channelId)) {
@@ -696,6 +704,7 @@ export default function App() {
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['channels'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-graph'] })
     }
   }, [jobQuery.data?.status, logsQuery.data?.status, queryClient])
 
@@ -712,6 +721,7 @@ export default function App() {
       setMapEditMode(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map', vaultId, channelId] })
+      queryClient.invalidateQueries({ queryKey: ['chart-graph', vaultId, channelId] })
       if (data.job_id) setActiveJobId(data.job_id)
     },
     onError: (err) => {
@@ -753,6 +763,7 @@ export default function App() {
       setUploadExpanded(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
       queryClient.invalidateQueries({ queryKey: ['chart-map'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-graph'] })
       if (isPortfolio && data.files_added > 0) {
         surfaceMutation.mutate()
       }
@@ -1392,6 +1403,21 @@ export default function App() {
                   By theme
                 </button>
               )}
+              {isPortfolio && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapTab === 'graph'}
+                  className={`view-tabs__tab ${mapTab === 'graph' ? 'view-tabs__tab--active' : ''}`}
+                  onClick={() => {
+                    setMapTab('graph')
+                    setMapEditMode(false)
+                    setPendingRemovalSlugs(new Set())
+                  }}
+                >
+                  Graph
+                </button>
+              )}
             </div>
           ) : null}
         </div>
@@ -1696,6 +1722,36 @@ export default function App() {
                       ))
                     )}
                   </div>
+                )}
+                {mapTab === 'graph' && isPortfolio && vault?.path && (
+                  <>
+                    <div className="map-toolbar">
+                      <div className="map-status-filters" role="group" aria-label="Filter by status">
+                        {MAP_STATUS_CHIPS.map((chip) => (
+                          <button
+                            key={chip.id}
+                            type="button"
+                            className={`map-status-chip ${
+                              statFilter === chip.id ? 'map-status-chip--active' : ''
+                            }`}
+                            aria-pressed={statFilter === chip.id}
+                            onClick={() =>
+                              setMapStatusFilter(statFilter === chip.id ? 'all' : chip.id)
+                            }
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <ChartGraphView
+                      graph={chartGraph}
+                      loading={chartGraphLoading}
+                      vaultPath={vault.path}
+                      obsidianVaultId={vault.obsidian_vault_id}
+                      statFilter={statFilter}
+                    />
+                  </>
                 )}
               </>
             )}

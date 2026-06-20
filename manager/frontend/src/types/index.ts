@@ -123,3 +123,26 @@ export interface ChartMap {
   raw_files: string[]
   awaiting_chart: string[]
 }
+
+export interface ChartGraphNode {
+  id: string
+  slug: string
+  label: string
+  type: string
+  wiki_page: string
+  status?: string | null
+}
+
+export interface ChartGraphEdge {
+  source: string
+  target: string
+  kind: string
+}
+
+export interface ChartGraph {
+  channel_id: string
+  nodes: ChartGraphNode[]
+  edges: ChartGraphEdge[]
+  stats: Record<string, number>
+  message?: string
+}

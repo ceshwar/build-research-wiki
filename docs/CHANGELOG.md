@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.4.6 — Map Graph view (2026-06-20)
+
+### Added
+
+- **Graph tab** on portfolio dock Map — force-directed wikilink network (papers, themes, concepts, entities, syntheses) from `wiki/` files
+- **`GET /chart-graph`** + `builder/chart_graph.py`; status filters and type legend; click node → Obsidian
+- **Obsidian vault-ID links** — auto-detect registered vaults; optional `obsidian_vault_id` override for sandbox reefs
+
+### Changed
+
+- Map removal errors surface in UI; batch-delete fallback for older backends; backend `--reload` in `dev.sh`
+
+### Docs / issues
+
+- GitHub **#15** (graph shipped); **#14** (in-app viewer, follow-up)
+
+---
+
 ## v0.4.5 — Staged map edits (2026-06-20)
 
 ### Changed

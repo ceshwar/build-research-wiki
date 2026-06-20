@@ -25,7 +25,7 @@ Tracked in GitHub issue **#13 — v0.4 Ideaverse control panel — shipped** (cl
 | **Agent ingest** | Get ingest prompt (Actions tab) — manual Deep Dive workflow |
 | **Builder** | `app/deps.py` shared VaultManager; 50 tests green on demo counts |
 
-**Still open (Phase 2+):** LLM Deep Dive automation, theme assistance, per-paper Enrich buttons, full ingest docks, Sonar ping, query-to-file, **in-app viewer** (#14). See issues #1–#12, #14.
+**Still open (Phase 2+):** LLM Deep Dive automation, theme assistance, per-paper Enrich buttons, full ingest docks, Sonar ping, query-to-file, **in-app viewer** (#14), graph polish (#15). See issues #1–#12, #14–#15.
 
 ## Phases
 

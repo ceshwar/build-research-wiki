@@ -66,7 +66,7 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 | **Reef picker** | Starter reefs, your reefs, **+ Connect your reef…** |
 | **Workspace shell** | `Reef › Dock` path + tabs; only one of Map / Chart status / Actions visible |
 | **Chart status** | Pipeline legend, clickable stat cards, next-step banner |
-| **Map** | **List** (sortable table) or **By theme** (portfolio only); **Note** expands one-liner + PDF |
+| **Map** | **List** (sortable table) or **By theme** (portfolio only); **Graph** (wikilink network); **Note** expands one-liner + PDF |
 | **Actions** | **Update chart**, **Get ingest prompt**, upload shortcut |
 
 Open **Docs** for in-app glossary (reefs, SCUBA terms, pipeline states).

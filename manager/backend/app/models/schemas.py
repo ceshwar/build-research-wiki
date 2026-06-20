@@ -160,6 +160,29 @@ class ChartMapResponse(BaseModel):
     awaiting_chart: List[str] = []
 
 
+class ChartGraphNode(BaseModel):
+    id: str
+    slug: str
+    label: str
+    type: str
+    wiki_page: str
+    status: Optional[str] = None
+
+
+class ChartGraphEdge(BaseModel):
+    source: str
+    target: str
+    kind: str = "link"
+
+
+class ChartGraphResponse(BaseModel):
+    channel_id: str
+    nodes: List[ChartGraphNode] = []
+    edges: List[ChartGraphEdge] = []
+    stats: dict = {}
+    message: str = ""
+
+
 class UploadResponse(BaseModel):
     files_added: int
     filenames: List[str]
