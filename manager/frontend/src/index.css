@@ -245,8 +245,18 @@ body {
   color: var(--navy);
   border-bottom: 3px solid var(--accent);
   padding-bottom: 0.35rem;
-  display: inline-block;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
   margin-bottom: 0.875rem;
+}
+
+.section-label__context {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--muted);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -613,6 +623,49 @@ code {
   text-decoration: none;
 }
 
+.concept-chip {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  margin: 0.1rem 0.15rem 0.1rem 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.concept-chip:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(99, 102, 241, 0.16);
+  text-decoration: none;
+}
+
+.map-synthesis-links {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.synthesis-link {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.synthesis-link:hover {
+  text-decoration: underline;
+}
+
+.paper-meta a {
+  font-weight: 500;
+}
+
 .theme-gradient--governance {
   background: linear-gradient(120deg, rgba(27, 42, 74, 0.14), var(--accent-soft));
   color: var(--navy);
@@ -776,6 +829,137 @@ code {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px dashed var(--border);
+}
+
+.dock-workspace {
+  margin-bottom: 1.5rem;
+}
+
+.dock-workspace__rail {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.dock-workspace__dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--text);
+  margin-bottom: 0.55rem;
+}
+
+.dock-workspace__meta {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dock-workspace__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dock-workspace__tab {
+  flex: 1 1 7rem;
+  min-width: 6.5rem;
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.dock-workspace__tab:hover {
+  border-color: var(--border-accent);
+}
+
+.dock-workspace__tab--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.dock-workspace__tab-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dock-workspace__tab--active .dock-workspace__tab-label {
+  color: var(--accent);
+}
+
+.dock-workspace__tab-hint {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dock-workspace__tab-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  min-width: 1.1rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+}
+
+.dock-workspace__guide {
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.dock-workspace__guide-dismiss {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.section-shell--in-view {
+  border-color: rgba(234, 88, 12, 0.45);
+  box-shadow: 0 4px 18px rgba(234, 88, 12, 0.12);
+}
+
+.map-concept-placeholder {
+  font-size: 0.6875rem;
+  font-style: italic;
+  color: var(--muted);
 }
 
 .dropzone--compact {

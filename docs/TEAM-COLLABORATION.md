@@ -54,7 +54,7 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 6. Update `wiki/overview.md` if threads shifted.
 7. PR with `builder/entries/`, `builder/deepdives/`, and generated `wiki/`.
 
-Check the Dive Computer: **On chart** (deep dive done) = ready for the team to read; **Enrich next** / **Quick dip** = still incomplete.
+Check **Chart status**: **On chart** (deep dive done) = ready for the team to read; **Enrich next** / **Quick dip** = still incomplete.
 
 ### Avoiding merge conflicts
 

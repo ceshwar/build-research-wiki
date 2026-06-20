@@ -80,7 +80,7 @@ Re-run **Update chart** after edits to refresh `wiki/`.
 
 ---
 
-## Completion states (Dive Computer)
+## Completion states (Chart status)
 
 | State | Meaning |
 |-------|---------|
@@ -95,7 +95,7 @@ Re-run **Update chart** after edits to refresh `wiki/`.
 
 1. User docks a PDF to a **portfolio** channel → **Confirm upload**
 2. **Quick Dip runs automatically** (same as **Update chart (Quick Dip)**)
-3. Dive Computer shows **Quick dip** / **Needs deep dive** / **Deep dive done** counts
+3. Chart status shows **Quick dip** / **Enrich next** / **On chart** counts
 4. User edits entries and deep dives in Obsidian or repo; re-surfaces when ready
 
 Ingest channels (lit-review, lab-memory, ideas) also get Quick Dip shells in `builder/entries/` → `wiki/sources/`; Deep Dive fills generative sections later.
@@ -126,5 +126,5 @@ Requires **poppler** (`pdftotext`) for PDF tests.
 | `builder/quick_dip.py` | PDF/text extraction + entry body builder |
 | `builder/map_channel.py` | Map `raw/` → entries + auto registry; refresh stale rows |
 | `builder/engine_papers.py` | Wiki paper pages; 🤿 icon for quick-dip |
-| `builder/completion.py` | Dive Computer state machine |
+| `builder/completion.py` | Chart status state machine |
 | `manager/` Update chart | Runs `map_channel` (Quick Dip) + `build` per channel |

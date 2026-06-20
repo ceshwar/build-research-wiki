@@ -44,12 +44,12 @@ Dock (raw/)  →  Quick Dip (Update chart)  →  Chart (wiki/)  →  Obsidian
 ```
 
 1. **Pick a reef** — Shallow reef for demo, Blank reef or your own for real work.
-2. **Pick a channel** on the Dive Computer (My Portfolio, Lit Review, Dive Log, …)
+2. **Pick a dock** — ⚓ My Portfolio, 🌊 Literature Review, … (first visit opens **Chart status**).
 3. **Dock** — expand upload, drop files, **Confirm Upload** → `raw/{channel}/`
-4. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart**
-5. **Portfolio map** — browse charted papers (List or By theme); open pages in Obsidian
-6. **Deep Dive** — **Get ingest prompt** for your coding agent, or edit `builder/entries/` and `builder/deepdives/` by hand
-7. **Re-chart** when ready; check Dive Computer stats
+4. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart** in Actions
+5. **Chart status** — pipeline stats and next-step banner for this dock
+6. **Map** — browse charted items (List or By theme); concepts and syntheses from LLM ingest
+7. **Deep Dive** — **Get ingest prompt** for your coding agent, or edit entries by hand
 8. **Open reef in Obsidian** (header icon or map links)
 
 Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
@@ -61,12 +61,22 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 | Area | What it does |
 |------|----------------|
 | **Header** | Reef dropdown (Starter reefs / Your reefs / Connect), Obsidian link, **Docs**, burger menu |
-| **Workflow panel** | Channel docks + collapsible upload |
-| **Dive Computer** | Pipeline legend, clickable stat cards, next-step banner |
-| **Portfolio map** | List \| By theme tabs; Obsidian links to chart pages |
-| **Actions** | **Update chart**, **Get ingest prompt** (accordion) |
+| **Docks** | Dock pills + collapsible upload |
+| **Dock workspace rail** | Sticky tabs for the active dock: **Chart status · Map · Actions** |
+| **Chart status** | Pipeline legend, clickable stat cards, next-step banner |
+| **Map** | List \| By theme; paper row links PDF; **Concepts** column shows ingest output |
+| **Actions** | **Update chart**, **Get ingest prompt** |
 
 Open **Docs** for in-app glossary (reefs, SCUBA terms, pipeline states).
+
+### Dock workspace (focus + discoverability)
+
+When you select a dock, everything below the dock pills scopes to that channel:
+
+- **Sticky rail** — shows `⚓ My Portfolio · 7 on chart` and three tabs. Click a tab to jump and expand that section; scroll updates the active tab.
+- **Collapsible sections** — collapse Map or Actions if you only need Chart status.
+- **Per-reef guide** — a one-line explainer appears until you dismiss it (**Got it**); it resets when you switch to a different reef.
+- **First dock visit** — the first time you open a dock on a reef, **Chart status** expands automatically.
 
 ---
 
@@ -95,6 +105,7 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 | Entry templates | `builder/templates/<channel>/` | copy to start by hand |
 | Chart entries | `builder/entries/<channel>/<slug>.md` | you — themes, abstract, one-liner |
 | Deep dives | `builder/deepdives/<slug>.md` | you or LLM agent |
+| Concepts / syntheses | `wiki/concepts/`, `wiki/syntheses/` | LLM ingest or hand-written |
 | Auto registry | `builder/auto_papers.json`, `auto_sources.json` | generated — don't hand-edit |
 | Chart pages | `wiki/papers/`, `wiki/sources/`, … | generated — don't hand-edit |
 
@@ -102,7 +113,19 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 
 ---
 
-## Completion states (Dive Computer)
+## Map columns
+
+| Column | Source |
+|--------|--------|
+| **Status** | Quick dip / Deep dive / Enrich next |
+| **Paper** | Wiki page link; year · venue · PDF link in metadata line |
+| **Themes** | `builder/entries/` wikilinks + `data.py` |
+| **Concepts** | `builder/data.py` CONCEPTS + wikilinks on paper pages; *Deep Dive to add* when empty |
+| **Syntheses** | Linked below concepts when paper appears in `wiki/syntheses/` |
+
+---
+
+## Completion states (Chart status)
 
 | Status | Meaning | What to do |
 |--------|---------|------------|
@@ -111,7 +134,7 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 | **Enrich next** | On chart but themes/deep dive incomplete | **Get ingest prompt** or edit entries + deepdives |
 | **On chart** (deep dive done) | Fully enriched paper page | Refine in Obsidian if needed |
 
-Portfolio uploads trigger Quick Dip automatically after **Confirm Upload**. Stat cards are clickable filters on the portfolio map.
+Portfolio uploads trigger Quick Dip automatically after **Confirm Upload**. Stat cards filter the Map.
 
 See [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md) for field-level rules (no guessing on Tier 1).
 
@@ -160,7 +183,7 @@ Full issue list: **[docs/ROADMAP.md](ROADMAP.md)** · create on GitHub: `./scrip
 
 | Phase | Feature |
 |-------|---------|
-| **Now (v0.4)** | Portfolio map UI, reef rebranding, ingest prompt with theme list + full-PDF read |
+| **Now (v0.4)** | Dock workspace, Map with concepts, Chart status, ingest prompt |
 | **Phase 2** | LLM Deep Dive — auto-fill `builder/deepdives/` from PDFs |
 | **Phase 2** | Theme/one-liner assistance, Enrich actions, entity propagation |
 | **Phase 3** | Full LLM ingest for lit-review / dive-log / ideas (replaces preview shells) |

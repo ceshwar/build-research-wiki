@@ -2,7 +2,7 @@
 
 Fixture-based tests for the two pieces of logic whose correctness the product
 advertises: **Quick Dip** extraction (the "never guess" contract) and the
-**completion** state machine (the Dive Computer's counts).
+**completion** state machine (Chart status counts).
 
 ```bash
 pip install -r requirements-dev.txt   # pytest

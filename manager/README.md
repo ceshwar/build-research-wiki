@@ -14,11 +14,12 @@ Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in th
 
 ## Workflow
 
-1. **Pick a channel** on the Dive Computer (My Portfolio, Lit Review, Lab Memory, …)
+1. **Pick a dock** — ⚓ My Portfolio, 🌊 Literature Review, …
 2. **Dock** — drop files, **Confirm Upload** → `raw/{channel}/`
-3. **Quick Dip** — runs automatically after portfolio upload; or click **Update chart (Quick Dip)**
-4. **Deep Dive** — themes, one-liner, analysis in `builder/entries/` and `builder/deepdives/`
-5. **Open reef in Obsidian**
+3. **Chart status** — track on chart / quick dip / enrich next for this dock
+4. **Map** — browse charted items; concepts and syntheses from ingest
+5. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
+6. **Open reef in Obsidian**
 
 See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2 rules.
 
@@ -33,7 +34,19 @@ See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2
 
 Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/docks.yaml` per vault.
 
-## Dive Computer
+## Dock workspace
+
+Selecting a dock shows a sticky rail with three tabs scoped to that channel:
+
+| Tab | Purpose |
+|-----|---------|
+| **Chart status** | Pipeline stats, next-step banner |
+| **Map** | List / By theme; concepts, syntheses, PDF in paper row |
+| **Actions** | Update chart, Get ingest prompt |
+
+First visit to a dock on a reef auto-expands **Chart status**. The onboarding guide dismisses per reef (stored in browser `localStorage`).
+
+## Chart status stats
 
 | Stat | Meaning |
 |------|---------|
@@ -53,7 +66,8 @@ Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/
 | **Deep Dive** | Tier 2+ enrichment (themes, analysis) |
 | **Channel** | A reef corpus — portfolio or ingest profile |
 | **Chart** | Generated map (`wiki/` + `index.md`) |
-| **Dive Computer** | Dashboard stats per channel |
+| **Chart status** | Per-dock charting tracker |
+| **Map** | Browse chart for the active dock |
 | **Reef** | The Obsidian vault |
 
 ## API

@@ -13,7 +13,7 @@ This guide helps you go from **clone** to **working research wiki** in one sessi
 
 - [ ] **Clone** the repo and open the folder in your LLM coding agent (Cursor, Claude Code, Codex, etc.).
 - [ ] **Start SCUBA** — `./manager/scripts/dev.sh` → **http://127.0.0.1:5173**.
-- [ ] **Pick Shallow reef** in the header dropdown — explore the Dive Computer, portfolio map (List / By theme), and **Docs** (in-app glossary).
+- [ ] **Pick Shallow reef** — explore docks, the workspace rail (**Chart status · Map · Actions**), and **Docs**.
 - [ ] **Browse in Obsidian** — open `examples/minimal-vault`; read `index.md` → `wiki/overview.md` → one paper page.
 - [ ] **Try Get ingest prompt** — on Shallow reef, ⚓ My Portfolio → **Get ingest prompt** → paste into your agent to Deep Dive the four Quick Dip papers.
 - [ ] **Spawn your own reef** — **+ Connect your reef…** or `python3 builder/new_vault.py ~/path "Lab Name"`.
@@ -69,10 +69,10 @@ Best for teams who want a visual dock-and-chart workflow without typing ingest c
 3. Pick **Shallow reef** (demo) or **Blank reef** (empty scaffold). Use **+ Connect your reef…** to register your own Obsidian folder (saved locally, gitignored).
 4. **Dock** — collapse-open the upload panel, drop PDFs, **Confirm Upload** → `raw/{channel}/`.
 5. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart**.
-6. **Portfolio map** — browse charted papers (List or By theme tabs); click Obsidian links to open pages.
+6. **Map** — browse charted papers (List or By theme); concepts show after Deep Dive / LLM ingest.
 7. **Deep Dive** — **Get ingest prompt** copies an agent-ready batch prompt; or edit `builder/entries/` and `builder/deepdives/` by hand.
-8. Check the **Dive Computer** — **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** tell you what still needs work.
-9. Open the reef in Obsidian (header icon or portfolio map links).
+8. Check **Chart status** — **On chart**, **Quick dip**, **Enrich next**, **Awaiting chart** tell you what still needs work.
+9. Open the reef in Obsidian (header icon or map links).
 
 See [`docs/SCUBA-IDEAVERSE.md`](SCUBA-IDEAVERSE.md) and the in-app **Docs** panel for SCUBA vocabulary.
 

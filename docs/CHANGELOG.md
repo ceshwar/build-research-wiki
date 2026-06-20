@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.4.1 — Dock workspace & Map concepts (2026-06-20)
+
+### Added
+
+- **Dock workspace rail** — sticky **Chart status · Map · Actions** tabs scoped to the active dock
+- **Map concepts column** — concept chips + synthesis links from `wiki/`; PDF moved into paper row
+- **Per-reef onboarding guide** — dismissible hint resets when you switch reefs
+- **First dock visit** — auto-expands Chart status the first time you open each dock on a reef
+
+### Changed
+
+- **Dive Computer** renamed to **Chart status** in the UI
+- **Portfolio map** renamed to **Map** (dock-scoped)
+- `GET /chart-map` returns `concepts` and `syntheses` per entry
+
+---
+
 ## v0.4.0 — Portfolio map & reef rebrand (2026-06-19)
 
 ### Added

@@ -174,11 +174,33 @@ function filterThemeGroups(
 }
 
 type SectionId = 'section-docks' | 'section-dive' | 'section-map' | 'section-actions'
+type WorkspaceSectionId = 'section-dive' | 'section-map' | 'section-actions'
+
+const DOCK_WORKSPACE_SECTIONS: {
+  id: WorkspaceSectionId
+  label: string
+  hint: string
+  badge?: (ctx: { enrich: number; pending: number }) => number | null
+}[] = [
+  {
+    id: 'section-dive',
+    label: 'Chart status',
+    hint: 'Track progress',
+    badge: (c) => (c.enrich > 0 ? c.enrich : null),
+  },
+  { id: 'section-map', label: 'Map', hint: 'Browse chart' },
+  {
+    id: 'section-actions',
+    label: 'Actions',
+    hint: 'Update & enrich',
+    badge: (c) => (c.pending > 0 ? c.pending : c.enrich > 0 ? c.enrich : null),
+  },
+]
 
 const NAV_SECTIONS: { id: SectionId; label: string; badge?: (ctx: { enrich: number; pending: number }) => number | null }[] = [
   { id: 'section-docks', label: 'Docks & upload' },
-  { id: 'section-dive', label: 'Dive Computer', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
-  { id: 'section-map', label: 'Portfolio map' },
+  { id: 'section-dive', label: 'Chart status', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
+  { id: 'section-map', label: 'Map' },
   { id: 'section-actions', label: 'Actions', badge: (c) => (c.enrich > 0 ? c.enrich : c.pending > 0 ? c.pending : null) },
 ]
 
@@ -219,6 +241,14 @@ function obsidianReefHref(vaultPath: string, reefPath: string) {
 
 function themeWikiPage(slug: string) {
   return `wiki/themes/${slug}.md`
+}
+
+function conceptWikiPage(slug: string) {
+  return `wiki/concepts/${slug}.md`
+}
+
+function synthesisWikiPage(slug: string) {
+  return `wiki/syntheses/${slug}.md`
 }
 
 const THEME_GRADIENT: Record<string, string> = {
@@ -301,6 +331,14 @@ function groupEntriesByTheme(map: ChartMap | undefined) {
 
 const CONNECT_REEF = '__connect__'
 
+function dockGuideDismissedKey(vaultId: string) {
+  return `scuba-dock-guide-dismissed:${vaultId}`
+}
+
+function dockSeenKey(vaultId: string, channelId: string) {
+  return `scuba-dock-seen:${vaultId}:${channelId}`
+}
+
 export default function App() {
   const queryClient = useQueryClient()
   const [vaultId, setVaultId] = useState('demo')
@@ -328,6 +366,9 @@ export default function App() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  const [activeWorkspaceSection, setActiveWorkspaceSection] =
+    useState<WorkspaceSectionId>('section-dive')
+  const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -359,6 +400,10 @@ export default function App() {
       setChannelId(channels[0].id)
     }
   }, [channels, channelId])
+
+  useEffect(() => {
+    setDockGuideDismissed(localStorage.getItem(dockGuideDismissedKey(vaultId)) === '1')
+  }, [vaultId])
 
   // The ingest prompt is per vault+dock; clear it when either changes.
   useEffect(() => {
@@ -403,16 +448,73 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey)
   }, [howToOpen])
 
+  useEffect(() => {
+    const sectionIds: WorkspaceSectionId[] = ['section-dive', 'section-map', 'section-actions']
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+        const top = visible[0]?.target.id as WorkspaceSectionId | undefined
+        if (top && sectionIds.includes(top)) {
+          setActiveWorkspaceSection(top)
+        }
+      },
+      { rootMargin: '-12% 0px -50% 0px', threshold: [0, 0.2, 0.4, 0.6, 0.8] },
+    )
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [vaultId, channelId, diveExpanded, mapExpanded, actionsExpanded])
+
   const scrollToSection = useCallback(
     (id: SectionId, opts?: { expandUpload?: boolean; expandActions?: boolean }) => {
+      if (id === 'section-dive') setDiveExpanded(true)
+      if (id === 'section-map') setMapExpanded(true)
+      if (id === 'section-actions') setActionsExpanded(true)
       if (opts?.expandUpload) setUploadExpanded(true)
       if (opts?.expandActions) setActionsExpanded(true)
+      if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
+        setActiveWorkspaceSection(id)
+      }
       setNavOpen(false)
       requestAnimationFrame(() => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     },
     [],
+  )
+
+  const focusWorkspaceSection = useCallback(
+    (id: WorkspaceSectionId) => {
+      scrollToSection(id, { expandActions: id === 'section-actions' })
+    },
+    [scrollToSection],
+  )
+
+  const dismissDockGuide = useCallback(() => {
+    localStorage.setItem(dockGuideDismissedKey(vaultId), '1')
+    setDockGuideDismissed(true)
+  }, [vaultId])
+
+  const selectDock = useCallback(
+    (nextChannelId: string) => {
+      const isFirstVisit = localStorage.getItem(dockSeenKey(vaultId, nextChannelId)) !== '1'
+      setChannelId(nextChannelId)
+      requestAnimationFrame(() => {
+        document.querySelector('.dock-workspace__rail')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        })
+        if (isFirstVisit) {
+          localStorage.setItem(dockSeenKey(vaultId, nextChannelId), '1')
+          focusWorkspaceSection('section-dive')
+        }
+      })
+    },
+    [vaultId, focusWorkspaceSection],
   )
 
   const toggleStatFilter = useCallback((filter: StatFilter) => {
@@ -844,7 +946,7 @@ export default function App() {
                 <button
                   key={ch.id}
                   type="button"
-                  onClick={() => setChannelId(ch.id)}
+                  onClick={() => selectDock(ch.id)}
                   className={`dock-pill ${channelId === ch.id ? 'dock-pill--active' : ''}`}
                   title={
                     awaiting > 0
@@ -1008,11 +1110,71 @@ export default function App() {
         </section>
       )}
 
-      {/* Dive Computer — expands into stats, next step, needs attention */}
-      {vault && (
-        <section id="section-dive" className="section-shell mb-6 scroll-mt-4">
+      {/* Dock workspace — chart status, map, actions for the selected dock */}
+      {vault && channel && (
+        <div className="dock-workspace">
+          <div className="dock-workspace__rail">
+            <div className="dock-workspace__dock">
+              <span>
+                {channel.emoji} {channel.name}
+              </span>
+              <span className="dock-workspace__meta">
+                {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
+                {(channelStats?.pending ?? pendingCount) > 0 &&
+                  ` · ${channelStats?.pending ?? pendingCount} awaiting`}
+              </span>
+            </div>
+            <div className="dock-workspace__tabs" role="tablist" aria-label="Dock workspace">
+              {DOCK_WORKSPACE_SECTIONS.map((item) => {
+                const badge = item.badge?.({
+                  enrich: enrichEntries.length,
+                  pending: pendingCount,
+                })
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeWorkspaceSection === item.id}
+                    className={`dock-workspace__tab ${
+                      activeWorkspaceSection === item.id ? 'dock-workspace__tab--active' : ''
+                    }`}
+                    onClick={() => focusWorkspaceSection(item.id)}
+                  >
+                    <span className="dock-workspace__tab-label">
+                      {item.label}
+                      {badge != null && badge > 0 && (
+                        <span className="dock-workspace__tab-badge">{badge}</span>
+                      )}
+                    </span>
+                    <span className="dock-workspace__tab-hint">{item.hint}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {!dockGuideDismissed && (
+              <div className="dock-workspace__guide">
+                <span>
+                  <strong>Chart status</strong> tracks charting for this dock · <strong>Map</strong>{' '}
+                  browses wiki pages · <strong>Actions</strong> updates the chart and runs Deep Dive.
+                  Collapse sections you do not need.
+                </span>
+                <button type="button" className="dock-workspace__guide-dismiss" onClick={dismissDockGuide}>
+                  Got it
+                </button>
+              </div>
+            )}
+          </div>
+
+      {/* Chart status — pipeline, stats, next step */}
+      <section
+        id="section-dive"
+        className={`section-shell mb-6 scroll-mt-4 ${
+          activeWorkspaceSection === 'section-dive' ? 'section-shell--in-view' : ''
+        }`}
+      >
           <SectionHeader
-            title={<SectionLabel>Dive Computer</SectionLabel>}
+            title={<SectionLabel>Chart status</SectionLabel>}
             meta={`Chart updated ${formatChartUpdated(vault.last_build)}`}
             expanded={diveExpanded}
             onToggle={() => setDiveExpanded((e) => !e)}
@@ -1122,16 +1284,16 @@ export default function App() {
             </div>
           )}
         </section>
-      )}
 
-      {/* Portfolio map — tabbed exploration */}
-      <section id="section-map" className="section-shell mb-6 scroll-mt-4">
+      {/* Map — tabbed exploration for active dock */}
+      <section
+        id="section-map"
+        className={`section-shell mb-6 scroll-mt-4 ${
+          activeWorkspaceSection === 'section-map' ? 'section-shell--in-view' : ''
+        }`}
+      >
         <SectionHeader
-          title={
-            <SectionLabel>
-              {isPortfolio ? 'Portfolio map' : `${channel?.emoji ?? ''} ${channel?.name ?? 'Dock'} map`}
-            </SectionLabel>
-          }
+          title={<SectionLabel>Map</SectionLabel>}
           expanded={mapExpanded}
           onToggle={() => setMapExpanded((e) => !e)}
           extra={
@@ -1220,7 +1382,7 @@ export default function App() {
                             <th>Status</th>
                             <th>Paper</th>
                             <th>Themes</th>
-                            <th>PDF</th>
+                            <th>Concepts</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1243,9 +1405,21 @@ export default function App() {
                                       {entry.title}
                                     </ReefLink>
                                   </div>
-                                  {(entry.year || entry.venue) && (
-                                    <div className="text-[12px] text-[var(--muted)]">
+                                  {(entry.year || entry.venue || entry.pdf_path) && (
+                                    <div className="paper-meta text-[12px] text-[var(--muted)]">
                                       {[entry.year, entry.venue].filter(Boolean).join(' · ')}
+                                      {entry.pdf_path && (
+                                        <>
+                                          {(entry.year || entry.venue) && ' · '}
+                                          <ReefLink
+                                            vaultPath={vault?.path}
+                                            reefPath={entry.pdf_path}
+                                            className="link-secondary obsidian-mark"
+                                          >
+                                            {entry.pdf || entry.pdf_path.split('/').pop()}
+                                          </ReefLink>
+                                        </>
+                                      )}
                                     </div>
                                   )}
                                 </td>
@@ -1265,17 +1439,34 @@ export default function App() {
                                     <span className="text-[12px] text-[var(--muted)]">—</span>
                                   )}
                                 </td>
-                                <td className="text-[12px]">
-                                  {entry.pdf_path ? (
-                                    <ReefLink
-                                      vaultPath={vault?.path}
-                                      reefPath={entry.pdf_path}
-                                      className="link-secondary obsidian-mark"
-                                    >
-                                      {entry.pdf || entry.pdf_path.split('/').pop()}
-                                    </ReefLink>
+                                <td>
+                                  {entry.concepts.length ? (
+                                    entry.concepts.map((c) => (
+                                      <ReefLink
+                                        key={c.slug}
+                                        vaultPath={vault?.path}
+                                        reefPath={conceptWikiPage(c.slug)}
+                                        className="concept-chip obsidian-mark"
+                                      >
+                                        {c.title}
+                                      </ReefLink>
+                                    ))
                                   ) : (
-                                    '—'
+                                    <span className="map-concept-placeholder">Deep Dive to add</span>
+                                  )}
+                                  {entry.syntheses.length > 0 && (
+                                    <div className="map-synthesis-links">
+                                      {entry.syntheses.map((s) => (
+                                        <ReefLink
+                                          key={s.slug}
+                                          vaultPath={vault?.path}
+                                          reefPath={synthesisWikiPage(s.slug)}
+                                          className="synthesis-link obsidian-mark"
+                                        >
+                                          ↗ {s.title}
+                                        </ReefLink>
+                                      ))}
+                                    </div>
                                   )}
                                 </td>
                               </tr>
@@ -1342,7 +1533,12 @@ export default function App() {
       </section>
 
       {/* Actions — chart + agent */}
-      <section id="section-actions" className="section-shell mb-6 scroll-mt-4">
+      <section
+        id="section-actions"
+        className={`section-shell mb-6 scroll-mt-4 ${
+          activeWorkspaceSection === 'section-actions' ? 'section-shell--in-view' : ''
+        }`}
+      >
         <SectionHeader
           title={<SectionLabel>Actions</SectionLabel>}
           expanded={actionsExpanded}
@@ -1436,6 +1632,8 @@ export default function App() {
           </div>
         )}
       </section>
+        </div>
+      )}
 
       {activeJobId && (
         <section className="panel-card mb-6">

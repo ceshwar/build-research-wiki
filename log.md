@@ -6,6 +6,11 @@ bottom. Each entry starts with `## [YYYY-MM-DD] <ingest|query|lint|synthesis> | 
 
 ## [setup] Research Wiki scaffolded from the build-research-wiki template.
 
+## [2026-06-20] release | v0.4.1 dock workspace, Map concepts, Chart status
+- Dock workspace rail (Chart status · Map · Actions); per-reef guide; first-dock visit expands Chart status.
+- Map: concepts/syntheses columns; PDF in paper row; chart_map API extended.
+- Docs sync: SCUBA-IDEAVERSE, README, manager/README, CHANGELOG.
+
 ## [2026-06-19] release | v0.4 portfolio map, reef rebrand, docs sync
 - SCUBA UI: portfolio map, Docs panel, Shallow reef / Blank reef / Connect your reef.
 - Shallow reef demo: 7 papers (3 deep dive, 4 enrich next); ingest prompt walkthrough.

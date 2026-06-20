@@ -13,15 +13,15 @@ papers and notes. Implements the
 Karpathy — compile knowledge once and keep it current.
 
 <p align="center">
-  <img src="docs/images/scuba-main-ui.png" alt="SCUBA Ideaverse control panel — docks, Dive Computer, and portfolio map on Shallow reef" width="900">
+  <img src="docs/images/scuba-main-ui.png" alt="SCUBA Ideaverse — docks, chart status, and map on Shallow reef" width="900">
 </p>
-<p align="center"><em>Shallow reef demo — dock papers, track completion, browse the portfolio map, then open in Obsidian.</em></p>
+<p align="center"><em>Shallow reef demo — pick a dock, track chart status, browse the map, then open in Obsidian.</em></p>
 
 ---
 
 ## The control panel (v0.4)
 
-A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, portfolio map browsing, and completion tracking in the Dive Computer.
+A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, per-dock **Map** browsing (themes, concepts, syntheses), and **Chart status** tracking.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -29,11 +29,12 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 
 | Step | Action |
 |------|--------|
-| 1 | Pick a channel (portfolio, lit review, lab memory, …) |
+| 1 | Pick a **reef**, then a **dock** (portfolio, lit review, …) |
 | 2 | **Dock** files → `raw/{channel}/` (portfolio uploads auto-run Quick Dip) |
-| 3 | **Update chart (Quick Dip)** → PDF facts → `builder/entries/` → `wiki/` |
-| 4 | **Deep Dive** — edit `builder/entries/` and `builder/deepdives/`; re-chart |
-| 5 | Open reef in Obsidian |
+| 3 | Check **Chart status** — on chart, quick dip, enrich next |
+| 4 | Browse the **Map** — papers, themes, concepts; PDF linked in each row |
+| 5 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
+| 6 | Open reef in Obsidian |
 
 Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)** · Chart spec: **[docs/PAPER-CHART-SPEC.md](docs/PAPER-CHART-SPEC.md)**
 
@@ -43,7 +44,7 @@ Full guide: **[docs/SCUBA-IDEAVERSE.md](docs/SCUBA-IDEAVERSE.md)** · Chart spec
 
 ### 1. SCUBA Ideaverse (UI) — *recommended for teams*
 
-Dock → Quick Dip → Deep Dive → Obsidian. Uploads stay in `raw/`; Tier 1 chart entries land in `builder/entries/` from PDF facts only (no guessing). The Dive Computer shows **Quick dip**, **Needs deep dive**, and **Deep dive done** counts.
+Dock → Quick Dip → Deep Dive → Obsidian. Uploads stay in `raw/`; Tier 1 chart entries land in `builder/entries/` from PDF facts only (no guessing). **Chart status** shows **Quick dip**, **Enrich next**, and **On chart** counts per dock.
 
 ### 2. LLM-driven ingest (agent workflow)
 
@@ -115,7 +116,7 @@ build-research-wiki/
 | [Roadmap](docs/ROADMAP.md) | Phased next steps + GitHub issue script |
 | [Getting started](docs/GETTING-STARTED.md) | Onboarding paths + first-session checklist |
 | [Team collaboration](docs/TEAM-COLLABORATION.md) | Shared repos, git norms, privacy |
-| [Changelog](docs/CHANGELOG.md) | Release notes (v0.4.0) |
+| [Changelog](docs/CHANGELOG.md) | Release notes (v0.4.1) |
 | [Shallow reef (demo)](examples/minimal-vault/) | Trial reef — 7 papers (3 deep dive, 4 enrich next) |
 | [CLAUDE.md](CLAUDE.md) | Full wiki schema |
 | [BUILD.md](BUILD.md) | Deterministic builder |

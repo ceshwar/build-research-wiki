@@ -27,7 +27,11 @@ def test_demo_portfolio_map():
     assert len(processed) == 3
     assert len(quick) == 4
     assert len(m["themes"]) >= 5
-    assert m["entries"][0]["pdf_path"].startswith("raw/papers/")
+    pr = next(e for e in m["entries"] if e["slug"] == "positive-reinforcement-reddit")
+    assert len(pr["concepts"]) >= 2
+    assert any(c["slug"] == "positive-reinforcement" for c in pr["concepts"])
+    synth_slugs = {s["slug"] for s in pr["syntheses"]}
+    assert "demo-reward-attention-thread" in synth_slugs
 
 
 def test_ingest_prompt_lists_themes_and_full_pdf(tmp_path):

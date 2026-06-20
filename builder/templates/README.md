@@ -23,7 +23,7 @@ See [`docs/PAPER-CHART-SPEC.md`](../docs/PAPER-CHART-SPEC.md) for the full Tier 
 | Abstract | PDF text if found | edit entry if PDF missed it |
 | Deep dive (RQ, method, findings, …) | — | `builder/deepdives/<slug>.md` |
 
-**Completion states** (Dive Computer):
+**Completion states** (Chart status):
 
 - **Pending** — docked in `raw/` but not charted
 - **Quick dip** — Tier 1 on chart (PDF facts)
