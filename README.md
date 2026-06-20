@@ -1,18 +1,22 @@
-# build-research-wiki
-
-Build your own **LLM-powered research wiki** — a persistent, compounding knowledge base that
-an AI assistant maintains for you. Drop in papers and notes; browse the result in
-[Obsidian](https://obsidian.md).
-
-**Based on the [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** by Andrej Karpathy — compile knowledge once and keep it current.
-
----
-
-## SCUBA Ideaverse (v0.3)
+# SCUBA Ideaverse
 
 **Your research world, mapped and connected.**
 
-A web control panel for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, and tracking completion in the Dive Computer.
+An LLM-powered research wiki — a persistent, compounding knowledge base that an AI assistant
+maintains for you. Dock papers and notes; browse the result in [Obsidian](https://obsidian.md).
+
+Built by the [SCUBA Lab](https://eshwarchandrasekharan.com/lab.html) at UIUC and shared openly
+under [MIT](LICENSE). We run it on our own research portfolio — but the system (**dock → chart →
+enrich → Obsidian**) is corpus-agnostic, so any lab or researcher can point it at their own
+papers and notes. Implements the
+[LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) by Andrej
+Karpathy — compile knowledge once and keep it current.
+
+---
+
+## The control panel (v0.3)
+
+A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, and tracking completion in the Dive Computer.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -127,7 +131,7 @@ build-research-wiki/
 
 ## Credits
 
-Implements the **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** pattern. This template adds research-specific formats, a portfolio builder, SCUBA Ideaverse, and team docs.
+Built by the **[SCUBA Lab](https://eshwarchandrasekharan.com/lab.html)** (Social Computing, User Behavior, and AI) at UIUC. Implements the **[LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)** pattern by Andrej Karpathy, adding research-specific formats, a portfolio chart builder, the SCUBA Ideaverse control panel, and team docs. Shared openly so other labs can run it on their own corpus.
 
 ## License
 
