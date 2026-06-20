@@ -697,13 +697,20 @@ code {
 }
 
 .chart-table--edit .chart-table__remove {
-  opacity: 0.4;
+  opacity: 1;
+  color: #d64545;
+  font-weight: 600;
+  border-color: rgba(214, 69, 69, 0.55);
+  background: rgba(214, 69, 69, 0.16);
 }
 
 .chart-table--edit .chart-table__row:hover .chart-table__remove,
 .chart-table--edit .chart-table__remove:focus-visible,
 .chart-table--edit .chart-table__remove:hover:not(:disabled) {
   opacity: 1;
+  color: #fff;
+  border-color: #b83838;
+  background: #c43c3c;
 }
 
 .chart-table__sort {

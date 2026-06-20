@@ -33,7 +33,7 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 | 2 | Work in the **workspace** — `Reef › Dock` path, tabs for Map / Chart status / Actions |
 | 3 | **Dock** files — click the dock name in the path, or **Upload PDFs** in Actions |
 | 4 | Check **Chart status** — on chart, quick dip, enrich next |
-| 5 | Browse the **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF |
+| 5 | Browse the **Map** — List or By theme (portfolio); expand **Note** for one-liner + PDF; **Edit** to remove papers from the chart |
 | 6 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
 | 7 | Open reef in Obsidian |
 

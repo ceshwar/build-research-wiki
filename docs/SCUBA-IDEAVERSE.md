@@ -118,10 +118,12 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 
 | View | When | What it shows |
 |------|------|----------------|
-| **List** | Always (portfolio + ingest docks) | Sortable table: Status, Paper (with **Note**), Themes |
-| **By theme** | Portfolio reefs only | Papers grouped by research theme |
+| **List** | Always (portfolio + ingest docks) | Sortable table: Status, Paper (with **Note**), Themes. Toggle **Edit** to show **−** remove controls (PDF stays in dock) |
+| **By theme** | Portfolio reefs only | Papers grouped by research theme (read-only) |
 
 Map status chips: **All**, **Deep dive**, **Quick dip**. Chart status **stat cards** also filter the map when clicked (e.g. **Enrich next** shows papers needing Deep Dive).
+
+**Edit mode** (List view only): toggle **Edit** next to the status chips to reveal a **−** column. Removing a paper takes it off the chart but leaves the PDF in `raw/` (awaiting chart). Run **Update chart** to map it again. Off by default — safe for demos and presentations.
 
 ---
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.4.4 — Map edit mode & remove from chart (2026-06-20)
+
+### Added
+
+- **Map Edit mode** — toggle on List view to reveal **−** remove controls; off by default for clean demos
+- **Remove from chart** — `DELETE /chart-entry` + `builder/remove_from_chart.py`; PDF stays in `raw/` as awaiting chart; `builder/off_chart.json` tracks removals until re-charted
+- **Local demo reef** — copy portfolio to `examples/local-reef/` (gitignored) via user vault config; isolated from your live Obsidian vault
+
+### Changed
+
+- Remove controls use a red **−** button (sticky left column) visible only in Edit mode
+
+### Docs
+
+- README, `docs/SCUBA-IDEAVERSE.md`, `manager/README.md`, in-app Docs updated for Edit mode
+
+---
+
 ## v0.4.3 — Path navigation & demo trim (2026-06-20)
 
 ### Changed
