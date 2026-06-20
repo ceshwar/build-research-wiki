@@ -90,16 +90,6 @@ export interface DockCreatePayload {
   profile?: 'portfolio' | 'ingest'
 }
 
-export interface ChartConcept {
-  slug: string
-  title: string
-}
-
-export interface ChartSynthesis {
-  slug: string
-  title: string
-}
-
 export interface ChartEntry {
   slug: string
   title: string
@@ -109,8 +99,7 @@ export interface ChartEntry {
   pdf: string
   pdf_path: string
   themes: string[]
-  concepts: ChartConcept[]
-  syntheses: ChartSynthesis[]
+  overview: string
   entry: string
   wiki_page: string
 }

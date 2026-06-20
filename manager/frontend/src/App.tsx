@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useDropzone, type FileRejection } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HowToPanel } from './components/HowToPanel'
@@ -53,7 +53,19 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <h2 className="section-label">{children}</h2>
 }
 
-type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich'
+type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich' | 'processed' | 'needs_deep_dive' | 'charted'
+type MapSortKey = 'status' | 'paper' | 'themes'
+type MapSortDir = 'asc' | 'desc'
+
+const MISSING_PAPER_YEAR = 1
+
+const MAP_STATUS_CHIPS: { id: StatFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'processed', label: 'Deep dive' },
+  { id: 'quick_dip', label: 'Quick dip' },
+  { id: 'needs_deep_dive', label: 'Enrich next' },
+  { id: 'charted', label: 'Charted' },
+]
 
 function SectionHeader({
   title,
@@ -154,10 +166,139 @@ function Stat({
 function filterChartEntries(entries: ChartEntry[], filter: StatFilter): ChartEntry[] {
   if (filter === 'all' || filter === 'on_chart') return entries
   if (filter === 'quick_dip') return entries.filter((e) => e.status === 'quick_dip')
+  if (filter === 'processed') return entries.filter((e) => e.status === 'processed')
+  if (filter === 'needs_deep_dive') return entries.filter((e) => e.status === 'needs_deep_dive')
+  if (filter === 'charted') return entries.filter((e) => e.status === 'charted')
   if (filter === 'enrich') {
     return entries.filter((e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive')
   }
   return entries
+}
+
+function themeSortLabel(entry: ChartEntry, themes: { slug: string; title: string }[]) {
+  if (!entry.themes.length) return '\uffff'
+  return entry.themes
+    .map((slug) => themes.find((t) => t.slug === slug)?.title ?? slug)
+    .sort((a, b) => a.localeCompare(b))
+    .join(', ')
+}
+
+function sortChartEntries(
+  entries: ChartEntry[],
+  key: MapSortKey,
+  dir: MapSortDir,
+  themes: { slug: string; title: string }[],
+): ChartEntry[] {
+  const mul = dir === 'asc' ? 1 : -1
+  return [...entries].sort((a, b) => {
+    let cmp = 0
+    if (key === 'paper') {
+      cmp = (a.year ?? MISSING_PAPER_YEAR) - (b.year ?? MISSING_PAPER_YEAR)
+      if (cmp === 0) cmp = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    } else if (key === 'status') {
+      cmp = chartStatusPill(a.status).label.localeCompare(chartStatusPill(b.status).label)
+      if (cmp === 0) cmp = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    } else {
+      cmp = themeSortLabel(a, themes).localeCompare(themeSortLabel(b, themes))
+      if (cmp === 0) cmp = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    }
+    return cmp * mul
+  })
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  label: string
+  sortKey: MapSortKey
+  activeKey: MapSortKey
+  dir: MapSortDir
+  onSort: (key: MapSortKey) => void
+}) {
+  const active = activeKey === sortKey
+  const arrow = active ? (dir === 'asc' ? ' ↑' : ' ↓') : ''
+  return (
+    <th>
+      <button type="button" className="chart-table__sort" onClick={() => onSort(sortKey)}>
+        {label}
+        <span className="chart-table__sort-indicator" aria-hidden>
+          {arrow}
+        </span>
+      </button>
+    </th>
+  )
+}
+
+function FlowTrail({
+  reefName,
+  dock,
+  activeLabel,
+  onReefClick,
+  onDockClick,
+  meta,
+  className = '',
+  ariaLabel = 'Workspace location',
+}: {
+  reefName: string
+  dock?: { emoji: string; name: string }
+  activeLabel: string
+  onReefClick?: () => void
+  onDockClick?: () => void
+  meta?: ReactNode
+  className?: string
+  ariaLabel?: string
+}) {
+  return (
+    <nav
+      className={['flow-breadcrumb', className].filter(Boolean).join(' ')}
+      aria-label={ariaLabel}
+    >
+      {onReefClick ? (
+        <button
+          type="button"
+          className="flow-breadcrumb__part flow-breadcrumb__part--link"
+          onClick={onReefClick}
+        >
+          {reefName}
+        </button>
+      ) : (
+        <span className="flow-breadcrumb__part">{reefName}</span>
+      )}
+      {dock ? (
+        <>
+          <span className="flow-breadcrumb__sep" aria-hidden>
+            ›
+          </span>
+          {onDockClick ? (
+            <button
+              type="button"
+              className="flow-breadcrumb__part flow-breadcrumb__part--link"
+              onClick={onDockClick}
+            >
+              {dock.emoji} {dock.name}
+            </button>
+          ) : (
+            <span className="flow-breadcrumb__part">
+              {dock.emoji} {dock.name}
+            </span>
+          )}
+          <span className="flow-breadcrumb__sep flow-breadcrumb__sep--arrow" aria-hidden>
+            →
+          </span>
+        </>
+      ) : (
+        <span className="flow-breadcrumb__sep" aria-hidden>
+          ›
+        </span>
+      )}
+      <span className="flow-breadcrumb__part flow-breadcrumb__part--current">{activeLabel}</span>
+      {meta}
+    </nav>
+  )
 }
 
 function filterThemeGroups(
@@ -180,27 +321,30 @@ const DOCK_WORKSPACE_SECTIONS: {
   id: WorkspaceSectionId
   label: string
   hint: string
+  group?: 'enrich'
   badge?: (ctx: { enrich: number; pending: number }) => number | null
 }[] = [
+  { id: 'section-map', label: 'Map', hint: 'Browse chart' },
   {
     id: 'section-dive',
     label: 'Chart status',
     hint: 'Track progress',
+    group: 'enrich',
     badge: (c) => (c.enrich > 0 ? c.enrich : null),
   },
-  { id: 'section-map', label: 'Map', hint: 'Browse chart' },
   {
     id: 'section-actions',
     label: 'Actions',
     hint: 'Update & enrich',
+    group: 'enrich',
     badge: (c) => (c.pending > 0 ? c.pending : c.enrich > 0 ? c.enrich : null),
   },
 ]
 
 const NAV_SECTIONS: { id: SectionId; label: string; badge?: (ctx: { enrich: number; pending: number }) => number | null }[] = [
   { id: 'section-docks', label: 'Docks & upload' },
-  { id: 'section-dive', label: 'Chart status', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
   { id: 'section-map', label: 'Map' },
+  { id: 'section-dive', label: 'Chart status', badge: (c) => (c.enrich > 0 ? c.enrich : null) },
   { id: 'section-actions', label: 'Actions', badge: (c) => (c.enrich > 0 ? c.enrich : c.pending > 0 ? c.pending : null) },
 ]
 
@@ -241,14 +385,6 @@ function obsidianReefHref(vaultPath: string, reefPath: string) {
 
 function themeWikiPage(slug: string) {
   return `wiki/themes/${slug}.md`
-}
-
-function conceptWikiPage(slug: string) {
-  return `wiki/concepts/${slug}.md`
-}
-
-function synthesisWikiPage(slug: string) {
-  return `wiki/syntheses/${slug}.md`
 }
 
 const THEME_GRADIENT: Record<string, string> = {
@@ -359,16 +495,23 @@ export default function App() {
   const [promptCopied, setPromptCopied] = useState(false)
   const [statFilter, setStatFilter] = useState<StatFilter>('all')
   const [mapTab, setMapTab] = useState<'list' | 'theme'>('list')
-  const [diveExpanded, setDiveExpanded] = useState(true)
+  const [diveExpanded, setDiveExpanded] = useState(false)
   const [mapExpanded, setMapExpanded] = useState(true)
-  const [actionsExpanded, setActionsExpanded] = useState(true)
+  const [actionsExpanded, setActionsExpanded] = useState(false)
   const [promptExpanded, setPromptExpanded] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
   const [activeWorkspaceSection, setActiveWorkspaceSection] =
-    useState<WorkspaceSectionId>('section-dive')
+    useState<WorkspaceSectionId>('section-map')
   const [dockGuideDismissed, setDockGuideDismissed] = useState(false)
+  const [expandedPaperSlugs, setExpandedPaperSlugs] = useState<Set<string>>(() => new Set())
+  const [mapSort, setMapSort] = useState<{ key: MapSortKey; dir: MapSortDir }>({
+    key: 'paper',
+    dir: 'desc',
+  })
+  const [docksExpanded, setDocksExpanded] = useState(true)
+  const [stickyTrailVisible, setStickyTrailVisible] = useState(false)
 
   const { data: vaults = [], isLoading: vaultsLoading } = useQuery<Vault[]>({
     queryKey: ['vaults'],
@@ -412,6 +555,7 @@ export default function App() {
     setPromptExpanded(false)
     setStatFilter('all')
     setUploadExpanded(false)
+    setExpandedPaperSlugs(new Set())
   }, [vaultId, channelId])
 
   useEffect(() => {
@@ -424,6 +568,20 @@ export default function App() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    const el = document.getElementById('section-docks')
+    if (!el || !vaultId || !channelId) {
+      setStickyTrailVisible(false)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setStickyTrailVisible(!entry.isIntersecting),
+      { threshold: 0 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [vaultId, channelId, docksExpanded, uploadExpanded])
 
   useEffect(() => {
     if (!navOpen) return
@@ -449,7 +607,7 @@ export default function App() {
   }, [howToOpen])
 
   useEffect(() => {
-    const sectionIds: WorkspaceSectionId[] = ['section-dive', 'section-map', 'section-actions']
+    const sectionIds: WorkspaceSectionId[] = ['section-map', 'section-dive', 'section-actions']
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -469,12 +627,25 @@ export default function App() {
     return () => observer.disconnect()
   }, [vaultId, channelId, diveExpanded, mapExpanded, actionsExpanded])
 
+  const scrollToReefTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
   const scrollToSection = useCallback(
     (id: SectionId, opts?: { expandUpload?: boolean; expandActions?: boolean }) => {
+      if (id === 'section-docks') {
+        setDocksExpanded(true)
+      } else if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
+        setDocksExpanded(false)
+        setUploadExpanded(false)
+      }
       if (id === 'section-dive') setDiveExpanded(true)
       if (id === 'section-map') setMapExpanded(true)
       if (id === 'section-actions') setActionsExpanded(true)
-      if (opts?.expandUpload) setUploadExpanded(true)
+      if (opts?.expandUpload) {
+        setDocksExpanded(true)
+        setUploadExpanded(true)
+      }
       if (opts?.expandActions) setActionsExpanded(true)
       if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
         setActiveWorkspaceSection(id)
@@ -489,6 +660,8 @@ export default function App() {
 
   const focusWorkspaceSection = useCallback(
     (id: WorkspaceSectionId) => {
+      setDocksExpanded(false)
+      setUploadExpanded(false)
       scrollToSection(id, { expandActions: id === 'section-actions' })
     },
     [scrollToSection],
@@ -502,6 +675,7 @@ export default function App() {
   const selectDock = useCallback(
     (nextChannelId: string) => {
       const isFirstVisit = localStorage.getItem(dockSeenKey(vaultId, nextChannelId)) !== '1'
+      setDocksExpanded(true)
       setChannelId(nextChannelId)
       requestAnimationFrame(() => {
         document.querySelector('.dock-workspace__rail')?.scrollIntoView({
@@ -510,19 +684,47 @@ export default function App() {
         })
         if (isFirstVisit) {
           localStorage.setItem(dockSeenKey(vaultId, nextChannelId), '1')
-          focusWorkspaceSection('section-dive')
+          focusWorkspaceSection('section-map')
         }
       })
     },
     [vaultId, focusWorkspaceSection],
   )
 
-  const toggleStatFilter = useCallback((filter: StatFilter) => {
-    setStatFilter((prev) => (prev === filter ? 'all' : filter))
+  const toggleMapSort = useCallback((key: MapSortKey) => {
+    setMapSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'paper' ? 'desc' : 'asc' },
+    )
+  }, [])
+
+  const setMapStatusFilter = useCallback((filter: StatFilter) => {
+    setStatFilter(filter)
     setMapExpanded(true)
     setMapTab('list')
-    requestAnimationFrame(() => scrollToSection('section-map'))
-  }, [scrollToSection])
+    focusWorkspaceSection('section-map')
+  }, [focusWorkspaceSection])
+
+  const togglePaperExpand = useCallback((slug: string) => {
+    setExpandedPaperSlugs((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }, [])
+
+  const toggleStatFilter = useCallback(
+    (filter: StatFilter) => {
+      const next = statFilter === filter ? 'all' : filter
+      setStatFilter(next)
+      setMapExpanded(true)
+      setMapTab('list')
+      focusWorkspaceSection('section-map')
+    },
+    [statFilter, focusWorkspaceSection],
+  )
 
   const jobQuery = useQuery({
     queryKey: ['job', activeJobId],
@@ -707,12 +909,18 @@ export default function App() {
     (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
   const themeGroups = groupEntriesByTheme(chartMap)
   const filteredEntries = filterChartEntries(chartMap?.entries ?? [], statFilter)
+  const sortedEntries = useMemo(
+    () => sortChartEntries(filteredEntries, mapSort.key, mapSort.dir, chartMap?.themes ?? []),
+    [filteredEntries, mapSort, chartMap?.themes],
+  )
   const filteredThemeGroups = filterThemeGroups(themeGroups, statFilter)
   const enrichEntries =
     chartMap?.entries.filter(
       (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
     ) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
+  const activeWorkspaceLabel =
+    DOCK_WORKSPACE_SECTIONS.find((s) => s.id === activeWorkspaceSection)?.label ?? 'Map'
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
 
@@ -850,6 +1058,25 @@ export default function App() {
         </div>
       </header>
 
+      {vault && channel && (
+        <div
+          className={`sticky-flow-trail ${stickyTrailVisible ? 'sticky-flow-trail--visible' : ''}`}
+          aria-hidden={!stickyTrailVisible}
+        >
+          <div className="sticky-flow-trail__inner">
+            <FlowTrail
+              reefName={vault.name}
+              dock={{ emoji: channel.emoji, name: channel.name }}
+              activeLabel={activeWorkspaceLabel}
+              onReefClick={scrollToReefTop}
+              onDockClick={() => scrollToSection('section-docks')}
+              className="flow-breadcrumb--sticky"
+              ariaLabel="Current location"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="main-content">
 
       {showAddReef && (
@@ -934,7 +1161,34 @@ export default function App() {
       )}
 
       {/* Docks + optional upload */}
-      <section id="section-docks" className="workflow-panel mb-6 scroll-mt-4">
+      <section
+        id="section-docks"
+        className={`workflow-panel mb-6 scroll-mt-4 ${docksExpanded ? '' : 'workflow-panel--collapsed'}`}
+      >
+        <div className="workflow-panel__head">
+          <FlowTrail reefName={vault?.name ?? 'Reef'} activeLabel="Docks" ariaLabel="Reef to docks" />
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setDocksExpanded((e) => !e)}
+            aria-expanded={docksExpanded}
+          >
+            {docksExpanded ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+        {!docksExpanded && channel && (
+          <button
+            type="button"
+            className="workflow-panel__summary"
+            onClick={() => setDocksExpanded(true)}
+          >
+            <span>
+              {channel.emoji} {channel.name}
+            </span>
+            <span className="workflow-panel__summary-hint">Switch dock or upload</span>
+          </button>
+        )}
+        {docksExpanded && (
         <div className="workflow-panel__docks">
           <SectionLabel>Docks</SectionLabel>
           <div className="flex flex-wrap gap-2">
@@ -1067,6 +1321,7 @@ export default function App() {
             </div>
           )}
         </div>
+        )}
       </section>
 
       {showAddDock && (
@@ -1114,50 +1369,69 @@ export default function App() {
       {vault && channel && (
         <div className="dock-workspace">
           <div className="dock-workspace__rail">
-            <div className="dock-workspace__dock">
-              <span>
-                {channel.emoji} {channel.name}
-              </span>
-              <span className="dock-workspace__meta">
-                {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
-                {(channelStats?.pending ?? pendingCount) > 0 &&
-                  ` · ${channelStats?.pending ?? pendingCount} awaiting`}
-              </span>
-            </div>
+            <FlowTrail
+              reefName={vault.name}
+              dock={{ emoji: channel.emoji, name: channel.name }}
+              activeLabel={activeWorkspaceLabel}
+              onDockClick={() => scrollToSection('section-docks', { expandUpload: false })}
+              className="flow-breadcrumb--workspace"
+              meta={
+                <span className="dock-workspace__meta">
+                  {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
+                  {(channelStats?.pending ?? pendingCount) > 0 &&
+                    ` · ${channelStats?.pending ?? pendingCount} awaiting`}
+                </span>
+              }
+            />
             <div className="dock-workspace__tabs" role="tablist" aria-label="Dock workspace">
-              {DOCK_WORKSPACE_SECTIONS.map((item) => {
-                const badge = item.badge?.({
-                  enrich: enrichEntries.length,
-                  pending: pendingCount,
-                })
+              {(() => {
+                const mapTab = DOCK_WORKSPACE_SECTIONS.find((s) => s.id === 'section-map')!
+                const enrichTabs = DOCK_WORKSPACE_SECTIONS.filter((s) => s.group === 'enrich')
+                const renderTab = (item: (typeof DOCK_WORKSPACE_SECTIONS)[number], primary?: boolean) => {
+                  const badge = item.badge?.({
+                    enrich: enrichEntries.length,
+                    pending: pendingCount,
+                  })
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeWorkspaceSection === item.id}
+                      className={`dock-workspace__tab ${
+                        primary ? 'dock-workspace__tab--primary' : ''
+                      } ${activeWorkspaceSection === item.id ? 'dock-workspace__tab--active' : ''}`}
+                      onClick={() => focusWorkspaceSection(item.id)}
+                    >
+                      <span className="dock-workspace__tab-label">
+                        {item.label}
+                        {badge != null && badge > 0 && (
+                          <span className="dock-workspace__tab-badge">{badge}</span>
+                        )}
+                      </span>
+                      <span className="dock-workspace__tab-hint">{item.hint}</span>
+                    </button>
+                  )
+                }
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeWorkspaceSection === item.id}
-                    className={`dock-workspace__tab ${
-                      activeWorkspaceSection === item.id ? 'dock-workspace__tab--active' : ''
-                    }`}
-                    onClick={() => focusWorkspaceSection(item.id)}
-                  >
-                    <span className="dock-workspace__tab-label">
-                      {item.label}
-                      {badge != null && badge > 0 && (
-                        <span className="dock-workspace__tab-badge">{badge}</span>
-                      )}
-                    </span>
-                    <span className="dock-workspace__tab-hint">{item.hint}</span>
-                  </button>
+                  <>
+                    {renderTab(mapTab, true)}
+                    <div className="dock-workspace__tabs-enrich">
+                      <span className="dock-workspace__group-label">Chart & enrich</span>
+                      <div className="dock-workspace__tabs-row">
+                        {enrichTabs.map((item) => renderTab(item))}
+                      </div>
+                    </div>
+                  </>
                 )
-              })}
+              })()}
             </div>
             {!dockGuideDismissed && (
               <div className="dock-workspace__guide">
                 <span>
-                  <strong>Chart status</strong> tracks charting for this dock · <strong>Map</strong>{' '}
-                  browses wiki pages · <strong>Actions</strong> updates the chart and runs Deep Dive.
-                  Collapse sections you do not need.
+                  <strong>Map</strong> is your chart browser · <strong>Chart status</strong> tracks
+                  progress · <strong>Actions</strong> updates the chart and runs Deep Dive. Collapse
+                  sections you do not need.
                 </span>
                 <button type="button" className="dock-workspace__guide-dismiss" onClick={dismissDockGuide}>
                   Got it
@@ -1165,6 +1439,282 @@ export default function App() {
               </div>
             )}
           </div>
+
+      {/* Map — tabbed exploration for active dock */}
+      <section
+        id="section-map"
+        className={`section-shell mb-6 scroll-mt-4 ${
+          activeWorkspaceSection === 'section-map' ? 'section-shell--in-view' : ''
+        }`}
+      >
+        <SectionHeader
+          title={<SectionLabel>Map</SectionLabel>}
+          expanded={mapExpanded}
+          onToggle={() => setMapExpanded((e) => !e)}
+          extra={
+            <>
+              {statFilter !== 'all' && (
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setStatFilter('all')}
+                >
+                  Clear filter
+                </button>
+              )}
+              {chartMap && chartMap.entries.length > 0 ? (
+                <div className="view-tabs" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapTab === 'list'}
+                  className={`view-tabs__tab ${mapTab === 'list' ? 'view-tabs__tab--active' : ''}`}
+                  onClick={() => setMapTab('list')}
+                >
+                  List
+                </button>
+                {isPortfolio && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mapTab === 'theme'}
+                    className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
+                    onClick={() => setMapTab('theme')}
+                  >
+                    By theme
+                  </button>
+                )}
+              </div>
+              ) : null}
+            </>
+          }
+        />
+        {mapExpanded && (
+          <div className={`section-shell__body ${mapTab === 'list' ? '' : ''}`}>
+            {chartMapLoading && (
+              <p className="text-sm text-[var(--muted)]">Loading chart…</p>
+            )}
+            {chartMap && statFilter === 'pending' && pendingCount > 0 && (
+              <div className="empty-map">
+                <p>
+                  {pendingCount} file{pendingCount === 1 ? '' : 's'} in{' '}
+                  <ReefLink vaultPath={vault?.path} reefPath={chartMap.raw_path} className="link-accent">
+                    {chartMap.raw_path}/
+                  </ReefLink>{' '}
+                  awaiting chart.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary mt-3 px-4 py-2 text-sm"
+                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
+                >
+                  Update chart
+                </button>
+              </div>
+            )}
+            {chartMap && chartMap.entries.length === 0 && statFilter !== 'pending' && (
+              <div className="empty-map">
+                <p>No papers on chart yet. Upload PDFs above, then run Update chart.</p>
+                <button
+                  type="button"
+                  className="btn-secondary mt-3 px-4 py-2 text-sm"
+                  onClick={() => scrollToSection('section-docks', { expandUpload: true })}
+                >
+                  Go to upload
+                </button>
+              </div>
+            )}
+            {chartMap && chartMap.entries.length > 0 && statFilter !== 'pending' && (
+              <>
+                {mapTab === 'list' && (
+                  <>
+                    <div className="map-status-filters" role="group" aria-label="Filter by status">
+                      {MAP_STATUS_CHIPS.map((chip) => (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          className={`map-status-chip ${
+                            statFilter === chip.id ? 'map-status-chip--active' : ''
+                          }`}
+                          aria-pressed={statFilter === chip.id}
+                          onClick={() =>
+                            setMapStatusFilter(statFilter === chip.id ? 'all' : chip.id)
+                          }
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+                    {sortedEntries.length === 0 ? (
+                      <div className="empty-map">No papers match this filter.</div>
+                    ) : (
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <SortableTh
+                              label="Status"
+                              sortKey="status"
+                              activeKey={mapSort.key}
+                              dir={mapSort.dir}
+                              onSort={toggleMapSort}
+                            />
+                            <SortableTh
+                              label="Paper"
+                              sortKey="paper"
+                              activeKey={mapSort.key}
+                              dir={mapSort.dir}
+                              onSort={toggleMapSort}
+                            />
+                            <SortableTh
+                              label="Themes"
+                              sortKey="themes"
+                              activeKey={mapSort.key}
+                              dir={mapSort.dir}
+                              onSort={toggleMapSort}
+                            />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedEntries.map((entry) => {
+                            const pill = chartStatusPill(entry.status)
+                            const expanded = expandedPaperSlugs.has(entry.slug)
+                            const canExpand = !!(entry.overview?.trim() || entry.pdf_path)
+                            return (
+                              <tr key={entry.slug}>
+                                <td>
+                                  <span className={pill.className}>
+                                    {pill.icon} {pill.label}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="map-paper-cell">
+                                    <div className="font-medium text-[var(--text)]">
+                                      <ReefLink
+                                        vaultPath={vault?.path}
+                                        reefPath={entry.wiki_page}
+                                        className="link-accent obsidian-mark"
+                                      >
+                                        {entry.title}
+                                      </ReefLink>
+                                    </div>
+                                    <div className="paper-meta text-[12px] text-[var(--muted)]">
+                                      {[entry.year, entry.venue].filter(Boolean).join(' · ')}
+                                      {canExpand && (
+                                        <>
+                                          {(entry.year || entry.venue) && ' · '}
+                                          <button
+                                            type="button"
+                                            className="map-paper-toggle"
+                                            aria-expanded={expanded}
+                                            onClick={() => togglePaperExpand(entry.slug)}
+                                          >
+                                            {expanded ? 'Hide note' : 'Note'}
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                    {expanded && (
+                                      <div className="map-paper-detail">
+                                        {entry.overview?.trim() ? (
+                                          <p className="map-paper-overview">{entry.overview}</p>
+                                        ) : (
+                                          <p className="map-paper-overview map-paper-overview--empty">
+                                            No overview yet — run Deep Dive to add a one-liner.
+                                          </p>
+                                        )}
+                                        {entry.pdf_path && (
+                                          <ReefLink
+                                            vaultPath={vault?.path}
+                                            reefPath={entry.pdf_path}
+                                            className="map-paper-pdf-link obsidian-mark"
+                                          >
+                                            View PDF
+                                          </ReefLink>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td>
+                                  {entry.themes.length ? (
+                                    entry.themes.map((t) => (
+                                      <ReefLink
+                                        key={t}
+                                        vaultPath={vault?.path}
+                                        reefPath={themeWikiPage(t)}
+                                        className={`theme-chip ${themeGradientClass(t)} obsidian-mark`}
+                                      >
+                                        {themeDisplayTitle(t, chartMap.themes)}
+                                      </ReefLink>
+                                    ))
+                                  ) : (
+                                    <span className="text-[12px] text-[var(--muted)]">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                  </>
+                )}
+
+                {mapTab === 'theme' && isPortfolio && (
+                  <div className="theme-map">
+                    {filteredThemeGroups.length === 0 ? (
+                      <div className="empty-map col-span-full">No papers match this filter.</div>
+                    ) : (
+                      filteredThemeGroups.map((group) => (
+                        <div
+                          key={group.slug}
+                          className={`theme-map__card ${themeGradientClass(group.slug)} ${
+                            group.slug === '_unassigned' ? 'theme-map__card--unassigned' : ''
+                          }`}
+                        >
+                          <div className="theme-map__title">
+                            {group.slug === '_unassigned' ? (
+                              group.title
+                            ) : (
+                              <ReefLink
+                                vaultPath={vault?.path}
+                                reefPath={themeWikiPage(group.slug)}
+                                className="theme-map__title-link obsidian-mark"
+                              >
+                                {group.title}
+                              </ReefLink>
+                            )}
+                            <span className="ml-1 text-[10px] font-normal text-[var(--muted)]">
+                              · {group.entries.length}
+                            </span>
+                          </div>
+                          {group.entries.map((entry) => {
+                            const pill = chartStatusPill(entry.status)
+                            return (
+                              <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
+                                <span>{pill.icon}</span>
+                                <ReefLink
+                                  vaultPath={vault?.path}
+                                  reefPath={entry.wiki_page}
+                                  className="link-accent theme-map__paper-link obsidian-mark"
+                                >
+                                  {entry.title}
+                                </ReefLink>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Chart status — pipeline, stats, next step */}
       <section
@@ -1284,253 +1834,6 @@ export default function App() {
             </div>
           )}
         </section>
-
-      {/* Map — tabbed exploration for active dock */}
-      <section
-        id="section-map"
-        className={`section-shell mb-6 scroll-mt-4 ${
-          activeWorkspaceSection === 'section-map' ? 'section-shell--in-view' : ''
-        }`}
-      >
-        <SectionHeader
-          title={<SectionLabel>Map</SectionLabel>}
-          expanded={mapExpanded}
-          onToggle={() => setMapExpanded((e) => !e)}
-          extra={
-            <>
-              {statFilter !== 'all' && (
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => setStatFilter('all')}
-                >
-                  Clear filter
-                </button>
-              )}
-              {chartMap && chartMap.entries.length > 0 ? (
-                <div className="view-tabs" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mapTab === 'list'}
-                  className={`view-tabs__tab ${mapTab === 'list' ? 'view-tabs__tab--active' : ''}`}
-                  onClick={() => setMapTab('list')}
-                >
-                  List
-                </button>
-                {isPortfolio && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mapTab === 'theme'}
-                    className={`view-tabs__tab ${mapTab === 'theme' ? 'view-tabs__tab--active' : ''}`}
-                    onClick={() => setMapTab('theme')}
-                  >
-                    By theme
-                  </button>
-                )}
-              </div>
-              ) : null}
-            </>
-          }
-        />
-        {mapExpanded && (
-          <div className={`section-shell__body ${mapTab === 'list' ? '' : ''}`}>
-            {chartMapLoading && (
-              <p className="text-sm text-[var(--muted)]">Loading chart…</p>
-            )}
-            {chartMap && statFilter === 'pending' && pendingCount > 0 && (
-              <div className="empty-map">
-                <p>
-                  {pendingCount} file{pendingCount === 1 ? '' : 's'} in{' '}
-                  <ReefLink vaultPath={vault?.path} reefPath={chartMap.raw_path} className="link-accent">
-                    {chartMap.raw_path}/
-                  </ReefLink>{' '}
-                  awaiting chart.
-                </p>
-                <button
-                  type="button"
-                  className="btn-primary mt-3 px-4 py-2 text-sm"
-                  onClick={() => scrollToSection('section-actions', { expandActions: true })}
-                >
-                  Update chart
-                </button>
-              </div>
-            )}
-            {chartMap && chartMap.entries.length === 0 && statFilter !== 'pending' && (
-              <div className="empty-map">
-                <p>No papers on chart yet. Upload PDFs above, then run Update chart.</p>
-                <button
-                  type="button"
-                  className="btn-secondary mt-3 px-4 py-2 text-sm"
-                  onClick={() => scrollToSection('section-docks', { expandUpload: true })}
-                >
-                  Go to upload
-                </button>
-              </div>
-            )}
-            {chartMap && chartMap.entries.length > 0 && statFilter !== 'pending' && (
-              <>
-                {mapTab === 'list' && (
-                  <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
-                    {filteredEntries.length === 0 ? (
-                      <div className="empty-map">No papers match this filter.</div>
-                    ) : (
-                      <table className="chart-table">
-                        <thead>
-                          <tr>
-                            <th>Status</th>
-                            <th>Paper</th>
-                            <th>Themes</th>
-                            <th>Concepts</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredEntries.map((entry) => {
-                            const pill = chartStatusPill(entry.status)
-                            return (
-                              <tr key={entry.slug}>
-                                <td>
-                                  <span className={pill.className}>
-                                    {pill.icon} {pill.label}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div className="font-medium text-[var(--text)]">
-                                    <ReefLink
-                                      vaultPath={vault?.path}
-                                      reefPath={entry.wiki_page}
-                                      className="link-accent obsidian-mark"
-                                    >
-                                      {entry.title}
-                                    </ReefLink>
-                                  </div>
-                                  {(entry.year || entry.venue || entry.pdf_path) && (
-                                    <div className="paper-meta text-[12px] text-[var(--muted)]">
-                                      {[entry.year, entry.venue].filter(Boolean).join(' · ')}
-                                      {entry.pdf_path && (
-                                        <>
-                                          {(entry.year || entry.venue) && ' · '}
-                                          <ReefLink
-                                            vaultPath={vault?.path}
-                                            reefPath={entry.pdf_path}
-                                            className="link-secondary obsidian-mark"
-                                          >
-                                            {entry.pdf || entry.pdf_path.split('/').pop()}
-                                          </ReefLink>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-                                </td>
-                                <td>
-                                  {entry.themes.length ? (
-                                    entry.themes.map((t) => (
-                                      <ReefLink
-                                        key={t}
-                                        vaultPath={vault?.path}
-                                        reefPath={themeWikiPage(t)}
-                                        className={`theme-chip ${themeGradientClass(t)} obsidian-mark`}
-                                      >
-                                        {themeDisplayTitle(t, chartMap.themes)}
-                                      </ReefLink>
-                                    ))
-                                  ) : (
-                                    <span className="text-[12px] text-[var(--muted)]">—</span>
-                                  )}
-                                </td>
-                                <td>
-                                  {entry.concepts.length ? (
-                                    entry.concepts.map((c) => (
-                                      <ReefLink
-                                        key={c.slug}
-                                        vaultPath={vault?.path}
-                                        reefPath={conceptWikiPage(c.slug)}
-                                        className="concept-chip obsidian-mark"
-                                      >
-                                        {c.title}
-                                      </ReefLink>
-                                    ))
-                                  ) : (
-                                    <span className="map-concept-placeholder">Deep Dive to add</span>
-                                  )}
-                                  {entry.syntheses.length > 0 && (
-                                    <div className="map-synthesis-links">
-                                      {entry.syntheses.map((s) => (
-                                        <ReefLink
-                                          key={s.slug}
-                                          vaultPath={vault?.path}
-                                          reefPath={synthesisWikiPage(s.slug)}
-                                          className="synthesis-link obsidian-mark"
-                                        >
-                                          ↗ {s.title}
-                                        </ReefLink>
-                                      ))}
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-
-                {mapTab === 'theme' && isPortfolio && (
-                  <div className="theme-map">
-                    {filteredThemeGroups.length === 0 ? (
-                      <div className="empty-map col-span-full">No papers match this filter.</div>
-                    ) : (
-                      filteredThemeGroups.map((group) => (
-                        <div
-                          key={group.slug}
-                          className={`theme-map__card ${themeGradientClass(group.slug)} ${
-                            group.slug === '_unassigned' ? 'theme-map__card--unassigned' : ''
-                          }`}
-                        >
-                          <div className="theme-map__title">
-                            {group.slug === '_unassigned' ? (
-                              group.title
-                            ) : (
-                              <ReefLink
-                                vaultPath={vault?.path}
-                                reefPath={themeWikiPage(group.slug)}
-                                className="theme-map__title-link obsidian-mark"
-                              >
-                                {group.title}
-                              </ReefLink>
-                            )}
-                            <span className="ml-1 text-[10px] font-normal text-[var(--muted)]">
-                              · {group.entries.length}
-                            </span>
-                          </div>
-                          {group.entries.map((entry) => {
-                            const pill = chartStatusPill(entry.status)
-                            return (
-                              <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
-                                <span>{pill.icon}</span>
-                                <ReefLink
-                                  vaultPath={vault?.path}
-                                  reefPath={entry.wiki_page}
-                                  className="link-accent theme-map__paper-link obsidian-mark"
-                                >
-                                  {entry.title}
-                                </ReefLink>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </section>
 
       {/* Actions — chart + agent */}
       <section

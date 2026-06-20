@@ -23,81 +23,75 @@ def _load_themes(vault):
     return [{"slug": slug, "title": meta[0]} for slug, meta in sorted(themes.items())]
 
 
-def _concepts_by_paper(vault):
-    """Invert builder/data.py CONCEPTS → paper slug → [{slug, title}, …]."""
-    data_path = os.path.join(vault, "builder", "data.py")
-    if not os.path.exists(data_path):
-        return {}
-    data = completion._load_module(data_path)
-    concepts = getattr(data, "CONCEPTS", {})
-    by_paper = {}
-    for slug, meta in concepts.items():
-        title = meta[0] if meta else slug
-        papers = meta[2] if len(meta) > 2 else []
-        for paper in papers:
-            by_paper.setdefault(paper, []).append({"slug": slug, "title": title})
-    for paper in by_paper:
-        by_paper[paper].sort(key=lambda c: c["slug"])
-    return by_paper
+def _strip_frontmatter(text):
+    if text.startswith("---"):
+        end = text.find("---", 3)
+        if end != -1:
+            return text[end + 3 :]
+    return text
 
 
-def _wiki_concept_slugs(vault):
-    concepts_dir = os.path.join(vault, "wiki", "concepts")
-    if not os.path.isdir(concepts_dir):
-        return set()
-    return {
-        f[:-3] for f in os.listdir(concepts_dir)
-        if f.endswith(".md") and not f.startswith(".")
-    }
+def _wiki_blockquote_overview(text):
+    """First blockquote after the H1 — the paper one-liner on chart pages."""
+    text = _strip_frontmatter(text).lstrip()
+    h1 = re.search(r"^#\s+.+$", text, re.M)
+    if not h1:
+        return ""
+    rest = text[h1.end() :].lstrip("\n")
+    quote_lines = []
+    for ln in rest.splitlines():
+        s = ln.strip()
+        if s.startswith(">"):
+            quote_lines.append(re.sub(r"^>\s*", "", s))
+        elif quote_lines:
+            break
+        elif s.startswith("**") or s.startswith("[!"):
+            break
+    overview = " ".join(quote_lines).strip()
+    if not overview or overview in ("—", "-") or completion._is_placeholder(overview):
+        return ""
+    return overview
 
 
-def _concepts_from_wiki_page(vault, wiki_page, known_slugs):
-    path = os.path.join(vault, wiki_page)
-    if not os.path.isfile(path) or not known_slugs:
-        return []
-    text = completion._read_text(path)
-    found = []
-    seen = set()
-    for m in re.finditer(r"\[\[([^\]|#]+)(?:\|[^\]]+)?\]\]", text):
-        slug = m.group(1).strip()
-        if slug in known_slugs and slug not in seen:
-            seen.add(slug)
-            title = slug.replace("-", " ").title()
-            concept_path = os.path.join(vault, "wiki", "concepts", slug + ".md")
-            if os.path.isfile(concept_path):
-                page = completion._read_text(concept_path)
-                fm = re.search(r"^title:\s*[\"']?(.+?)[\"']?\s*$", page, re.M)
-                if fm:
-                    title = fm.group(1).strip()
-            found.append({"slug": slug, "title": title})
-    return sorted(found, key=lambda c: c["slug"])
-
-
-def _syntheses_by_paper(vault):
-    """Scan wiki/syntheses for pages that wikilink each paper slug."""
-    synth_dir = os.path.join(vault, "wiki", "syntheses")
-    if not os.path.isdir(synth_dir):
-        return {}
-    by_paper = {}
-    link_re = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]+)?\]\]")
-    for fname in sorted(os.listdir(synth_dir)):
-        if not fname.endswith(".md") or fname.startswith("."):
+def _abstract_snippet(text, limit=240):
+    for heading in ("Abstract / Notes", "Abstract", "Summary"):
+        block = completion._section_text(text, heading)
+        if not block or len(block.strip()) < 40 or completion._is_placeholder(block):
             continue
-        slug = fname[:-3]
-        path = os.path.join(synth_dir, fname)
-        text = completion._read_text(path)
-        title = slug.replace("-", " ").title()
-        fm = re.search(r"^title:\s*[\"']?(.+?)[\"']?\s*$", text, re.M)
-        if fm:
-            title = fm.group(1).strip()
-        else:
-            h1 = re.search(r"^#\s+(.+)$", text, re.M)
-            if h1:
-                title = h1.group(1).strip()
-        for m in link_re.finditer(text):
-            paper = m.group(1).strip()
-            by_paper.setdefault(paper, []).append({"slug": slug, "title": title})
-    return by_paper
+        para = block.strip().split("\n\n")[0].replace("\n", " ")
+        if len(para) > limit:
+            para = para[:limit].rsplit(" ", 1)[0] + "…"
+        return para
+    return ""
+
+
+def _overview_for(item, vault, wiki_page, channel_id):
+    """One-line overview: wiki blockquote → entry one-liner → registry → abstract snippet."""
+    wiki_abs = os.path.join(vault, wiki_page)
+    wiki_text = completion._read_text(wiki_abs) if os.path.isfile(wiki_abs) else ""
+
+    if wiki_text:
+        overview = _wiki_blockquote_overview(wiki_text)
+        if overview:
+            return overview
+
+    entry_rel = item.get("entry") or item.get("note", "")
+    entry_abs = completion._resolve_entry_path(vault, entry_rel, item.get("channel", channel_id))
+    if entry_abs:
+        parsed = completion._parse_entry(entry_abs)
+        one = (parsed.get("one_liner") or "").strip()
+        if one and not completion._is_placeholder(one):
+            return one
+
+    registry_one = (item.get("one") or "").strip()
+    if registry_one and not completion._is_placeholder(registry_one):
+        return registry_one
+
+    if wiki_text:
+        snippet = _abstract_snippet(wiki_text)
+        if snippet:
+            return snippet
+    return ""
 
 
 def _pdf_path(item, channel_id, channels):
@@ -170,9 +164,6 @@ def build_map(vault, channel_id="my-portfolio"):
     ]
     known = _charted_pdfs(corpus, channels)
     raw_files = _raw_files(vault, channel_id)
-    concepts_by_paper = _concepts_by_paper(vault)
-    syntheses_by_paper = _syntheses_by_paper(vault)
-    wiki_concepts = _wiki_concept_slugs(vault)
 
     entries = []
     for item in sorted(corpus, key=lambda x: (-(x.get("year") or 0), x.get("title", x["slug"]))):
@@ -183,15 +174,6 @@ def build_map(vault, channel_id="my-portfolio"):
             if ch.get("profile") == "portfolio"
             else "wiki/sources/{}.md".format(paper_slug)
         )
-        registry_concepts = concepts_by_paper.get(paper_slug, [])
-        wiki_linked = _concepts_from_wiki_page(vault, wiki_page, wiki_concepts)
-        merged_concepts = list(registry_concepts)
-        seen_c = {c["slug"] for c in merged_concepts}
-        for c in wiki_linked:
-            if c["slug"] not in seen_c:
-                merged_concepts.append(c)
-                seen_c.add(c["slug"])
-        merged_concepts.sort(key=lambda c: c["slug"])
         entries.append({
             "slug": paper_slug,
             "title": item.get("title") or paper_slug,
@@ -201,8 +183,7 @@ def build_map(vault, channel_id="my-portfolio"):
             "pdf": _pdf_name(item, channels),
             "pdf_path": _pdf_path(item, channel_id, channels),
             "themes": _themes_for(item, vault),
-            "concepts": merged_concepts,
-            "syntheses": syntheses_by_paper.get(paper_slug, []),
+            "overview": _overview_for(item, vault, wiki_page, channel_id),
             "entry": item.get("entry") or item.get("note", ""),
             "wiki_page": wiki_page,
         })

@@ -28,10 +28,9 @@ def test_demo_portfolio_map():
     assert len(quick) == 4
     assert len(m["themes"]) >= 5
     pr = next(e for e in m["entries"] if e["slug"] == "positive-reinforcement-reddit")
-    assert len(pr["concepts"]) >= 2
-    assert any(c["slug"] == "positive-reinforcement" for c in pr["concepts"])
-    synth_slugs = {s["slug"] for s in pr["syntheses"]}
-    assert "demo-reward-attention-thread" in synth_slugs
+    assert "positive feedback" in pr["overview"].lower()
+    ch = next(e for e in m["entries"] if e["slug"] == "creator-hearts")
+    assert len(ch["overview"]) > 40
 
 
 def test_ingest_prompt_lists_themes_and_full_pdf(tmp_path):

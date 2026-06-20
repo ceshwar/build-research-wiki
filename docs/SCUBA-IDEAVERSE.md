@@ -62,7 +62,7 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 |------|----------------|
 | **Header** | Reef dropdown (Starter reefs / Your reefs / Connect), Obsidian link, **Docs**, burger menu |
 | **Docks** | Dock pills + collapsible upload |
-| **Dock workspace rail** | Sticky tabs for the active dock: **Chart status · Map · Actions** |
+| **Dock workspace rail** | **Map** first, then **Chart & enrich** (Chart status + Actions) — scrolls with the page |
 | **Chart status** | Pipeline legend, clickable stat cards, next-step banner |
 | **Map** | List \| By theme; paper row links PDF; **Concepts** column shows ingest output |
 | **Actions** | **Update chart**, **Get ingest prompt** |
@@ -73,10 +73,10 @@ Open **Docs** for in-app glossary (reefs, SCUBA terms, pipeline states).
 
 When you select a dock, everything below the dock pills scopes to that channel:
 
-- **Sticky rail** — shows `⚓ My Portfolio · 7 on chart` and three tabs. Click a tab to jump and expand that section; scroll updates the active tab.
+- **Rail** — shows `⚓ My Portfolio · 7 on chart` and tabs. **Map** is primary; **Chart status** and **Actions** are grouped under **Chart & enrich**. Click a tab to jump; scroll updates the active tab.
 - **Collapsible sections** — collapse Map or Actions if you only need Chart status.
 - **Per-reef guide** — a one-line explainer appears until you dismiss it (**Got it**); it resets when you switch to a different reef.
-- **First dock visit** — the first time you open a dock on a reef, **Chart status** expands automatically.
+- **First dock visit** — the first time you open a dock on a reef, **Map** expands automatically.
 
 ---
 
@@ -118,10 +118,8 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 | Column | Source |
 |--------|--------|
 | **Status** | Quick dip / Deep dive / Enrich next |
-| **Paper** | Wiki page link; year · venue · PDF link in metadata line |
+| **Paper** | Wiki page link; **Note** expands one-liner + **View PDF** |
 | **Themes** | `builder/entries/` wikilinks + `data.py` |
-| **Concepts** | `builder/data.py` CONCEPTS + wikilinks on paper pages; *Deep Dive to add* when empty |
-| **Syntheses** | Linked below concepts when paper appears in `wiki/syntheses/` |
 
 ---
 

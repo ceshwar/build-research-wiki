@@ -36,7 +36,7 @@ Use **+ Add dock** in the UI to create custom folders. Config lives in `builder/
 
 ## Dock workspace
 
-Selecting a dock shows a sticky rail with three tabs scoped to that channel:
+Selecting a dock shows a rail with **Map** (primary) and a **Chart & enrich** group (Chart status + Actions). The rail scrolls away so Map stays unobstructed.
 
 | Tab | Purpose |
 |-----|---------|
@@ -44,7 +44,7 @@ Selecting a dock shows a sticky rail with three tabs scoped to that channel:
 | **Map** | List / By theme; concepts, syntheses, PDF in paper row |
 | **Actions** | Update chart, Get ingest prompt |
 
-First visit to a dock on a reef auto-expands **Chart status**. The onboarding guide dismisses per reef (stored in browser `localStorage`).
+First visit to a dock on a reef auto-expands **Map**. The onboarding guide dismisses per reef (stored in browser `localStorage`).
 
 ## Chart status stats
 

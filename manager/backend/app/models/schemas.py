@@ -109,16 +109,6 @@ class IngestPromptResponse(BaseModel):
     channel_id: str = "my-portfolio"
 
 
-class ChartConcept(BaseModel):
-    slug: str
-    title: str
-
-
-class ChartSynthesis(BaseModel):
-    slug: str
-    title: str
-
-
 class ChartEntry(BaseModel):
     slug: str
     title: str
@@ -128,8 +118,7 @@ class ChartEntry(BaseModel):
     pdf: str = ""
     pdf_path: str = ""
     themes: List[str] = []
-    concepts: List[ChartConcept] = []
-    syntheses: List[ChartSynthesis] = []
+    overview: str = ""
     entry: str = ""
     wiki_page: str = ""
 
