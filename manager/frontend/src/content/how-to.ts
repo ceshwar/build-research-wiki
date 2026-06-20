@@ -30,7 +30,7 @@ export const HOW_TO_SECTIONS = [
       { name: 'Deep Dive', desc: 'Tier 2 enrichment: themes, one-liners, analysis in `builder/deepdives/`.' },
       { name: 'Chart', desc: 'Generated wiki pages under `wiki/papers/` or `wiki/sources/`.' },
       { name: 'Chart status', desc: 'Per-dock charting tracker — on chart, awaiting chart, quick dip, enrich next.' },
-      { name: 'Map', desc: 'Charted items for the active dock — **List** table, **By theme** (portfolio clusters), or **Graph** (wikilink network: papers, themes, concepts, entities, syntheses). Expand **Note** for one-liner + PDF. Toggle **Edit** (List only) to remove papers from the chart.' },
+      { name: 'Map', desc: 'Charted items for the active dock — **List** table, **By theme** (portfolio clusters), or **Graph** (wikilink network). On Graph, toggle **Show** layers (default: papers, themes, concepts); hover highlights in orange. Expand **Note** for one-liner + PDF. Toggle **Edit** (List only) to remove papers from the chart.' },
       { name: 'Workspace', desc: 'Focused view: `/ Reef › Dock` path + tabs (Map · Chart status · Actions). **/** switches reefs; reef name picks a dock.' },
       { name: 'Update chart', desc: 'Runs Quick Dip + rebuild for new docked files.' },
       { name: 'Full rebuild', desc: 'Regenerates the entire wiki from builder entries.' },

@@ -1436,9 +1436,68 @@ code {
   margin-top: 0.25rem;
 }
 
+.chart-graph__layers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.chart-graph__layers-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-right: 0.15rem;
+}
+
+.graph-layer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, opacity 0.12s;
+}
+
+.graph-layer-chip:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.graph-layer-chip--on {
+  border-color: color-mix(in srgb, var(--border) 55%, var(--text) 45%);
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg) 88%, var(--navy) 12%);
+}
+
+.graph-layer-chip:not(.graph-layer-chip--on) {
+  opacity: 0.55;
+}
+
+.graph-layer-chip:not(.graph-layer-chip--on) .graph-layer-chip__dot {
+  opacity: 0.45;
+}
+
+.graph-layer-chip__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .chart-graph__meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem 1rem;
   margin-bottom: 0.5rem;
   font-size: 0.6875rem;
@@ -1450,31 +1509,61 @@ code {
 }
 
 .chart-graph__canvas-wrap {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--bg);
+  min-height: 520px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
 }
 
-.chart-graph__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem 1rem;
-  margin-top: 0.55rem;
-  font-size: 0.6875rem;
+.chart-graph__canvas-wrap:active {
+  cursor: grabbing;
+}
+
+.chart-graph__nav-hint {
+  margin-left: auto;
+  font-size: 0.625rem;
   color: var(--muted);
 }
 
-.chart-graph__legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.chart-graph__zoom {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.chart-graph__legend-swatch {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
+.chart-graph__zoom-btn {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.82);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chart-graph__zoom-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chart-graph__zoom-btn--wide {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .chart-graph__hint {

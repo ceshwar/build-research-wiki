@@ -1745,6 +1745,7 @@ export default function App() {
                       </div>
                     </div>
                     <ChartGraphView
+                      active
                       graph={chartGraph}
                       loading={chartGraphLoading}
                       vaultPath={vault.path}
