@@ -27,28 +27,11 @@ def load_data(vault_root):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
 
-    auto_path = os.path.join(builder, "auto_papers.py")
-    if os.path.exists(auto_path):
-        spec_auto = importlib.util.spec_from_file_location("auto_papers", auto_path)
-        auto_mod = importlib.util.module_from_spec(spec_auto)
-        spec_auto.loader.exec_module(auto_mod)
-        mod.P = list(mod.P) + list(getattr(auto_mod, "P_AUTO", []))
-
-    auto_lab = os.path.join(builder, "auto_lab_papers.py")
-    if os.path.exists(auto_lab):
-        spec_lab = importlib.util.spec_from_file_location("auto_lab_papers", auto_lab)
-        lab_mod = importlib.util.module_from_spec(spec_lab)
-        spec_lab.loader.exec_module(lab_mod)
-        mod.P = list(mod.P) + list(getattr(lab_mod, "P_LAB_AUTO", []))
-
-    auto_sources = os.path.join(builder, "auto_sources.py")
-    if os.path.exists(auto_sources):
-        spec_src = importlib.util.spec_from_file_location("auto_sources", auto_sources)
-        src_mod = importlib.util.module_from_spec(spec_src)
-        spec_src.loader.exec_module(src_mod)
-        mod.S = list(getattr(mod, "S", [])) + list(getattr(src_mod, "S_AUTO", []))
-    elif not hasattr(mod, "S"):
-        mod.S = []
+    # Generated Quick Dip registries are JSON (never executed). Legacy .py is migrated on read.
+    import registry
+    mod.P = list(mod.P) + registry.load(builder, "auto_papers.json")
+    mod.P = list(mod.P) + registry.load(builder, "auto_lab_papers.json")
+    mod.S = list(getattr(mod, "S", [])) + registry.load(builder, "auto_sources.json")
 
     return mod, builder
 

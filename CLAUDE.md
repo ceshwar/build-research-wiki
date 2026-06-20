@@ -324,7 +324,7 @@ script or cron. Skip this whole section if you only want the LLM-driven workflow
 - `builder/templates/<channel>/entry.md` — default templates to copy when starting by hand.
 - `builder/entries/<channel>/<slug>.md` — working notes for each docked artifact: themes,
   abstract/summary, my notes. Created from templates on **Surface Interval** (`map_channel.py`).
-- `builder/auto_papers.py` / `builder/auto_sources.py` — auto registry (do not hand-edit).
+- `builder/auto_papers.json` / `builder/auto_sources.json` — auto registry (do not hand-edit).
 
 ### Wiki layout (added by the builder)
 - `wiki/themes/<slug>.md` — theme hub pages.

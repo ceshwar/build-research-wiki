@@ -48,7 +48,7 @@ P = [
     #      themes=["example-theme"], one="One-line contribution."),
 ]
 
-# ingest-channel artifacts (optional; auto_sources.py is created by map_channel.py)
+# ingest-channel artifacts (optional; auto_sources.json is created by map_channel.py)
 S = []
 
 # slug -> short display title (link aliases in concept/entity pages)

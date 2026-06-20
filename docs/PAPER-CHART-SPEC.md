@@ -48,7 +48,7 @@ Chart entries are **product IP**: structured wiki pages we generate for users. T
 ```
 raw/papers/foo.pdf                          # immutable upload
 builder/entries/my-portfolio/foo.md         # Quick Dip entry (edit here)
-builder/auto_papers.py                      # registry row (status: quick-dip)
+builder/auto_papers.json                    # registry row (status: quick-dip)
 wiki/papers/foo.md                          # generated chart page
 ```
 

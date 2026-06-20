@@ -4,8 +4,13 @@
 import importlib.util
 import os
 import re
+import sys
 
 BUILDER_DIR = os.path.dirname(os.path.abspath(__file__))
+if BUILDER_DIR not in sys.path:
+    sys.path.insert(0, BUILDER_DIR)
+
+import registry  # noqa: E402
 
 PLACEHOLDER_MARKERS = (
     "theme-slug-one", "theme-slug-two", "theme-slug", "concept-slug",
@@ -76,18 +81,13 @@ def load_corpus(vault_path):
                 "status": s.get("status", "quick-dip"),
             })
 
-    for auto_name, key, default_channel in [
-        ("auto_papers.py", "P_AUTO", "my-portfolio"),
-        ("auto_lab_papers.py", "P_LAB_AUTO", "lab-portfolio"),
-        ("auto_sources.py", "S_AUTO", None),
+    for json_name, profile, default_channel in [
+        ("auto_papers.json", "portfolio", "my-portfolio"),
+        ("auto_lab_papers.json", "portfolio", "lab-portfolio"),
+        ("auto_sources.json", "ingest", None),
     ]:
-        auto_path = os.path.join(builder, auto_name)
-        if not os.path.exists(auto_path):
-            continue
-        mod = _load_module(auto_path)
-        for item in getattr(mod, key, []):
+        for item in registry.load(builder, json_name):
             channel = item.get("channel") or default_channel
-            profile = "portfolio" if key.startswith("P_") else "ingest"
             entries.append({
                 "profile": profile,
                 "channel": channel,

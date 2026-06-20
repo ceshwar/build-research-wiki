@@ -12,7 +12,8 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from app.services.channel_registry import channel_registry
+from app.services.channel_registry import channel_registry  # inserts builder/ onto sys.path
+import registry  # builder/registry.py — JSON read for generated Quick Dip registries
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_DIR.parent.parent
@@ -201,28 +202,23 @@ class VaultManager:
                 for pdf in p.get("pdfs", []):
                     known.add(pdf)
                     known.add(os.path.basename(pdf))
-        for auto_name, key in [("auto_papers.py", "P_AUTO"), ("auto_lab_papers.py", "P_LAB_AUTO")]:
-            auto_path = vault_path / "builder" / auto_name
-            if auto_path.exists():
-                mod = self._load_data_module(auto_path)
-                for p in getattr(mod, key, []):
-                    for pdf in p.get("pdfs", []):
-                        known.add(pdf)
-                        known.add(os.path.basename(pdf))
+        builder_dir = str(vault_path / "builder")
+        for auto_name in ("auto_papers.json", "auto_lab_papers.json"):
+            for p in registry.load(builder_dir, auto_name):
+                for pdf in p.get("pdfs", []):
+                    known.add(pdf)
+                    known.add(os.path.basename(pdf))
         return known
 
     def _known_channel_files(self, vault_path, channel_id):
         known = set()
-        auto_path = vault_path / "builder" / "auto_sources.py"
-        if auto_path.exists():
-            mod = self._load_data_module(auto_path)
-            for s in getattr(mod, "S_AUTO", []):
-                if s.get("channel") != channel_id:
-                    continue
-                sf = s.get("source_file", "")
-                if sf:
-                    known.add(sf)
-                    known.add(os.path.basename(sf))
+        for s in registry.load(str(vault_path / "builder"), "auto_sources.json"):
+            if s.get("channel") != channel_id:
+                continue
+            sf = s.get("source_file", "")
+            if sf:
+                known.add(sf)
+                known.add(os.path.basename(sf))
         return known
 
     def _enrich(self, vault: dict) -> dict:
@@ -258,11 +254,9 @@ class VaultManager:
             mod = self._load_data_module(data_path)
             paper_count = len(getattr(mod, "P", []))
             theme_count = len(getattr(mod, "THEMES", {}))
-            for auto_name, key in [("auto_papers.py", "P_AUTO"), ("auto_lab_papers.py", "P_LAB_AUTO")]:
-                auto_path = vault_path / "builder" / auto_name
-                if auto_path.exists():
-                    auto_mod = self._load_data_module(auto_path)
-                    paper_count += len(getattr(auto_mod, key, []))
+            builder_dir = str(vault_path / "builder")
+            for auto_name in ("auto_papers.json", "auto_lab_papers.json"):
+                paper_count += len(registry.load(builder_dir, auto_name))
 
         channels = []
         total_artifacts = 0

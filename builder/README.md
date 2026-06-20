@@ -36,7 +36,7 @@ PDF text extraction (optional, below) needs **poppler** (`brew install poppler`)
 | **`data.py`** | Corpus: THEMES, P, CONCEPTS, PEOPLE, … | **yes** |
 | `entries/<channel>/` | Your working chart notes (deterministic sections) | **yes** |
 | `deepdives/<slug>.md` | Generative *Deep dive* section (injected at build) | yes |
-| `auto_papers.py` / `auto_sources.py` | Registry of auto-mapped dock artifacts | auto |
+| `auto_papers.json` / `auto_sources.json` | JSON registry of auto-mapped dock artifacts | auto |
 | `extract_pdfs.py` | `pdftotext` → `cache/<slug>.txt` | no |
 | `new_vault.py` | Scaffold a new vault | no |
 | `cache/` | Disposable PDF text (gitignored) | — |
@@ -51,7 +51,7 @@ PDF text extraction (optional, below) needs **poppler** (`brew install poppler`)
 1. Dock PDF → `raw/papers/`.
 2. **Update chart (Quick Dip)** — `python3 builder/map_channel.py --channel my-portfolio` creates Tier 1 entry from PDF facts.
 3. **Deep Dive** — add theme links, one-liner, and `builder/deepdives/<slug>.md`.
-4. Register in `data.py` `P` if hand-curated; auto-mapped papers land in `auto_papers.py`.
+4. Register in `data.py` `P` if hand-curated; auto-mapped papers land in `auto_papers.json`.
 5. `python3 builder/build.py`. Update `wiki/overview.md` + `log.md` by hand.
 
 See [`docs/PAPER-CHART-SPEC.md`](../docs/PAPER-CHART-SPEC.md) for what Quick Dip fills vs Deep Dive.

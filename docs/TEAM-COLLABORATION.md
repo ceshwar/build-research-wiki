@@ -26,7 +26,7 @@ The assistant **never modifies `raw/`**. Treat `raw/` as append-only from humans
 | `builder/data.py`, `builder/deepdives/` | **Yes** | Corpus definition and deep-dive source text. |
 | `builder/entries/` | **Yes** | Chart entry notes (themes, abstract, one-liner). |
 | `builder/templates/` | **Yes** | Default scaffolds (engine; rarely edited per vault). |
-| `builder/auto_papers.py`, `auto_sources.py` | **Yes** | Auto-registry from Surface Interval. |
+| `builder/auto_papers.json`, `auto_sources.json` | **Yes** | Auto-registry from Surface Interval. |
 | `manager/` | **Yes** | SCUBA Ideaverse UI (optional for CLI-only teams). |
 | `builder/cache/` | **No** | Regenerable PDF text; gitignored. |
 | `.obsidian/workspace*.json` | **No** | Per-machine UI state; gitignored. |

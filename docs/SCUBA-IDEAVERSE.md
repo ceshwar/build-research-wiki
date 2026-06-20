@@ -67,7 +67,7 @@ Non-portfolio docks: **upload works**; files stay in `raw/`. The UI shows an **i
 | Entry templates | `builder/templates/<channel>/` | copy to start by hand |
 | Chart entries | `builder/entries/<channel>/<slug>.md` | you — themes, abstract, one-liner |
 | Deep dives | `builder/deepdives/<slug>.md` | you or LLM (Phase 3) |
-| Auto registry | `builder/auto_papers.py`, `auto_sources.py` | generated — don't hand-edit |
+| Auto registry | `builder/auto_papers.json`, `auto_sources.json` | generated — don't hand-edit |
 | Chart pages | `wiki/papers/`, `wiki/sources/`, … | generated — don't hand-edit |
 
 **Paper page shape** matches a fleshed-out portfolio entry (see `examples/minimal-vault/wiki/papers/` or your personal `beyond-throughput` example): frontmatter → one-liner → themes → abstract → deep dive → source links.
