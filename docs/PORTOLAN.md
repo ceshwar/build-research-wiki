@@ -4,6 +4,8 @@
 
 Built for reading, in a world built for writing — Portolan keeps you oriented as the ocean of research keeps rising. The research assistant that actually reads your papers.
 
+**Why "Portolan"?** A portolan is a navigational chart — a sailor's map of coastlines and harbors, drawn to keep you oriented at sea. This one keeps you oriented in *your field*, charting the papers you read and how they connect.
+
 In a world that rewards writing and creating, almost nothing helps you read and connect. Portolan is a consumption tool. It reads what you dock and keeps you oriented in your field so you stop losing the thread.
 
 Portolan is the layer between Zotero and Obsidian. Zotero stores, Obsidian links, neither reads your papers for you. The verb that is ours is **reads**. The asset is a compounding knowledge base: accumulation, not storage. Plain markdown you own and version with git. Works for one dissertation or a whole lab.

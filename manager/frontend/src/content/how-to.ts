@@ -2,6 +2,16 @@
 
 export const HOW_TO_SECTIONS = [
   {
+    id: 'about',
+    title: 'What is Portolan',
+    body: [
+      'A **portolan** is a navigational chart — the old sailor’s map of coastlines and harbors, drawn to keep you oriented at sea. Portolan does the same for your field: it **reads the papers you dock and charts how they connect**, so you stay oriented as the literature keeps rising instead of losing the thread.',
+      '**The gap it fills:** tools help you write and store — Zotero stores, Obsidian links — but almost nothing helps you **read**. Portolan’s verb is **reads**: it turns a pile of PDFs into a compounding, browsable chart you own as plain Markdown, versioned with git.',
+      '**What you do:** dock papers → **Quick Dip** charts the facts → **Deep Dive** enriches (themes, findings, connections) → **Navigate** the graph → open it all in Obsidian.',
+      'Built for **research papers** — the same dock → chart → enrich loop works for any corpus you need to actually read.',
+    ],
+  },
+  {
     id: 'start',
     title: 'Quick start',
     body: [
