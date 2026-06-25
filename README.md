@@ -13,9 +13,9 @@ Portolan is the layer between Zotero and Obsidian. Zotero stores, Obsidian links
 Built by the [SCUBA Lab](https://eshwarchandrasekharan.com/lab.html) at UIUC and shared openly under [MIT](LICENSE). Implements the [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) by Andrej Karpathy. The system (**dock → chart → enrich → Obsidian**) is corpus-agnostic: point it at your own papers and notes.
 
 <p align="center">
-  <img src="docs/images/portolan-hero.png" alt="Portolan — Shallow reef, My Portfolio, Navigate List view" width="900">
+  <img src="docs/images/portolan-hero.png" alt="Portolan — Local reef, My Portfolio, Navigate Graph view" width="900">
 </p>
-<p align="center"><em>Shallow reef · My Portfolio — Navigate · List with status, papers, and themes.</em></p>
+<p align="center"><em>Local reef · My Portfolio — Navigate · Graph (papers, themes, concepts).</em></p>
 
 ---
 

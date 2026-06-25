@@ -352,6 +352,14 @@ export function ChartGraphView({
     fg.zoomToFit(400, 56)
   }, [graphData.nodes.length])
 
+  // Land the graph framed quickly: nodes have positions after warmup, so fit a few times
+  // early instead of waiting for the full simulation cooldown (onEngineStop fits as a backstop).
+  useEffect(() => {
+    if (!active || graphData.nodes.length === 0) return
+    const timers = [250, 700, 1400].map((ms) => window.setTimeout(() => fitGraph(), ms))
+    return () => timers.forEach((t) => window.clearTimeout(t))
+  }, [active, graphData.nodes.length, statFilter, enabledLayers, fitGraph])
+
   const handleEngineStop = useCallback(() => {
     if (!fitPendingRef.current) return
     fitPendingRef.current = false

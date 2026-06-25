@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.5.1 — Graph framing + hero (2026-06-25)
+
+### Fixed
+
+- **Graph initial view** — early `zoomToFit` passes (250 / 700 / 1400 ms) so dense graphs land centered instead of clustering at the bottom with empty space above
+
+### Changed
+
+- **Hero screenshot** — `docs/images/portolan-hero.png` (Local reef · Navigate · Graph, 82 nodes)
+
+---
+
 ## v0.5.0 — Portolan rebrand (2026-06-20)
 
 ### Changed
