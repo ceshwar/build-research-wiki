@@ -126,6 +126,38 @@ export function fetchChartGraph(vaultId: string, channelId: string) {
   )
 }
 
+export function updateChartVerification(
+  vaultId: string,
+  channelId: string,
+  slug: string,
+  humanVerified: boolean,
+  verifiedBy = 'human',
+) {
+  const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId, slug })
+  return request<{
+    slug: string
+    channel_id: string
+    human_verified: boolean
+    verified_at: string
+    verified_by: string
+    job_id: string | null
+  }>(`/chart-entry/verification?${params}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ human_verified: humanVerified, verified_by: verifiedBy }),
+  })
+}
+
+export function fetchLlmConfig() {
+  return request<{
+    ollama_url: string
+    default_model: string
+    embedding_model: string
+    think: boolean
+    stages: Record<string, string>
+  }>('/llm-config')
+}
+
 export function removeFromChart(vaultId: string, channelId: string, slug: string) {
   const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId, slug })
   return request<{ slug: string; channel_id: string; deleted_files: string[]; job_id: string | null }>(
@@ -166,6 +198,71 @@ export function fetchJob(jobId: string) {
 
 export function fetchJobLogs(jobId: string) {
   return request<JobLogs>(`/jobs/${jobId}/logs`)
+}
+
+export function fetchSettings() {
+  return request<import('../types').AppSettings>('/settings')
+}
+
+export function updateSettings(patch: Partial<import('../types').AppSettings>) {
+  return request<import('../types').AppSettings>('/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+}
+
+export function fetchVaultFile(vaultId: string, path: string) {
+  const params = new URLSearchParams({ vault_id: vaultId, path })
+  return request<{ path: string; content_type: string; content: string | null; size: number }>(
+    `/vault-file?${params}`,
+  )
+}
+
+export function runDeepDive(
+  vaultId: string,
+  channelId: string,
+  opts: { slug?: string; slugs?: string[]; provider?: string; model?: string } = {},
+) {
+  const params = new URLSearchParams({ vault_id: vaultId, channel_id: channelId })
+  return request<{ job_id: string; model: string; provider: string; slugs: string[] }>(
+    `/deep-dive?${params}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug: opts.slug,
+        slugs: opts.slugs ?? [],
+        provider: opts.provider,
+        model: opts.model,
+      }),
+    },
+  )
+}
+
+export function runWikiQuery(vaultId: string, question: string, provider?: string, model?: string) {
+  const params = new URLSearchParams({ vault_id: vaultId })
+  return request<{ job_id: string; model: string; provider: string; question: string }>(
+    `/query?${params}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, provider, model }),
+    },
+  )
+}
+
+export function fetchQueryResult(jobId: string, question = '') {
+  const params = new URLSearchParams({ question })
+  return request<{
+    job_id: string
+    status: string
+    question: string
+    answer: string
+    model: string
+    elapsed_s?: number
+    provider_kind?: string
+  }>(`/query/${jobId}?${params}`)
 }
 
 export type { ChannelStats }

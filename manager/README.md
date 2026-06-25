@@ -83,6 +83,15 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | POST | `/vaults/{id}/docks` — create custom dock |
 | GET | `/vaults` |
 | GET | `/chart-map?vault_id=&channel_id=` |
+| GET | `/chart-graph?vault_id=&channel_id=` |
+| GET | `/vault-file?vault_id=&path=` — in-app markdown viewer |
+| POST | `/deep-dive?vault_id=&channel_id=` — LLM Deep Dive `{ slug \| slugs }` |
+| POST | `/query?vault_id=` — wiki Q&A `{ question }` |
+| GET | `/query/{job_id}` — query result when job completes |
+| GET/PATCH | `/settings` — viewer, Ollama URL, models, local/frontier |
+| GET | `/llm-config` |
+| POST | `/chart-entry/verification?...` — mark human verified |
+| GET | `/ingest-prompt?vault_id=&channel_id=` |
 | POST | `/vaults` — add reef `{ path, name? }` |
 | POST | `/vaults/validate` — check folder |
 | POST | `/vaults/pick-folder` — native folder picker |

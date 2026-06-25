@@ -154,6 +154,9 @@ def build_graph(vault, channel_id="my-portfolio"):
             "status": e["status"],
             "wiki_page": e["wiki_page"],
             "themes": [resolve_theme(t) for t in (e.get("themes") or [])],
+            "human_verified": e.get("human_verified"),
+            "needs_human_verification": e.get("needs_human_verification"),
+            "territory": e.get("territory"),
         }
         for e in entries
     }
@@ -232,12 +235,18 @@ def build_graph(vault, channel_id="my-portfolio"):
             title = pm["title"]
             wiki_page = pm["wiki_page"]
             status = pm["status"]
+            human_verified = pm.get("human_verified")
+            needs_human_verification = pm.get("needs_human_verification")
+            territory = pm.get("territory")
         elif slug in registry:
             reg = registry[slug]
             node_type = reg["type"]
             title = reg["title"]
             wiki_page = reg["wiki_page"]
             status = None
+            human_verified = None
+            needs_human_verification = None
+            territory = None
             if node_type == "theme" and slug in theme_titles:
                 title = theme_titles[slug]
         else:
@@ -245,16 +254,24 @@ def build_graph(vault, channel_id="my-portfolio"):
             title = theme_titles.get(slug, slug.replace("-", " "))
             wiki_page = "wiki/themes/{}.md".format(slug)
             status = None
+            human_verified = None
+            needs_human_verification = None
+            territory = None
 
         stats[node_type] = stats.get(node_type, 0) + 1
-        nodes.append({
+        node = {
             "id": slug,
             "slug": slug,
             "label": title,
             "type": node_type,
             "wiki_page": wiki_page,
             "status": status,
-        })
+        }
+        if node_type == "paper":
+            node["human_verified"] = human_verified
+            node["needs_human_verification"] = needs_human_verification
+            node["territory"] = territory
+        nodes.append(node)
 
     return {
         "channel_id": channel_id,

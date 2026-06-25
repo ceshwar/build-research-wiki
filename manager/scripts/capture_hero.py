@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture README hero: Local reef · My Portfolio · Navigate · Graph."""
+"""Capture README hero: Shallow reef · My Portfolio · Navigate · Graph."""
 
 import os
 import sys
@@ -41,7 +41,7 @@ def main() -> int:
         page.reload(wait_until="networkidle")
 
         page.get_by_role("button", name="/", exact=True).click()
-        page.get_by_role("button", name="Local reef", exact=True).click()
+        page.get_by_role("button", name="Shallow reef", exact=True).click()
 
         # vault switch keeps my-portfolio channel → workspace opens directly
         page.wait_for_selector(".workspace-shell", timeout=15000)

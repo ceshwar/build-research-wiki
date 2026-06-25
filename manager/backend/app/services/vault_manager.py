@@ -342,9 +342,20 @@ class VaultManager:
                 "charted": counts.get("charted", 0),
                 "processed": counts.get("processed", 0),
                 "needs_review": counts.get("needs_deep_dive", 0) + counts.get("scaffolded", 0),
+                "needs_human_verification": counts.get("needs_human_verification", 0),
+                "human_verified_count": counts.get("human_verified", 0),
                 "needs_attention": [
                     {"slug": a["slug"], "title": a["title"], "status": a["status"]}
                     for a in ch_report.get("needs_attention", [])[:8]
+                ],
+                "needs_verification": [
+                    {
+                        "slug": a["slug"],
+                        "title": a["title"],
+                        "status": a["status"],
+                        "llm_model": a.get("llm_model") or "",
+                    }
+                    for a in ch_report.get("needs_verification", [])[:8]
                 ],
             })
 
@@ -362,6 +373,8 @@ class VaultManager:
             "charted_count": totals.get("charted", 0),
             "processed_count": totals.get("processed", 0),
             "needs_review_count": totals.get("needs_deep_dive", 0) + totals.get("scaffolded", 0),
+            "needs_human_verification_count": totals.get("needs_human_verification", 0),
+            "human_verified_count": totals.get("human_verified", 0),
             "channels": channels,
             # legacy fields
             "pdf_count": next((c["artifact_count"] for c in channels if c["id"] == "my-portfolio"), 0),

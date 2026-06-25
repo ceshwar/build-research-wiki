@@ -64,19 +64,21 @@ Dock (raw/)  →  Quick Dip (Update chart)  →  Chart (wiki/)  →  Obsidian
                       │
          ┌────────────┴────────────┐
          │                         │
-   Tier 1: PDF facts only    Tier 2+: Deep Dive
-   (no guessing)             (themes, analysis, LLM agent)
+   Tier 1: PDF facts only    Tier 2: Deep Dive (LLM qwen3:32b)
+   (no guessing)             → human review → charted territory
 ```
 
 1. **Pick a reef** — Shallow reef for demo, Blank reef or your own for real work.
 2. **Pick a dock** — hover dock pills for what each channel is for; first dock auto-opens **Navigate**.
-3. **Workspace** — path header shows `Reef › Dock`; tabs switch between **Navigate**, **Status**, and **Actions** (one panel at a time).
+3. **Workspace** — path header shows `Reef › Dock`; tabs: **Navigate**, **Query**, **Status**, **Actions**
 4. **Dock** — click the dock name in the path to switch docks or upload → `raw/{channel}/`
 5. **Quick Dip** — runs automatically for portfolio uploads; or click **Update chart** in Actions
 6. **Status** — pipeline stats and next-step banner for this dock
 7. **Navigate** — browse charted items (**List** table, **By theme**, or **Graph** on portfolio reefs); expand **Note** for one-liner + PDF
-8. **Deep Dive** — **Get ingest prompt** for your coding agent, or edit entries by hand
-9. **Open reef in Obsidian** (header icon or graph links)
+8. **Deep Dive** — **Run Deep Dive (LLM)** in Actions (default qwen3:32b), or **Get ingest prompt** for your agent
+9. **Query** — ask questions against the wiki; cites [[sources]]; surfaces uncharted papers
+10. **Settings** (⚙) — Ollama URL, models, local vs frontier provider, in-app vs Obsidian viewer
+11. **Open in Obsidian** — optional; header icon or drawer link when viewing in-app
 
 Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 
@@ -86,13 +88,12 @@ Full chart spec: [`docs/PAPER-CHART-SPEC.md`](PAPER-CHART-SPEC.md)
 
 | Area | What it does |
 |------|----------------|
-| **Header** | **Docs** and **Open in Obsidian** only |
+| **Header** | **Settings** (⚙), **Docs**, **Open in Obsidian** |
 | **Path bar** | `/` switches reefs · reef name picks dock · dock name is current location |
 | **Reef picker** | Starter reefs, your reefs, **+ Connect your reef…** |
-| **Workspace shell** | `Reef › Dock` path + tabs; only one of Navigate / Status / Actions visible |
-| **Status** | Pipeline legend, clickable stat cards, next-step banner |
-| **Navigate** | **List** (sortable table) · **By theme** (portfolio) · **Graph** (wikilink network); **Note** expands one-liner + PDF |
-| **Actions** | **Update chart**, **Get ingest prompt**, upload shortcut |
+| **Workspace shell** | `Reef › Dock` path + tabs; Navigate / Query / Status / Actions |
+| **Query** | Ask the wiki; LLM reads index + relevant pages; async job |
+| **Actions** | **Update chart**, **Run Deep Dive (LLM)**, **Get ingest prompt**, upload |
 
 Open **Docs** for in-app glossary (reefs, key terms, pipeline states).
 
@@ -220,9 +221,8 @@ Full issue list: **[docs/ROADMAP.md](ROADMAP.md)** · create on GitHub: `./scrip
 
 | Phase | Feature |
 |-------|---------|
-| **Now (v0.5)** | Portolan rebrand, Navigate · Status · Graph |
-| **Phase 2** | LLM Deep Dive — auto-fill `builder/deepdives/` from PDFs |
-| **Phase 2** | Theme/one-liner assistance, Enrich actions, entity propagation |
+| **Now (v0.6)** | LLM Deep Dive in-app, Query tab, Settings, in-app viewer, verification/territory |
+| **Phase 2** | Theme/one-liner assistance, per-paper Deep Dive button, entity propagation |
 | **Phase 3** | Full LLM ingest for lit-review / dive-log / ideas (replaces preview shells) |
 | **Phase 4** | Sonar ping (related work), query-to-file syntheses, overview threads |
 | **Phase 5** | Reef profiles, Obsidian Dataview stats |

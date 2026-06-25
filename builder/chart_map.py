@@ -207,6 +207,14 @@ def build_map(vault, channel_id="my-portfolio"):
             "overview": _overview_for(item, vault, wiki_page, channel_id),
             "entry": item.get("entry") or item.get("note", ""),
             "wiki_page": wiki_page,
+            "human_verified": assessed.get("human_verified", False),
+            "needs_human_verification": assessed.get("needs_human_verification", False),
+            "llm_enriched": assessed.get("llm_enriched", False),
+            "llm_model": assessed.get("llm_model") or "",
+            "enrichment_source": assessed.get("enrichment_source") or "",
+            "territory": assessed.get("territory") or "charted",
+            "verified_at": assessed.get("verified_at") or "",
+            "verified_by": assessed.get("verified_by") or "",
         })
 
     awaiting = [f for f in raw_files if f not in known]

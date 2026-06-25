@@ -12,6 +12,7 @@ if BUILDER_DIR not in sys.path:
 
 import registry  # noqa: E402
 import off_chart  # noqa: E402
+import verification  # noqa: E402
 
 PLACEHOLDER_MARKERS = (
     "theme-slug-one", "theme-slug-two", "theme-slug", "concept-slug",
@@ -50,6 +51,7 @@ def _load_module(path):
 def load_corpus(vault_path):
     """Return all registry entries as dicts with channel + profile."""
     builder = os.path.join(vault_path, "builder")
+    verification_overrides = verification.load_overrides(builder)
     data_path = os.path.join(builder, "data.py")
     entries = []
 
@@ -69,6 +71,12 @@ def load_corpus(vault_path):
                 "themes": list(p.get("themes", [])),
                 "title": p.get("title", p["slug"]),
                 "status": p.get("status", "mapped"),
+                "human_verified": p.get("human_verified"),
+                "llm_enriched": p.get("llm_enriched"),
+                "llm_model": p.get("llm_model"),
+                "verified_at": p.get("verified_at"),
+                "verified_by": p.get("verified_by"),
+                "_verification_overrides": verification_overrides,
             })
         for s in getattr(data, "S", []):
             entries.append({
@@ -80,6 +88,12 @@ def load_corpus(vault_path):
                 "themes": [],
                 "title": s.get("title", s["slug"]),
                 "status": s.get("status", "quick-dip"),
+                "human_verified": s.get("human_verified"),
+                "llm_enriched": s.get("llm_enriched"),
+                "llm_model": s.get("llm_model"),
+                "verified_at": s.get("verified_at"),
+                "verified_by": s.get("verified_by"),
+                "_verification_overrides": verification_overrides,
             })
 
     for json_name, profile, default_channel in [
@@ -98,6 +112,12 @@ def load_corpus(vault_path):
                 "themes": list(item.get("themes", [])),
                 "title": item.get("title", item["slug"]),
                 "status": item.get("status", "quick-dip"),
+                "human_verified": item.get("human_verified"),
+                "llm_enriched": item.get("llm_enriched"),
+                "llm_model": item.get("llm_model"),
+                "verified_at": item.get("verified_at"),
+                "verified_by": item.get("verified_by"),
+                "_verification_overrides": verification_overrides,
             })
     by_channel = {}
     for e in entries:
@@ -276,6 +296,11 @@ def assess_entry(vault_path, entry):
     else:
         status = "scaffolded"
 
+    overrides = entry.get("_verification_overrides")
+    if overrides is None:
+        overrides = verification.load_overrides(os.path.join(vault_path, "builder"))
+    vf = verification.effective(entry, status, overrides)
+
     return {
         "slug": entry["slug"],
         "title": entry.get("title", entry["slug"]),
@@ -283,6 +308,7 @@ def assess_entry(vault_path, entry):
         "profile": profile,
         "status": status,
         "has_deepdive": os.path.exists(dd_path),
+        **vf,
     }
 
 
@@ -291,13 +317,24 @@ def assess_channel(vault_path, channel_id, pending_count=0):
     assessed = [assess_entry(vault_path, e) for e in corpus]
     counts = {"pending": pending_count, "on_chart": len(corpus),
               "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0,
-              "charted": 0}
+              "charted": 0, "needs_human_verification": 0, "human_verified": 0}
     needs_attention = []
+    needs_verification = []
     for a in assessed:
         counts[a["status"]] += 1
+        if a.get("human_verified"):
+            counts["human_verified"] += 1
+        if a.get("needs_human_verification"):
+            counts["needs_human_verification"] += 1
+            needs_verification.append(a)
         if a["status"] in ("scaffolded", "needs_deep_dive", "charted"):
             needs_attention.append(a)
-    return {"counts": counts, "entries": assessed, "needs_attention": needs_attention}
+    return {
+        "counts": counts,
+        "entries": assessed,
+        "needs_attention": needs_attention,
+        "needs_verification": needs_verification,
+    }
 
 
 def assess_vault(vault_path, channel_pending=None):
@@ -305,9 +342,14 @@ def assess_vault(vault_path, channel_pending=None):
     corpus = load_corpus(vault_path)
     all_assessed = [assess_entry(vault_path, e) for e in corpus]
     totals = {"on_chart": len(corpus), "pending": sum(channel_pending.values()),
-              "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0, "charted": 0}
+              "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0, "charted": 0,
+              "needs_human_verification": 0, "human_verified": 0}
     for a in all_assessed:
         totals[a["status"]] += 1
+        if a.get("human_verified"):
+            totals["human_verified"] += 1
+        if a.get("needs_human_verification"):
+            totals["needs_human_verification"] += 1
     by_channel = {}
     channels = set(e.get("channel") for e in corpus) | set(channel_pending.keys())
     for ch in channels:

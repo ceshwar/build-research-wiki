@@ -11,6 +11,8 @@ type StatFilter =
   | 'processed'
   | 'needs_deep_dive'
   | 'charted'
+  | 'needs_verification'
+  | 'uncharted'
 
 type GraphLayerId = 'paper' | 'theme' | 'concept' | 'entity' | 'synthesis' | 'source'
 
@@ -119,7 +121,10 @@ function paperColor(status: string | null | undefined): string {
 }
 
 function nodeColor(node: ChartGraphNode): string {
-  if (node.type === 'paper') return paperColor(node.status)
+  if (node.type === 'paper') {
+    if (node.needs_human_verification) return '#d97706'
+    return paperColor(node.status)
+  }
   const layer = layerIdForNodeType(node.type)
   return layer ? LAYER_COLORS[layer] : '#94a3b8'
 }
@@ -158,8 +163,11 @@ function linkEndpointIds(link: { source: unknown; target: unknown }): { source: 
   return { source, target }
 }
 
-function paperMatchesFilter(status: string | null | undefined, filter: StatFilter): boolean {
+function paperMatchesFilter(node: ChartGraphNode, filter: StatFilter): boolean {
+  const status = node.status
   if (filter === 'all' || filter === 'on_chart') return true
+  if (filter === 'needs_verification') return !!node.needs_human_verification
+  if (filter === 'uncharted') return node.territory === 'uncharted'
   if (filter === 'quick_dip') return status === 'quick_dip'
   if (filter === 'processed') return status === 'processed'
   if (filter === 'needs_deep_dive') return status === 'needs_deep_dive'
@@ -173,7 +181,7 @@ export function filterGraphData(graph: ChartGraph, filter: StatFilter): ChartGra
 
   const visiblePapers = new Set(
     graph.nodes
-      .filter((n) => n.type === 'paper' && paperMatchesFilter(n.status, filter))
+      .filter((n) => n.type === 'paper' && paperMatchesFilter(n, filter))
       .map((n) => n.id),
   )
   const connected = new Set(visiblePapers)
@@ -220,6 +228,7 @@ export function ChartGraphView({
   statFilter,
   loading,
   active = true,
+  onOpenPage,
 }: {
   graph?: ChartGraph
   vaultPath: string
@@ -227,6 +236,7 @@ export function ChartGraphView({
   statFilter: StatFilter
   loading?: boolean
   active?: boolean
+  onOpenPage?: (path: string, title?: string) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const graphRef = useRef<ForceGraphMethods<GraphNode, GraphLink> | undefined>(undefined)
@@ -475,9 +485,13 @@ export function ChartGraphView({
   const onNodeClick = useCallback(
     (node: GraphNode) => {
       if (!node.wiki_page) return
+      if (onOpenPage) {
+        onOpenPage(node.wiki_page, node.label)
+        return
+      }
       window.location.href = obsidianHref(node.wiki_page, vaultPath, obsidianVaultId)
     },
-    [vaultPath, obsidianVaultId],
+    [vaultPath, obsidianVaultId, onOpenPage],
   )
 
   useEffect(() => {

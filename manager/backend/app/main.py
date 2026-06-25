@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import build, dock, jobs, surface, vaults
+from app.routes import build, dock, jobs, settings, surface, vaults
 
 app = FastAPI(
     title="Portolan",
-    version="0.5.0",
+    version="0.6.0",
     description="Read what you dock. Chart the connections.",
 )
 
@@ -17,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(settings.router)
 app.include_router(vaults.router)
 app.include_router(dock.router)
 app.include_router(surface.router)

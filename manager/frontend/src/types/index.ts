@@ -18,6 +18,13 @@ export interface NeedsAttention {
   status: 'scaffolded' | 'charted' | 'processed' | 'quick_dip' | 'needs_deep_dive'
 }
 
+export interface NeedsVerification {
+  slug: string
+  title: string
+  status: string
+  llm_model?: string
+}
+
 export interface ChannelStats {
   id: string
   name: string
@@ -34,7 +41,11 @@ export interface ChannelStats {
   processed: number
   needs_deep_dive: number
   quick_dip?: number
+  needs_review: number
+  needs_human_verification?: number
+  human_verified_count?: number
   needs_attention: NeedsAttention[]
+  needs_verification?: NeedsVerification[]
 }
 
 export interface Vault {
@@ -57,6 +68,8 @@ export interface Vault {
   quick_dip_count?: number
   needs_deep_dive_count?: number
   needs_review_count: number
+  needs_human_verification_count?: number
+  human_verified_count?: number
   channels: ChannelStats[]
   user_added?: boolean
 }
@@ -105,6 +118,14 @@ export interface ChartEntry {
   overview: string
   entry: string
   wiki_page: string
+  human_verified: boolean
+  needs_human_verification: boolean
+  llm_enriched: boolean
+  llm_model: string
+  enrichment_source: string
+  territory: 'charted' | 'uncharted'
+  verified_at: string
+  verified_by: string
 }
 
 export interface ChartTheme {
@@ -131,6 +152,9 @@ export interface ChartGraphNode {
   type: string
   wiki_page: string
   status?: string | null
+  human_verified?: boolean | null
+  needs_human_verification?: boolean | null
+  territory?: string | null
 }
 
 export interface ChartGraphEdge {
@@ -145,4 +169,31 @@ export interface ChartGraph {
   edges: ChartGraphEdge[]
   stats: Record<string, number>
   message?: string
+}
+
+export interface LlmModelsConfig {
+  deep_dive: string
+  charting: string
+  query: string
+}
+
+export interface FrontierConfig {
+  provider: string
+  deep_dive_model: string
+  query_model: string
+}
+
+export interface LlmSettings {
+  deep_dive_provider: string
+  query_provider: string
+  ollama_url: string
+  think: boolean
+  model_catalog: string[]
+  models: LlmModelsConfig
+  frontier: FrontierConfig
+}
+
+export interface AppSettings {
+  view_in: 'app' | 'obsidian'
+  llm: LlmSettings
 }

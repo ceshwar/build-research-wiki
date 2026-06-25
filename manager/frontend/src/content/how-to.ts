@@ -37,7 +37,9 @@ export const HOW_TO_SECTIONS = [
       { name: 'Reef', desc: 'Your research wiki — an Obsidian folder Portolan charts and connects.' },
       { name: 'Dock', desc: 'A channel with its own folder under `raw/` (e.g. ⚓ My Portfolio → `raw/papers/`). Hover a dock pill for its purpose.' },
       { name: 'Quick Dip', desc: 'Tier 1 charting: PDF title, abstract, venue, year onto the wiki — no guessing.' },
-      { name: 'Deep Dive', desc: 'Tier 2 enrichment: themes, one-liners, analysis in `builder/deepdives/`.' },
+      { name: 'Deep Dive', desc: 'Tier 2 enrichment via **qwen3:32b** (Ollama): themes, one-liners, analysis in `builder/deepdives/`. Content-complete ≠ accurate — see **Needs review**.' },
+      { name: 'Needs review', desc: 'LLM-filled Deep Dive awaiting human or frontier-model verification. Shown with ⚠ until you **Mark verified**.' },
+      { name: 'Human verified', desc: 'A reviewer confirmed claims on a processed paper. Stored in `builder/verification.json` + wiki frontmatter.' },
       { name: 'Chart', desc: 'Generated wiki pages under `wiki/papers/` or `wiki/sources/` — the compounding knowledge base you browse.' },
       { name: 'Status', desc: 'Per-dock pipeline tracker — on chart, awaiting chart, quick dip, enrich next.' },
       {

@@ -1,0 +1,24 @@
+# Portolan user settings — copied to settings.user.yaml (gitignored) to customize.
+# API: GET/PATCH /api/settings
+
+view_in: app  # app | obsidian — default when opening papers
+
+llm:
+  deep_dive_provider: local  # local | frontier
+  query_provider: local
+  ollama_url: http://127.0.0.1:11500
+  think: false
+  # Selectable alternatives (defaults unchanged). Pick in Settings per stage.
+  model_catalog:
+    - qwen3:8b
+    - qwen3:32b
+    - qwen3:30b-a3b-instruct-2507-q4_K_M
+    - nomic-embed-text
+  models:
+    deep_dive: qwen3:32b
+    charting: qwen3:8b
+    query: qwen3:32b
+  frontier:
+    provider: anthropic  # anthropic | openai
+    deep_dive_model: claude-sonnet-4-20250514
+    query_model: claude-sonnet-4-20250514

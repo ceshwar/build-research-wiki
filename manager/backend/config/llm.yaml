@@ -1,0 +1,13 @@
+# Portolan LLM defaults — Lane A (GPU tunnel) or Lane B (local Ollama).
+# Override with env: OLLAMA_URL, PORTOLAN_LLM_MODEL
+
+ollama_url: http://127.0.0.1:11500
+default_model: qwen3:32b
+embedding_model: nomic-embed-text:latest
+think: false
+
+# Stages that call the LLM (future deep_dive_llm service)
+stages:
+  deep_dive: qwen3:32b
+  charting: qwen3:8b
+  query: qwen3:32b

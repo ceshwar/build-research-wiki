@@ -58,6 +58,14 @@ class MapService:
             cwd=plan["cwd"],
         )
 
+    def set_verification(self, vault_id, channel_id, slug, human_verified, verified_by="human"):
+        vault_path = self.vaults.resolve_path(vault_id)
+        import verification  # builder/ on sys.path
+        rec = verification.set_human_verified(
+            str(vault_path), channel_id, slug, human_verified, verified_by=verified_by)
+        job_id = self.rebuild_wiki(vault_id, mode="incremental")
+        return rec, job_id
+
     def remove_from_chart(self, vault_id, channel_id, slug):
         # type: (str, str, str) -> tuple
         vault_path = self.vaults.resolve_path(vault_id)

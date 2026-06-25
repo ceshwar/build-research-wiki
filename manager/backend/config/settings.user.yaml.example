@@ -1,0 +1,10 @@
+# User overrides — copy to settings.user.yaml (gitignored)
+view_in: app
+
+llm:
+  deep_dive_provider: local
+  query_provider: local
+  ollama_url: http://127.0.0.1:11500
+  models:
+    deep_dive: qwen3:32b
+    query: qwen3:32b

@@ -9,7 +9,7 @@ Chart entries are **product IP**: structured wiki pages we generate for users. T
 | Tier | Name | Trigger | What gets filled |
 |------|------|---------|-------------------|
 | **1** | **Quick Dip** | Dock + **Update chart** (auto after portfolio upload) | PDF-derived facts only |
-| **2+** | **Deep Dive** | User or LLM (Phase 3) | Themes, one-liner, analysis, cross-links |
+| **2+** | **Deep Dive** | **Run Deep Dive (LLM)** in Actions, or agent/manual edit | Themes, one-liner, analysis, cross-links |
 
 **Quick Dip** = a first pass on the chart. **Deep Dive** = enrichment to a finished paper page (see `examples/minimal-vault/wiki/papers/positive-reinforcement-reddit.md`).
 
@@ -69,7 +69,9 @@ Entry file header:
 
 ## Deep Dive (Tier 2+)
 
-User or LLM enriches:
+**In-app (v0.6):** Actions → **Run Deep Dive (LLM)** calls `builder/deep_dive_llm.py` via Ollama (default **qwen3:32b** on GPU tunnel `127.0.0.1:11500`). Writes `builder/entries/`, `builder/deepdives/`, marks `enrichment_source` and **needs human review**.
+
+User, frontier model, or agent can also enrich manually:
 
 1. **Themes** — `[[wikilinks]]` on line 1 of `builder/entries/<channel>/<slug>.md`
 2. **One-liner** — `## One-liner` in entry file
@@ -77,6 +79,25 @@ User or LLM enriches:
 4. Optional: concept/entity pages, synthesis updates
 
 Re-run **Update chart** after edits to refresh `wiki/`.
+
+### Enrichment sources (stored in `builder/verification.json` + wiki frontmatter)
+
+| `enrichment_source` | Meaning |
+|---------------------|---------|
+| `quick-dip` | Tier 1 PDF facts only |
+| `local-32b` | LLM Deep Dive via local Ollama (e.g. qwen3:32b) |
+| `local-custom` | LLM Deep Dive via another local model |
+| `frontier` | LLM Deep Dive via Anthropic/OpenAI |
+| `human` | Hand-charted / user-verified corpus |
+
+### Territory
+
+| `territory` | Meaning |
+|-------------|---------|
+| `charted` | You have read/verified (or hand-authored `status: mapped`) |
+| `uncharted` | LLM-filled Deep Dive awaiting your review — surfaced in **Query** and **Needs review** filters |
+
+Mark **verified** in Portolan after reading; wiki pages get `human_verified: true` and an Obsidian callout.
 
 ---
 
@@ -87,7 +108,9 @@ Re-run **Update chart** after edits to refresh `wiki/`.
 | **Pending** | In `raw/` but not on chart |
 | **Quick dip** | Tier 1 done — PDF facts on chart; themes/one-liner/deep dive still empty |
 | **Needs deep dive** | Themes + abstract + one-liner filled; deep dive incomplete |
-| **Deep dive done** | Fully enriched (processed) |
+| **Deep dive done** | Fully enriched (processed) — may still **need review** if LLM-generated |
+| **Needs review** | Processed but `human_verified: false` |
+| **Uncharted** | LLM territory — read when Query surfaces it or from Status filter |
 
 ---
 
@@ -127,5 +150,6 @@ Requires **poppler** (`pdftotext`) for PDF tests.
 | `builder/quick_dip.py` | PDF/text extraction + entry body builder |
 | `builder/map_channel.py` | Map `raw/` → entries + auto registry; refresh stale rows |
 | `builder/engine_papers.py` | Wiki paper pages; 🤿 icon for quick-dip |
-| `builder/completion.py` | Chart status state machine |
-| `manager/` Update chart | Runs `map_channel` (Quick Dip) + `build` per channel |
+| `builder/deep_dive_llm.py` | LLM Deep Dive (Ollama / frontier) |
+| `builder/verification.py` | `human_verified`, `enrichment_source`, territory |
+| `builder/wiki_query.py` | Query tab — wiki Q&A with citations |

@@ -30,12 +30,13 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 | Step | Action |
 |------|--------|
 | 1 | Pick a **reef**, then a **dock** (hover pills for what each channel is) |
-| 2 | Work in the **workspace** — `Reef › Dock` path, tabs for Navigate / Status / Actions |
+| 2 | Work in the **workspace** — tabs: Navigate / Query / Status / Actions |
 | 3 | **Dock** files — click the dock name in the path, or **Upload PDFs** in Actions |
-| 4 | Check **Status** — on chart, quick dip, enrich next |
-| 5 | **Navigate** — List, By theme, or Graph; **Edit** → mark **−** → **Done** to remove from chart (PDFs stay in dock) |
-| 6 | **Deep Dive** via **Get ingest prompt** or edit `builder/entries/` + `builder/deepdives/` |
-| 7 | Open reef in Obsidian |
+| 4 | Check **Status** — on chart, quick dip, enrich next, needs review |
+| 5 | **Navigate** — List, By theme, or Graph; click papers to open in-app (Settings) or Obsidian |
+| 6 | **Run Deep Dive (LLM)** in Actions — default qwen3:32b; mark verified after review |
+| 7 | **Query** — ask the wiki; uncharted LLM papers included with review caveat |
+| 8 | **Settings** (⚙) — Ollama URL, models, local vs frontier provider |
 
 Full guide: **[docs/PORTOLAN.md](docs/PORTOLAN.md)** · Chart spec: **[docs/PAPER-CHART-SPEC.md](docs/PAPER-CHART-SPEC.md)**
 
@@ -45,7 +46,7 @@ Full guide: **[docs/PORTOLAN.md](docs/PORTOLAN.md)** · Chart spec: **[docs/PAPE
 
 ### 1. Portolan (UI) — *recommended for teams*
 
-Dock → Quick Dip → Deep Dive → Obsidian. Uploads stay in `raw/`; Tier 1 chart entries land in `builder/entries/` from PDF facts only (no guessing). **Status** shows **Quick dip**, **Enrich next**, and **On chart** counts per dock.
+Dock → Quick Dip → **Run Deep Dive (LLM)** → review → **Query**. Default model: **qwen3:32b** via Ollama (GPU tunnel on port 11500). LLM output is **uncharted** until you mark verified.
 
 ### 2. LLM-driven ingest (agent workflow)
 

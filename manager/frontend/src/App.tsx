@@ -3,6 +3,9 @@ import { useDropzone, type FileRejection } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HowToPanel } from './components/HowToPanel'
 import { ChartGraphView } from './components/ChartGraphView'
+import { ContentDrawer } from './components/ContentDrawer'
+import { QueryPanel } from './components/QueryPanel'
+import { SettingsPanel } from './components/SettingsPanel'
 import {
   addVault,
   createDock,
@@ -10,18 +13,21 @@ import {
   fetchChannels,
   fetchChartGraph,
   fetchChartMap,
-  fetchIngestPrompt,
   fetchJob,
   fetchJobLogs,
+  fetchSettings,
   fetchVaults,
   pickVaultFolder,
   removeFromChartBatch,
   removeVault,
+  runDeepDive,
   startBuild,
   surfaceInterval,
+  updateChartVerification,
   validateVaultPath,
 } from './api/client'
 import type { Channel, ChartEntry, ChartGraph, ChartMap, Vault } from './types'
+import { enrichmentLabel, territoryLabel } from './lib/enrichment'
 import type { VaultValidateResult } from './api/client'
 
 const MIME: Record<string, string> = {
@@ -56,7 +62,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <h2 className="section-label">{children}</h2>
 }
 
-type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich' | 'processed' | 'needs_deep_dive' | 'charted'
+type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich' | 'processed' | 'needs_deep_dive' | 'charted' | 'needs_verification' | 'uncharted'
 type MapSortKey = 'status' | 'paper' | 'themes'
 type MapSortDir = 'asc' | 'desc'
 
@@ -65,6 +71,8 @@ const MISSING_PAPER_YEAR = 1
 const MAP_STATUS_CHIPS: { id: StatFilter; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'processed', label: 'Deep dive' },
+  { id: 'needs_verification', label: 'Needs review' },
+  { id: 'uncharted', label: 'Uncharted' },
   { id: 'quick_dip', label: 'Quick dip' },
 ]
 
@@ -87,9 +95,11 @@ function PipelineLegend() {
       <span className="pipeline-strip__arrow">→</span>
       <span className="pipeline-strip__step">Quick Dip</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">Deep Dive</span>
+      <span className="pipeline-strip__step">Deep Dive (LLM)</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">On chart</span>
+      <span className="pipeline-strip__step">Human review</span>
+      <span className="pipeline-strip__arrow">→</span>
+      <span className="pipeline-strip__step">Verified</span>
     </div>
   )
 }
@@ -107,7 +117,7 @@ function Stat({
   hint?: string
   value: string | number
   highlight?: boolean
-  variant?: 'chart' | 'pending' | 'quick' | 'enrich'
+  variant?: 'chart' | 'pending' | 'quick' | 'enrich' | 'verify'
   selected?: boolean
   onClick?: () => void
 }) {
@@ -153,6 +163,12 @@ function filterChartEntries(entries: ChartEntry[], filter: StatFilter): ChartEnt
   if (filter === 'processed') return entries.filter((e) => e.status === 'processed')
   if (filter === 'needs_deep_dive') return entries.filter((e) => e.status === 'needs_deep_dive')
   if (filter === 'charted') return entries.filter((e) => e.status === 'charted')
+  if (filter === 'needs_verification') {
+    return entries.filter((e) => e.needs_human_verification)
+  }
+  if (filter === 'uncharted') {
+    return entries.filter((e) => e.territory === 'uncharted')
+  }
   if (filter === 'enrich') {
     return entries.filter((e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive')
   }
@@ -287,21 +303,26 @@ function filterThemeGroups(
     .filter((g) => g.entries.length > 0)
 }
 
-type SectionId = 'section-docks' | 'section-dive' | 'section-map' | 'section-actions'
-type WorkspaceSectionId = 'section-dive' | 'section-map' | 'section-actions'
+type SectionId = 'section-docks' | 'section-dive' | 'section-map' | 'section-actions' | 'section-query'
+type WorkspaceSectionId = 'section-dive' | 'section-map' | 'section-actions' | 'section-query'
 
 const DOCK_WORKSPACE_SECTIONS: {
   id: WorkspaceSectionId
   label: string
   hint: string
-  badge?: (ctx: { enrich: number; pending: number }) => number | null
+  badge?: (ctx: { enrich: number; pending: number; needsVerification: number }) => number | null
 }[] = [
   { id: 'section-map', label: 'Navigate', hint: 'Browse your chart' },
+  {
+    id: 'section-query',
+    label: 'Query',
+    hint: 'Ask the wiki',
+  },
   {
     id: 'section-dive',
     label: 'Status',
     hint: 'Track progress',
-    badge: (c) => (c.enrich > 0 ? c.enrich : null),
+    badge: (c) => c.needsVerification || c.enrich || null,
   },
   {
     id: 'section-actions',
@@ -342,6 +363,24 @@ function chartStatusPill(status: string) {
   }
 }
 
+function verificationPill(entry: ChartEntry) {
+  if (entry.human_verified) {
+    return { icon: '✓', label: 'Verified', className: 'status-pill status-pill--verified' }
+  }
+  if (entry.needs_human_verification || entry.llm_enriched) {
+    const src = enrichmentLabel(entry) || 'Needs review'
+    return { icon: '⚠', label: src, className: 'status-pill status-pill--review' }
+  }
+  if (entry.territory === 'uncharted') {
+    return { icon: '◇', label: territoryLabel('uncharted'), className: 'status-pill status-pill--uncharted' }
+  }
+  const src = enrichmentLabel(entry)
+  if (src && src !== 'Quick dip') {
+    return { icon: '·', label: src, className: 'status-pill status-pill--source' }
+  }
+  return null
+}
+
 function obsidianReefHref(
   reefPath: string,
   opts: { vaultPath: string; obsidianVaultId?: string | null },
@@ -352,25 +391,6 @@ function obsidianReefHref(
   }
   const base = opts.vaultPath.replace(/\/$/, '')
   return `obsidian://open?path=${encodeURIComponent(`${base}/${rel}`)}`
-}
-
-function obsidianOpenVaultHref(vault: Pick<Vault, 'path' | 'obsidian_vault_id'>) {
-  if (vault.obsidian_vault_id) {
-    return `obsidian://open?vault=${encodeURIComponent(vault.obsidian_vault_id)}`
-  }
-  return `obsidian://open?path=${encodeURIComponent(vault.path)}`
-}
-
-function obsidianLinkNotice(vault: Vault | undefined): string | null {
-  if (!vault) return null
-  if (!vault.obsidian_links_ok) {
-    return `Open this reef folder in Obsidian (File → Open folder as vault) to enable map links.`
-  }
-  if (vault.obsidian_link_path && vault.obsidian_link_path !== vault.path) {
-    const name = vault.obsidian_link_path.split('/').filter(Boolean).pop() ?? vault.obsidian_link_path
-    return `Obsidian links open in ${name} — your registered vault with matching wiki paths.`
-  }
-  return null
 }
 
 function themeWikiPage(slug: string) {
@@ -399,15 +419,31 @@ function ReefLink({
   reefPath,
   children,
   className = 'link-accent',
+  viewIn = 'app',
+  onOpenInApp,
 }: {
   vaultPath?: string
   obsidianVaultId?: string | null
   reefPath?: string
   children: ReactNode
   className?: string
+  viewIn?: 'app' | 'obsidian'
+  onOpenInApp?: (path: string, title?: string) => void
 }) {
   if (!vaultPath || !reefPath) {
     return <>{children}</>
+  }
+  if (viewIn === 'app' && onOpenInApp) {
+    return (
+      <button
+        type="button"
+        className={`${className} link-button`}
+        title={`Open ${reefPath} in Portolan`}
+        onClick={() => onOpenInApp(reefPath, typeof children === 'string' ? children : undefined)}
+      >
+        {children}
+      </button>
+    )
   }
   return (
     <a
@@ -480,14 +516,16 @@ export default function App() {
   const [reefName, setReefName] = useState('')
   const [reefPreview, setReefPreview] = useState<VaultValidateResult | null>(null)
   const [howToOpen, setHowToOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [viewer, setViewer] = useState<{ path: string; title?: string } | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dockName, setDockName] = useState('')
   const [dockEmoji, setDockEmoji] = useState('📁')
-  const [ingestPrompt, setIngestPrompt] = useState<string | null>(null)
-  const [promptCopied, setPromptCopied] = useState(false)
+  const [queryJobMeta, setQueryJobMeta] = useState<{ model: string; elapsed_s?: number } | null>(
+    null,
+  )
   const [statFilter, setStatFilter] = useState<StatFilter>('all')
   const [mapTab, setMapTab] = useState<'list' | 'theme' | 'graph'>('list')
-  const [promptExpanded, setPromptExpanded] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [uploadExpanded, setUploadExpanded] = useState(false)
   const [showDockPicker, setShowDockPicker] = useState(false)
@@ -508,6 +546,12 @@ export default function App() {
     queryKey: ['vaults'],
     queryFn: fetchVaults,
   })
+
+  const { data: appSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: fetchSettings,
+  })
+  const viewIn = appSettings?.view_in ?? 'app'
 
   const { data: channels = [] } = useQuery<Channel[]>({
     queryKey: ['channels', vaultId],
@@ -545,11 +589,8 @@ export default function App() {
     setDockGuideDismissed(localStorage.getItem(dockGuideDismissedKey(vaultId)) === '1')
   }, [vaultId])
 
-  // The ingest prompt is per vault+dock; clear it when either changes.
+  // Reset workspace UI when reef or dock changes.
   useEffect(() => {
-    setIngestPrompt(null)
-    setPromptCopied(false)
-    setPromptExpanded(false)
     setStatFilter('all')
     setUploadExpanded(false)
     setShowDockPicker(false)
@@ -606,7 +647,7 @@ export default function App() {
       setShowDockPicker(false)
       setShowReefPicker(false)
       setUploadExpanded(false)
-      if (id === 'section-dive' || id === 'section-map' || id === 'section-actions') {
+      if (id === 'section-dive' || id === 'section-map' || id === 'section-actions' || id === 'section-query') {
         setActiveWorkspaceSection(id)
       }
     },
@@ -775,24 +816,32 @@ export default function App() {
     onSuccess: (data) => setActiveJobId(data.job_id),
   })
 
-  const ingestPromptMutation = useMutation({
-    mutationFn: () => fetchIngestPrompt(vaultId, channelId),
+  const verifyMutation = useMutation({
+    mutationFn: ({ slug, verified }: { slug: string; verified: boolean }) =>
+      updateChartVerification(vaultId, channelId, slug, verified),
     onSuccess: (data) => {
-      setIngestPrompt(data.prompt)
-      setPromptCopied(false)
-      setPromptExpanded(true)
-      setShowDockPicker(false)
-      setActiveWorkspaceSection('section-actions')
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      queryClient.invalidateQueries({ queryKey: ['chart-map', vaultId, channelId] })
+      queryClient.invalidateQueries({ queryKey: ['chart-graph', vaultId, channelId] })
+      if (data.job_id) setActiveJobId(data.job_id)
     },
   })
 
-  const copyPrompt = useCallback(() => {
-    if (!ingestPrompt) return
-    navigator.clipboard.writeText(ingestPrompt).then(() => {
-      setPromptCopied(true)
-      setTimeout(() => setPromptCopied(false), 2000)
-    })
-  }, [ingestPrompt])
+  const deepDiveMutation = useMutation({
+    mutationFn: (opts: { slug?: string; slugs?: string[] }) =>
+      runDeepDive(vaultId, channelId, opts),
+    onSuccess: (data) => {
+      setQueryJobMeta(null)
+      setActiveJobId(data.job_id)
+    },
+  })
+
+  const openInApp = useCallback(
+    (path: string, title?: string) => {
+      setViewer({ path, title })
+    },
+    [],
+  )
 
   const addDockMutation = useMutation({
     mutationFn: () => createDock(vaultId, { name: dockName.trim(), emoji: dockEmoji }),
@@ -881,6 +930,12 @@ export default function App() {
   const isDiving = jobStatus === 'running' || jobStatus === 'queued'
   const enrichCount =
     (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
+  const needsVerificationCount =
+    channelStats?.needs_human_verification ??
+    vault?.needs_human_verification_count ??
+    0
+  const needsVerificationEntries =
+    chartMap?.entries.filter((e) => e.needs_human_verification) ?? []
   const themeGroups = groupEntriesByTheme(chartMap)
   const filteredEntries = filterChartEntries(chartMap?.entries ?? [], statFilter)
   const sortedEntries = useMemo(
@@ -926,7 +981,6 @@ export default function App() {
       (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
     ) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
-  const obsidianNotice = obsidianLinkNotice(vault)
   const inWorkspace = !!(vault && channel && !showDockPicker && !showReefPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
@@ -969,16 +1023,15 @@ export default function App() {
           >
             Docs
           </button>
-          {vault && (
-            <a
-              href={obsidianOpenVaultHref(vault)}
-              className="header-icon-btn"
-              title="Open reef in Obsidian"
-              aria-label="Open reef in Obsidian"
-            >
-              <img src="/obsidian-icon.svg" alt="" width={18} height={18} />
-            </a>
-          )}
+          <button
+            type="button"
+            className="header-icon-btn header-icon-btn--settings"
+            onClick={() => setSettingsOpen(true)}
+            title="Settings"
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
         </div>
       </header>
 
@@ -1336,6 +1389,7 @@ export default function App() {
                 const badge = item.badge?.({
                   enrich: enrichEntries.length,
                   pending: pendingCount,
+                  needsVerification: needsVerificationCount,
                 })
                 return (
                   <button
@@ -1360,9 +1414,9 @@ export default function App() {
             {!dockGuideDismissed && (
               <div className="workspace-shell__guide">
                 <span>
-                  <strong>Navigate</strong> browses your chart · <strong>Status</strong> tracks
-                  pipeline progress · <strong>Actions</strong> uploads, updates the chart, and runs
-                  Deep Dive. Click <strong>/</strong> to switch reefs or the reef name to choose a dock.
+                  <strong>Navigate</strong> browses your chart · <strong>Query</strong> asks the wiki ·{' '}
+                  <strong>Status</strong> tracks pipeline · <strong>Actions</strong> runs Quick Dip and
+                  LLM Deep Dive.
                 </span>
                 <button type="button" className="workspace-shell__guide-dismiss" onClick={dismissDockGuide}>
                   Got it
@@ -1427,9 +1481,6 @@ export default function App() {
           <div className="workspace-panel__content">
             {chartMapLoading && (
               <p className="text-sm text-[var(--muted)]">Loading chart…</p>
-            )}
-            {obsidianNotice && (
-              <p className="obsidian-link-notice">{obsidianNotice}</p>
             )}
             {chartMap && statFilter === 'pending' && pendingCount > 0 && (
               <div className="empty-map">
@@ -1594,18 +1645,30 @@ export default function App() {
                                   </td>
                                 )}
                                 <td>
-                                  <span className={pill.className}>
-                                    {pill.icon} {pill.label}
-                                  </span>
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    <span className={pill.className}>
+                                      {pill.icon} {pill.label}
+                                    </span>
+                                    {(() => {
+                                      const vp = verificationPill(entry)
+                                      return vp ? (
+                                        <span className={vp.className} title={entry.llm_model || undefined}>
+                                          {vp.icon} {vp.label}
+                                        </span>
+                                      ) : null
+                                    })()}
+                                  </div>
                                 </td>
                                 <td>
                                   <div className="map-paper-cell">
                                     <div className="font-medium text-[var(--text)]">
                                       <ReefLink
                                         vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                                        obsidianVaultId={vault?.obsidian_vault_id}
                                         reefPath={entry.wiki_page}
-                                        className="link-accent obsidian-mark"
+                                        viewIn={viewIn}
+                                        onOpenInApp={openInApp}
+                                        className="link-accent"
                                       >
                                         {entry.title}
                                       </ReefLink>
@@ -1638,12 +1701,33 @@ export default function App() {
                                         {entry.pdf_path && (
                                           <ReefLink
                                             vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                                            obsidianVaultId={vault?.obsidian_vault_id}
                                             reefPath={entry.pdf_path}
-                                            className="map-paper-pdf-link obsidian-mark"
+                                            viewIn={viewIn}
+                                            onOpenInApp={openInApp}
+                                            className="map-paper-pdf-link"
                                           >
                                             View PDF
                                           </ReefLink>
+                                        )}
+                                        {entry.needs_human_verification && (
+                                          <button
+                                            type="button"
+                                            className="btn-secondary mt-2 px-2 py-1 text-xs"
+                                            disabled={verifyMutation.isPending}
+                                            onClick={() =>
+                                              verifyMutation.mutate({ slug: entry.slug, verified: true })
+                                            }
+                                          >
+                                            Mark human verified
+                                          </button>
+                                        )}
+                                        {entry.human_verified && entry.llm_enriched && (
+                                          <p className="mt-2 text-xs text-[var(--success)]">
+                                            Verified
+                                            {entry.verified_by ? ` by ${entry.verified_by}` : ''}
+                                            {entry.verified_at ? ` · ${entry.verified_at}` : ''}
+                                          </p>
                                         )}
                                       </div>
                                     )}
@@ -1655,9 +1739,11 @@ export default function App() {
                                       <ReefLink
                                         key={t}
                                         vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                                        obsidianVaultId={vault?.obsidian_vault_id}
                                         reefPath={themeWikiPage(t)}
-                                        className={`theme-chip ${themeGradientClass(t)} obsidian-mark`}
+                                        viewIn={viewIn}
+                                        onOpenInApp={openInApp}
+                                        className={`theme-chip ${themeGradientClass(t)}`}
                                       >
                                         {themeDisplayTitle(t, chartMap.themes)}
                                       </ReefLink>
@@ -1694,9 +1780,11 @@ export default function App() {
                             ) : (
                               <ReefLink
                                 vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                                obsidianVaultId={vault?.obsidian_vault_id}
                                 reefPath={themeWikiPage(group.slug)}
-                                className="theme-map__title-link obsidian-mark"
+                                viewIn={viewIn}
+                                onOpenInApp={openInApp}
+                                className="theme-map__title-link"
                               >
                                 {group.title}
                               </ReefLink>
@@ -1707,14 +1795,20 @@ export default function App() {
                           </div>
                           {group.entries.map((entry) => {
                             const pill = chartStatusPill(entry.status)
+                            const vp = verificationPill(entry)
                             return (
                               <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
-                                <span>{pill.icon}</span>
+                                <span>
+                                  {pill.icon}
+                                  {vp ? vp.icon : ''}
+                                </span>
                                 <ReefLink
                                   vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                                  obsidianVaultId={vault?.obsidian_vault_id}
                                   reefPath={entry.wiki_page}
-                                  className="link-accent theme-map__paper-link obsidian-mark"
+                                  viewIn={viewIn}
+                                  onOpenInApp={openInApp}
+                                  className="link-accent theme-map__paper-link"
                                 >
                                   {entry.title}
                                 </ReefLink>
@@ -1754,6 +1848,7 @@ export default function App() {
                       vaultPath={vault.path}
                       obsidianVaultId={vault.obsidian_vault_id}
                       statFilter={statFilter}
+                      onOpenPage={viewIn === 'app' ? openInApp : undefined}
                     />
                   </>
                 )}
@@ -1771,7 +1866,7 @@ export default function App() {
         <div className="workspace-panel__content">
               <PipelineLegend />
 
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
                 <Stat
                   label="On chart"
                   hint="Click to show all"
@@ -1807,6 +1902,15 @@ export default function App() {
                   selected={statFilter === 'enrich'}
                   onClick={() => toggleStatFilter('enrich')}
                 />
+                <Stat
+                  label="Needs review"
+                  hint="LLM Deep Dive — not verified"
+                  variant="verify"
+                  value={needsVerificationCount}
+                  highlight={needsVerificationCount > 0}
+                  selected={statFilter === 'needs_verification'}
+                  onClick={() => toggleStatFilter('needs_verification')}
+                />
               </div>
 
               {enrichEntries.length > 0 && (
@@ -1815,29 +1919,72 @@ export default function App() {
                     <strong>
                       {enrichEntries.length} paper{enrichEntries.length === 1 ? '' : 's'} need Deep Dive
                     </strong>
-                    <p>Themes, one-liners, and analysis — paste a prompt into your coding agent.</p>
+                    <p>
+                      Run LLM Deep Dive in Actions to add themes, one-liners, and analysis (
+                      {appSettings?.llm.models.deep_dive ?? 'qwen3:32b'}).
+                    </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        ingestPromptMutation.mutate()
-                        focusWorkspaceSection('section-actions')
-                      }}
-                      disabled={ingestPromptMutation.isPending}
-                      className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
-                    >
-                      {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
-                    </button>
-                    {vault && (
-                      <a
-                        href={obsidianOpenVaultHref(vault)}
-                        className="btn-secondary px-4 py-2 text-sm obsidian-mark"
-                      >
-                        Open reef
-                      </a>
-                    )}
+                  <button
+                    type="button"
+                    onClick={() => focusWorkspaceSection('section-actions')}
+                    className="btn-primary px-4 py-2 text-sm"
+                  >
+                    Go to Actions
+                  </button>
+                </div>
+              )}
+
+              {needsVerificationEntries.length > 0 && (
+                <div className="next-step-banner mt-4 next-step-banner--review">
+                  <div>
+                    <strong>
+                      {needsVerificationEntries.length} paper
+                      {needsVerificationEntries.length === 1 ? '' : 's'} need human review
+                    </strong>
+                    <p>
+                      LLM Deep Dive ({needsVerificationEntries[0]?.llm_model || 'qwen3:32b'}) fills
+                      content but does not certify accuracy — review claims, then mark verified.
+                    </p>
                   </div>
+                </div>
+              )}
+
+              {(channelStats?.needs_verification?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    Awaiting verification
+                  </h3>
+                  <ul className="needs-list mt-1">
+                    {channelStats!.needs_verification!.map((item) => (
+                      <li key={item.slug} className="flex flex-wrap items-center gap-2">
+                        <ReefLink
+                          vaultPath={vault?.path}
+                          obsidianVaultId={vault?.obsidian_vault_id}
+                          reefPath={
+                            isPortfolio
+                              ? `wiki/papers/${item.slug}.md`
+                              : `wiki/sources/${item.slug}.md`
+                          }
+                          viewIn={viewIn}
+                          onOpenInApp={openInApp}
+                          className="link-accent"
+                        >
+                          {item.title}
+                        </ReefLink>
+                        {item.llm_model && (
+                          <span className="text-[var(--muted)] text-xs">({item.llm_model})</span>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-secondary px-2 py-0.5 text-xs"
+                          disabled={verifyMutation.isPending}
+                          onClick={() => verifyMutation.mutate({ slug: item.slug, verified: true })}
+                        >
+                          Mark verified
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -1851,13 +1998,15 @@ export default function App() {
                       <li key={item.slug}>
                         <ReefLink
                           vaultPath={vault?.path}
-                    obsidianVaultId={vault?.obsidian_vault_id}
+                          obsidianVaultId={vault?.obsidian_vault_id}
                           reefPath={
                             isPortfolio
                               ? `wiki/papers/${item.slug}.md`
                               : `wiki/sources/${item.slug}.md`
                           }
-                          className="link-accent obsidian-mark"
+                          viewIn={viewIn}
+                          onOpenInApp={openInApp}
+                          className="link-accent"
                         >
                           {item.title}
                         </ReefLink>{' '}
@@ -1925,51 +2074,56 @@ export default function App() {
               </div>
 
               <div className="action-block">
-                <h4>Deep Dive with your agent</h4>
+                <h4>Deep Dive (LLM)</h4>
                 <p>
-                  Generate a paste-ready prompt for {channel?.emoji} {channel?.name}. Open the reef
-                  in Claude Code or Cursor, paste, and enrich.
+                  Run automated Deep Dive on papers needing enrichment using{' '}
+                  <strong>{appSettings?.llm.models.deep_dive ?? 'qwen3:32b'}</strong> (
+                  {appSettings?.llm.deep_dive_provider ?? 'local'}). Output is marked{' '}
+                  <em>needs review</em> until you verify.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => ingestPromptMutation.mutate()}
-                    disabled={ingestPromptMutation.isPending}
-                    className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                    type="button"
+                    onClick={() =>
+                      deepDiveMutation.mutate({
+                        slugs: enrichEntries.map((e) => e.slug),
+                      })
+                    }
+                    disabled={
+                      deepDiveMutation.isPending ||
+                      isDiving ||
+                      enrichEntries.length === 0 ||
+                      !isPortfolio
+                    }
+                    className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
                   >
-                    {ingestPromptMutation.isPending ? 'Generating…' : 'Get ingest prompt'}
+                    {deepDiveMutation.isPending || isDiving
+                      ? 'Running Deep Dive…'
+                      : `Run Deep Dive (${enrichEntries.length})`}
                   </button>
-                  {ingestPrompt && (
-                    <button onClick={copyPrompt} className="btn-secondary px-4 py-2 text-sm">
-                      {promptCopied ? 'Copied ✓' : 'Copy prompt'}
-                    </button>
-                  )}
                 </div>
-                {ingestPromptMutation.isError && (
-                  <p className="mt-2 text-xs text-red-400">{ingestPromptMutation.error.message}</p>
+                {deepDiveMutation.isError && (
+                  <p className="mt-2 text-xs text-red-400">{deepDiveMutation.error.message}</p>
+                )}
+                {enrichEntries.length === 0 && (
+                  <p className="mt-2 text-xs text-[var(--muted)]">
+                    No papers waiting for Deep Dive on this dock.
+                  </p>
                 )}
               </div>
             </div>
-
-            {ingestPrompt && (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className="accordion-toggle"
-                  onClick={() => setPromptExpanded((e) => !e)}
-                  aria-expanded={promptExpanded}
-                >
-                  <span>Full ingest prompt</span>
-                  <span className="text-[var(--muted)]">{promptExpanded ? '▾' : '▸'}</span>
-                </button>
-                {promptExpanded && (
-                  <pre className="accordion-body panel-card max-h-72 overflow-auto whitespace-pre-wrap p-3 font-mono text-[12px] leading-relaxed text-[var(--muted)]">
-                    {ingestPrompt}
-                  </pre>
-                )}
-              </div>
-            )}
         </div>
       </div>
+      )}
+
+      {activeWorkspaceSection === 'section-query' && vault && (
+        <div id="section-query" className="workspace-panel">
+          <QueryPanel
+            vaultId={vaultId}
+            onJobStart={setActiveJobId}
+            onQueryMeta={setQueryJobMeta}
+          />
+        </div>
       )}
 
           </div>
@@ -1979,13 +2133,26 @@ export default function App() {
       {activeJobId && (
         <section className="panel-card mb-6">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
-            <span className="text-xs font-medium text-[var(--text)]">Job log</span>
+            <span className="text-xs font-medium text-[var(--text)]">
+              Job log
+              {queryJobMeta && jobQuery.data?.type === 'query' && (
+                <span className="ml-2 font-normal text-[var(--muted)]">
+                  Query · {queryJobMeta.model}
+                  {queryJobMeta.elapsed_s != null ? ` · ${queryJobMeta.elapsed_s}s` : ''}
+                </span>
+              )}
+            </span>
             {jobStatus && (
               <span className={`text-xs font-medium uppercase ${statusColor(jobStatus)}`}>
                 {jobStatus}
               </span>
             )}
           </div>
+          {jobStatus === 'failed' && (
+            <p className="border-b border-[var(--border)] px-3 py-2 text-xs text-red-400" role="alert">
+              Job failed — check Ollama / GPU tunnel in Settings.
+            </p>
+          )}
           <pre className="max-h-48 overflow-auto p-3 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
             {(logsQuery.data?.lines ?? []).join('\n') || 'Waiting…'}
           </pre>
@@ -2005,6 +2172,15 @@ export default function App() {
       </div>
 
       <HowToPanel open={howToOpen} onClose={() => setHowToOpen(false)} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {viewer && vault && (
+        <ContentDrawer
+          vaultId={vaultId}
+          path={viewer.path}
+          title={viewer.title}
+          onClose={() => setViewer(null)}
+        />
+      )}
 
       <footer className="site-footer">
         <div className="site-footer__inner">

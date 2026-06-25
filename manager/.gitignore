@@ -10,3 +10,7 @@ frontend/dist/
 
 # User-registered vaults (added via UI — do not commit)
 backend/config/vaults.user.yaml
+backend/config/settings.user.yaml
+
+# Local LLM compare output
+scripts/.llm-compare/
