@@ -3,7 +3,7 @@ type: theme
 title: "Computational Social Science"
 slug: computational-social-science
 paper_count: 2
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Computational Social Science

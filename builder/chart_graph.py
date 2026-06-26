@@ -155,6 +155,7 @@ def build_graph(vault, channel_id="my-portfolio"):
             "wiki_page": e["wiki_page"],
             "themes": [resolve_theme(t) for t in (e.get("themes") or [])],
             "human_verified": e.get("human_verified"),
+            "llm_enriched": e.get("llm_enriched"),
             "needs_human_verification": e.get("needs_human_verification"),
             "territory": e.get("territory"),
         }
@@ -269,6 +270,7 @@ def build_graph(vault, channel_id="my-portfolio"):
         }
         if node_type == "paper":
             node["human_verified"] = human_verified
+            node["llm_enriched"] = paper_meta.get(slug, {}).get("llm_enriched") if slug in paper_meta else None
             node["needs_human_verification"] = needs_human_verification
             node["territory"] = territory
         nodes.append(node)

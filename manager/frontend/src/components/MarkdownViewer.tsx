@@ -1,7 +1,18 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { expandWikilinks } from '../lib/wikiLinks'
 
-export function MarkdownViewer({ content, className = '' }: { content: string; className?: string }) {
+export function MarkdownViewer({
+  content,
+  className = '',
+  onWikiLink,
+}: {
+  content: string
+  className?: string
+  onWikiLink?: (slug: string, label: string) => void
+}) {
+  const prepared = expandWikilinks(content)
+
   return (
     <div className={`markdown-viewer ${className}`.trim()}>
       <ReactMarkdown
@@ -17,11 +28,26 @@ export function MarkdownViewer({ content, className = '' }: { content: string; c
           blockquote: ({ children }) => (
             <blockquote className="markdown-viewer__blockquote">{children}</blockquote>
           ),
-          a: ({ href, children }) => (
-            <a href={href} className="markdown-viewer__link" target="_blank" rel="noreferrer">
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            if (href?.startsWith('portolan://') && onWikiLink) {
+              const slug = decodeURIComponent(href.slice('portolan://'.length))
+              const label = String(children)
+              return (
+                <button
+                  type="button"
+                  className="markdown-viewer__wiki-link"
+                  onClick={() => onWikiLink(slug, label)}
+                >
+                  {children}
+                </button>
+              )
+            }
+            return (
+              <a href={href} className="markdown-viewer__link" target="_blank" rel="noreferrer">
+                {children}
+              </a>
+            )
+          },
           code: ({ className: codeClass, children }) => {
             const inline = !codeClass
             return inline ? (
@@ -38,7 +64,7 @@ export function MarkdownViewer({ content, className = '' }: { content: string; c
           ),
         }}
       >
-        {content}
+        {prepared}
       </ReactMarkdown>
     </div>
   )

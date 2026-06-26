@@ -5,20 +5,21 @@ slug: language-of-approval
 venue: CHI
 year: 2026
 status: mapped
+human_verified: true
+llm_enriched: false
+enrichment_source: human
+territory: charted
 themes: [computational-social-science, social-media-online-communities, digital-governance]
 pdfs: ["raw/papers/chi2026-language-of-approval-2.pdf"]
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # The Language of Approval: Identifying the Drivers of Positive Feedback Online
 
 > Quasi-experiment + prediction on 11M posts identifies linguistic drivers of upvotes/awards and a policy-practice gap.
 
-## My notes
-
-**Venue:** CHI · **Year:** 2026 · **Source:** 📄 charted + PDF
-
-**Themes:** [[computational-social-science|Computational Social Science]], [[social-media-online-communities|Social Media & Online Communities]], [[digital-governance|Digital Governance]]
+> [!tip] Deep dive
+> Verified by reviewer.
 
 ## Abstract / Notes
 

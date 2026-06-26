@@ -151,7 +151,7 @@ def run_query(vault_id: str, body: QueryRequest):
         raise HTTPException(status_code=400, detail="Question required")
     try:
         job_id, model, provider = query_service.run_query(
-            vault_id, body.question.strip(), body.provider, body.model)
+            vault_id, body.question.strip(), body.provider, body.model, body.scope)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return QueryResponse(

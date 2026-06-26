@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { fetchQueryResult, fetchSettings, runWikiQuery } from '../api/client'
+import { isChatModel, wikiPathForSlug, type WikiSlugHints } from '../lib/wikiLinks'
 import { MarkdownViewer } from './MarkdownViewer'
 
 type QueryMeta = { model: string; elapsed_s?: number }
+type QueryScope = 'all' | 'verified' | 'needs_review' | 'uncharted'
 
-function modelOptions(catalog: string[], current: string): string[] {
+function chatModelOptions(catalog: string[], current: string): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const id of [current, ...catalog]) {
-    if (id && !seen.has(id)) {
+    if (id && isChatModel(id) && !seen.has(id)) {
       seen.add(id)
       out.push(id)
     }
@@ -19,16 +21,21 @@ function modelOptions(catalog: string[], current: string): string[] {
 
 export function QueryPanel({
   vaultId,
+  wikiHints,
   onJobStart,
   onQueryMeta,
+  onWikiNavigate,
 }: {
   vaultId: string
+  wikiHints?: WikiSlugHints
   onJobStart: (jobId: string) => void
   onQueryMeta?: (meta: QueryMeta | null) => void
+  onWikiNavigate?: (path: string, title: string) => void
 }) {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [queryModel, setQueryModel] = useState('')
+  const [scope, setScope] = useState<QueryScope>('all')
   const [pendingJobId, setPendingJobId] = useState<string | null>(null)
   const [answerMeta, setAnswerMeta] = useState<QueryMeta | null>(null)
   const [startedAt, setStartedAt] = useState<number | null>(null)
@@ -41,9 +48,10 @@ export function QueryPanel({
   const catalog = settings?.llm.model_catalog ?? []
   const defaultModel = settings?.llm.models.query ?? 'qwen3:32b'
   const activeModel = queryModel || defaultModel
+  const modelChoices = useMemo(() => chatModelOptions(catalog, defaultModel), [catalog, defaultModel])
 
   const queryMutation = useMutation({
-    mutationFn: (q: string) => runWikiQuery(vaultId, q, undefined, activeModel),
+    mutationFn: (q: string) => runWikiQuery(vaultId, q, undefined, activeModel, scope),
     onSuccess: (data) => {
       setPendingJobId(data.job_id)
       onJobStart(data.job_id)
@@ -65,7 +73,9 @@ export function QueryPanel({
           if (res.status === 'completed') {
             const meta: QueryMeta = {
               model: res.model || activeModel,
-              elapsed_s: res.elapsed_s ?? (startedAt ? Math.round((Date.now() - startedAt) / 100) / 10 : undefined),
+              elapsed_s:
+                res.elapsed_s ??
+                (startedAt ? Math.round((Date.now() - startedAt) / 100) / 10 : undefined),
             }
             setAnswer(res.answer)
             setAnswerMeta(meta)
@@ -102,11 +112,18 @@ export function QueryPanel({
     if (q && !busy) queryMutation.mutate(q)
   }
 
+  const onWikiLink = onWikiNavigate
+    ? (slug: string, label: string) => {
+        onWikiNavigate(wikiPathForSlug(slug, wikiHints), label)
+      }
+    : undefined
+
   return (
     <div className="query-panel">
       <p className="workspace-panel__meta">
-        Ask questions against your charted wiki. Answers cite sources from your papers. Unreviewed
-        LLM Deep Dives are included — weigh claims carefully.
+        Ask questions against your charted wiki. Scope: <strong>Deep dive</strong> = verified,{' '}
+        <strong>Quick dip</strong> = LLM awaiting review, <strong>Uncharted</strong> = not yet
+        LLM-ingested.
       </p>
       <form
         onSubmit={(e) => {
@@ -115,21 +132,37 @@ export function QueryPanel({
         }}
         className="query-form"
       >
-        <label className="query-form__label">
-          <span>Model</span>
-          <select
-            className="query-form__model"
-            value={activeModel}
-            onChange={(e) => setQueryModel(e.target.value)}
-            disabled={busy}
-          >
-            {modelOptions(catalog, defaultModel).map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="query-form__row">
+          <label className="query-form__label">
+            <span>Model</span>
+            <select
+              className="query-form__model"
+              value={activeModel}
+              onChange={(e) => setQueryModel(e.target.value)}
+              disabled={busy}
+            >
+              {modelChoices.map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="query-form__label">
+            <span>Scope</span>
+            <select
+              className="query-form__model"
+              value={scope}
+              onChange={(e) => setScope(e.target.value as QueryScope)}
+              disabled={busy}
+            >
+              <option value="all">All charted papers</option>
+              <option value="verified">Deep dive (verified)</option>
+              <option value="needs_review">Quick dip (needs review)</option>
+              <option value="uncharted">Uncharted only</option>
+            </select>
+          </label>
+        </div>
         <textarea
           className="query-form__input"
           rows={3}
@@ -164,7 +197,7 @@ export function QueryPanel({
               </span>
             )}
           </div>
-          <MarkdownViewer content={answer} className="query-answer__body" />
+          <MarkdownViewer content={answer} className="query-answer__body" onWikiLink={onWikiLink} />
         </div>
       )}
     </div>

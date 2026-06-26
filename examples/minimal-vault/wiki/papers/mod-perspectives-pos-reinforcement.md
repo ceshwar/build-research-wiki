@@ -5,21 +5,21 @@ slug: mod-perspectives-pos-reinforcement
 venue: CSCW
 year: 2024
 status: quick-dip
+human_verified: false
+llm_enriched: false
+enrichment_source: quick-dip
+territory: uncharted
 themes: []
 pdfs: ["raw/papers/cscw2024_positive_reinforcement.pdf"]
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # "Positive reinforcement helps breed positive behavior": Moderator Perspectives on Encouraging Desirable Behavior
 
 > —
 
-**Venue:** CSCW · **Year:** 2024 · **Source:** 🤿 quick dip (PDF facts only)
-
-**Themes:** —
-
-> [!note] Quick dip
-> Quick dip — run Deep Dive to add themes, one-liner, and analysis.
+> [!note] Uncharted
+> PDF surfaced on chart. Run **Quick Dip** (LLM) in Portolan when ready.
 
 ## Abstract / Notes
 
@@ -27,7 +27,7 @@ The role of a moderator is often characterized as solely punitive, however, mode
 
 ## Deep dive
 
-*Run **Deep Dive** to enrich themes, one-liner, method, findings, and cross-links.*
+*Run **Quick Dip** (LLM) in Portolan, then review to promote to **Deep dive**.*
 
 ## Source
 

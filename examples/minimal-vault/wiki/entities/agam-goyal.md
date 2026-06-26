@@ -3,7 +3,7 @@ type: entity
 title: "Agam Goyal"
 slug: agam-goyal
 paper_count: 1
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Agam Goyal

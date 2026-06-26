@@ -27,7 +27,8 @@ import {
   validateVaultPath,
 } from './api/client'
 import type { Channel, ChartEntry, ChartGraph, ChartMap, Vault } from './types'
-import { enrichmentLabel, territoryLabel } from './lib/enrichment'
+import { entryStatusPill, isDeepDiveVerified, isQuickDipReview, isUncharted } from './lib/enrichment'
+import type { WikiSlugHints } from './lib/wikiLinks'
 import type { VaultValidateResult } from './api/client'
 
 const MIME: Record<string, string> = {
@@ -62,7 +63,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <h2 className="section-label">{children}</h2>
 }
 
-type StatFilter = 'all' | 'on_chart' | 'pending' | 'quick_dip' | 'enrich' | 'processed' | 'needs_deep_dive' | 'charted' | 'needs_verification' | 'uncharted'
+type StatFilter = 'all' | 'on_chart' | 'pending' | 'uncharted' | 'needs_review' | 'verified'
 type MapSortKey = 'status' | 'paper' | 'themes'
 type MapSortDir = 'asc' | 'desc'
 
@@ -70,10 +71,9 @@ const MISSING_PAPER_YEAR = 1
 
 const MAP_STATUS_CHIPS: { id: StatFilter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'processed', label: 'Deep dive' },
-  { id: 'needs_verification', label: 'Needs review' },
+  { id: 'verified', label: 'Deep dive' },
+  { id: 'needs_review', label: 'Quick dip' },
   { id: 'uncharted', label: 'Uncharted' },
-  { id: 'quick_dip', label: 'Quick dip' },
 ]
 
 function dockPillTooltip(
@@ -93,13 +93,13 @@ function PipelineLegend() {
     <div className="pipeline-strip" role="note" aria-label="Chart pipeline">
       <span className="pipeline-strip__step">Dock PDF</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">Quick Dip</span>
+      <span className="pipeline-strip__step">◎ Uncharted</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">Deep Dive (LLM)</span>
+      <span className="pipeline-strip__step">🤿 Quick dip (LLM)</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">Human review</span>
+      <span className="pipeline-strip__step">Review</span>
       <span className="pipeline-strip__arrow">→</span>
-      <span className="pipeline-strip__step">Verified</span>
+      <span className="pipeline-strip__step">🦑 Deep dive</span>
     </div>
   )
 }
@@ -159,19 +159,9 @@ function Stat({
 
 function filterChartEntries(entries: ChartEntry[], filter: StatFilter): ChartEntry[] {
   if (filter === 'all' || filter === 'on_chart') return entries
-  if (filter === 'quick_dip') return entries.filter((e) => e.status === 'quick_dip')
-  if (filter === 'processed') return entries.filter((e) => e.status === 'processed')
-  if (filter === 'needs_deep_dive') return entries.filter((e) => e.status === 'needs_deep_dive')
-  if (filter === 'charted') return entries.filter((e) => e.status === 'charted')
-  if (filter === 'needs_verification') {
-    return entries.filter((e) => e.needs_human_verification)
-  }
-  if (filter === 'uncharted') {
-    return entries.filter((e) => e.territory === 'uncharted')
-  }
-  if (filter === 'enrich') {
-    return entries.filter((e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive')
-  }
+  if (filter === 'uncharted') return entries.filter((e) => isUncharted(e))
+  if (filter === 'needs_review') return entries.filter((e) => isQuickDipReview(e))
+  if (filter === 'verified') return entries.filter((e) => isDeepDiveVerified(e))
   return entries
 }
 
@@ -196,7 +186,7 @@ function sortChartEntries(
       cmp = (a.year ?? MISSING_PAPER_YEAR) - (b.year ?? MISSING_PAPER_YEAR)
       if (cmp === 0) cmp = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
     } else if (key === 'status') {
-      cmp = chartStatusPill(a.status).label.localeCompare(chartStatusPill(b.status).label)
+      cmp = entryStatusPill(a).label.localeCompare(entryStatusPill(b).label)
       if (cmp === 0) cmp = a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
     } else {
       cmp = themeSortLabel(a, themes).localeCompare(themeSortLabel(b, themes))
@@ -310,7 +300,7 @@ const DOCK_WORKSPACE_SECTIONS: {
   id: WorkspaceSectionId
   label: string
   hint: string
-  badge?: (ctx: { enrich: number; pending: number; needsVerification: number }) => number | null
+  badge?: (ctx: { uncharted: number; pending: number; quickDipReview: number }) => number | null
 }[] = [
   { id: 'section-map', label: 'Navigate', hint: 'Browse your chart' },
   {
@@ -322,13 +312,13 @@ const DOCK_WORKSPACE_SECTIONS: {
     id: 'section-dive',
     label: 'Status',
     hint: 'Track progress',
-    badge: (c) => c.needsVerification || c.enrich || null,
+    badge: (c) => c.quickDipReview || c.uncharted || null,
   },
   {
     id: 'section-actions',
     label: 'Actions',
-    hint: 'Update & enrich',
-    badge: (c) => (c.pending > 0 ? c.pending : c.enrich > 0 ? c.enrich : null),
+    hint: 'Update & chart',
+    badge: (c) => (c.pending > 0 ? c.pending : c.uncharted > 0 ? c.uncharted : null),
   },
 ]
 
@@ -346,40 +336,6 @@ function statusColor(status: string) {
   }
 }
 
-function chartStatusPill(status: string) {
-  switch (status) {
-    case 'processed':
-      return { icon: '📄', label: 'Deep dive', className: 'status-pill status-pill--done' }
-    case 'quick_dip':
-      return { icon: '🤿', label: 'Quick dip', className: 'status-pill status-pill--quick' }
-    case 'needs_deep_dive':
-      return { icon: '✎', label: 'Enrich next', className: 'status-pill status-pill--enrich' }
-    case 'scaffolded':
-      return { icon: '○', label: 'Scaffolded', className: 'status-pill status-pill--scaffold' }
-    case 'charted':
-      return { icon: '📝', label: 'Charted', className: 'status-pill status-pill--quick' }
-    default:
-      return { icon: '○', label: status.replace(/_/g, ' '), className: 'status-pill' }
-  }
-}
-
-function verificationPill(entry: ChartEntry) {
-  if (entry.human_verified) {
-    return { icon: '✓', label: 'Verified', className: 'status-pill status-pill--verified' }
-  }
-  if (entry.needs_human_verification || entry.llm_enriched) {
-    const src = enrichmentLabel(entry) || 'Needs review'
-    return { icon: '⚠', label: src, className: 'status-pill status-pill--review' }
-  }
-  if (entry.territory === 'uncharted') {
-    return { icon: '◇', label: territoryLabel('uncharted'), className: 'status-pill status-pill--uncharted' }
-  }
-  const src = enrichmentLabel(entry)
-  if (src && src !== 'Quick dip') {
-    return { icon: '·', label: src, className: 'status-pill status-pill--source' }
-  }
-  return null
-}
 
 function obsidianReefHref(
   reefPath: string,
@@ -405,12 +361,22 @@ const THEME_GRADIENT: Record<string, string> = {
   'social-media-online-communities': 'theme-gradient--communities',
 }
 
+const THEME_ICONS: Record<string, string> = {
+  'digital-governance': '⚖️',
+  'healthy-online-behavior': '💚',
+  'algorithmic-ai-audits': '🔍',
+  'computational-social-science': '📊',
+  'social-media-online-communities': '💬',
+}
+
 function themeGradientClass(slug: string) {
   return THEME_GRADIENT[slug] ?? 'theme-gradient--default'
 }
 
 function themeDisplayTitle(slug: string, themes: { slug: string; title: string }[]) {
-  return themes.find((t) => t.slug === slug)?.title ?? slug
+  const title = themes.find((t) => t.slug === slug)?.title ?? slug
+  const icon = THEME_ICONS[slug] ?? '◆'
+  return `${icon} ${title}`
 }
 
 function ReefLink({
@@ -928,14 +894,21 @@ export default function App() {
 
   const jobStatus = jobQuery.data?.status ?? logsQuery.data?.status
   const isDiving = jobStatus === 'running' || jobStatus === 'queued'
-  const enrichCount =
-    (vault?.needs_deep_dive_count ?? 0) + (vault?.needs_review_count ?? 0)
-  const needsVerificationCount =
-    channelStats?.needs_human_verification ??
+  const unchartedCount =
+    vault?.uncharted_count ??
+    chartMap?.entries.filter((e) => isUncharted(e)).length ??
+    0
+  const quickDipReviewCount =
+    channelStats?.quick_dip_review_count ??
+    vault?.quick_dip_review_count ??
     vault?.needs_human_verification_count ??
     0
-  const needsVerificationEntries =
-    chartMap?.entries.filter((e) => e.needs_human_verification) ?? []
+  const deepDiveCount =
+    vault?.human_verified_count ??
+    chartMap?.entries.filter((e) => isDeepDiveVerified(e)).length ??
+    0
+  const quickDipReviewEntries =
+    chartMap?.entries.filter((e) => isQuickDipReview(e)) ?? []
   const themeGroups = groupEntriesByTheme(chartMap)
   const filteredEntries = filterChartEntries(chartMap?.entries ?? [], statFilter)
   const sortedEntries = useMemo(
@@ -976,10 +949,26 @@ export default function App() {
   }, [pendingRemovalSlugs.size])
 
   const filteredThemeGroups = filterThemeGroups(themeGroups, statFilter)
-  const enrichEntries =
-    chartMap?.entries.filter(
-      (e) => e.status === 'quick_dip' || e.status === 'needs_deep_dive',
-    ) ?? []
+
+  const wikiHints = useMemo((): WikiSlugHints => {
+    const hints: WikiSlugHints = {
+      papers: chartMap?.entries.map((e) => e.slug) ?? [],
+      themes: chartMap?.themes.map((t) => t.slug) ?? [],
+      concepts: [],
+      entities: [],
+      sources: [],
+    }
+    for (const node of chartGraph?.nodes ?? []) {
+      if (node.type === 'concept') hints.concepts!.push(node.slug)
+      else if (node.type === 'entity') hints.entities!.push(node.slug)
+      else if (node.type === 'source') hints.sources!.push(node.slug)
+      else if (node.type === 'theme' && !hints.themes!.includes(node.slug)) {
+        hints.themes!.push(node.slug)
+      }
+    }
+    return hints
+  }, [chartMap, chartGraph])
+  const unchartedEntries = chartMap?.entries.filter((e) => isUncharted(e)) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
   const inWorkspace = !!(vault && channel && !showDockPicker && !showReefPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
@@ -1387,9 +1376,9 @@ export default function App() {
             <div className="workspace-shell__tabs" role="tablist" aria-label="Dock workspace">
               {DOCK_WORKSPACE_SECTIONS.map((item) => {
                 const badge = item.badge?.({
-                  enrich: enrichEntries.length,
+                  uncharted: unchartedEntries.length,
                   pending: pendingCount,
-                  needsVerification: needsVerificationCount,
+                  quickDipReview: quickDipReviewCount,
                 })
                 return (
                   <button
@@ -1415,8 +1404,8 @@ export default function App() {
               <div className="workspace-shell__guide">
                 <span>
                   <strong>Navigate</strong> browses your chart · <strong>Query</strong> asks the wiki ·{' '}
-                  <strong>Status</strong> tracks pipeline · <strong>Actions</strong> runs Quick Dip and
-                  LLM Deep Dive.
+                  <strong>Status</strong> tracks pipeline · <strong>Actions</strong> updates the chart and
+                  runs Quick Dip (LLM).
                 </span>
                 <button type="button" className="workspace-shell__guide-dismiss" onClick={dismissDockGuide}>
                   Got it
@@ -1616,7 +1605,7 @@ export default function App() {
                         </thead>
                         <tbody>
                           {sortedEntries.map((entry) => {
-                            const pill = chartStatusPill(entry.status)
+                            const pill = entryStatusPill(entry)
                             const expanded = expandedPaperSlugs.has(entry.slug)
                             const canExpand = !!(entry.overview?.trim() || entry.pdf_path)
                             const marked = pendingRemovalSlugs.has(entry.slug)
@@ -1645,19 +1634,9 @@ export default function App() {
                                   </td>
                                 )}
                                 <td>
-                                  <div className="flex flex-wrap items-center gap-1">
-                                    <span className={pill.className}>
-                                      {pill.icon} {pill.label}
-                                    </span>
-                                    {(() => {
-                                      const vp = verificationPill(entry)
-                                      return vp ? (
-                                        <span className={vp.className} title={entry.llm_model || undefined}>
-                                          {vp.icon} {vp.label}
-                                        </span>
-                                      ) : null
-                                    })()}
-                                  </div>
+                                  <span className={pill.className} title={pill.title}>
+                                    {pill.icon} {pill.label}
+                                  </span>
                                 </td>
                                 <td>
                                   <div className="map-paper-cell">
@@ -1695,7 +1674,7 @@ export default function App() {
                                           <p className="map-paper-overview">{entry.overview}</p>
                                         ) : (
                                           <p className="map-paper-overview map-paper-overview--empty">
-                                            No overview yet — run Deep Dive to add a one-liner.
+                                            No overview yet — run Quick Dip to add a one-liner.
                                           </p>
                                         )}
                                         {entry.pdf_path && (
@@ -1719,12 +1698,12 @@ export default function App() {
                                               verifyMutation.mutate({ slug: entry.slug, verified: true })
                                             }
                                           >
-                                            Mark human verified
+                                            Mark Deep dive verified
                                           </button>
                                         )}
                                         {entry.human_verified && entry.llm_enriched && (
                                           <p className="mt-2 text-xs text-[var(--success)]">
-                                            Verified
+                                            Verified — Deep dive
                                             {entry.verified_by ? ` by ${entry.verified_by}` : ''}
                                             {entry.verified_at ? ` · ${entry.verified_at}` : ''}
                                           </p>
@@ -1794,13 +1773,11 @@ export default function App() {
                             </span>
                           </div>
                           {group.entries.map((entry) => {
-                            const pill = chartStatusPill(entry.status)
-                            const vp = verificationPill(entry)
+                            const pill = entryStatusPill(entry)
                             return (
                               <div key={`${group.slug}-${entry.slug}`} className="theme-map__paper">
-                                <span>
+                                <span title={pill.title}>
                                   {pill.icon}
-                                  {vp ? vp.icon : ''}
                                 </span>
                                 <ReefLink
                                   vaultPath={vault?.path}
@@ -1866,7 +1843,7 @@ export default function App() {
         <div className="workspace-panel__content">
               <PipelineLegend />
 
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
                 <Stat
                   label="On chart"
                   hint="Click to show all"
@@ -1885,43 +1862,43 @@ export default function App() {
                   onClick={() => toggleStatFilter('pending')}
                 />
                 <Stat
-                  label="Quick dip"
-                  hint="PDF facts only"
-                  variant="quick"
-                  value={vault.quick_dip_count ?? 0}
-                  highlight={(vault.quick_dip_count ?? 0) > 0}
-                  selected={statFilter === 'quick_dip'}
-                  onClick={() => toggleStatFilter('quick_dip')}
-                />
-                <Stat
-                  label="Enrich next"
-                  hint="Needs Deep Dive"
+                  label="Uncharted"
+                  hint="Not LLM-ingested yet"
                   variant="enrich"
-                  value={enrichEntries.length || enrichCount}
-                  highlight={enrichEntries.length > 0 || enrichCount > 0}
-                  selected={statFilter === 'enrich'}
-                  onClick={() => toggleStatFilter('enrich')}
+                  value={unchartedCount}
+                  highlight={unchartedCount > 0}
+                  selected={statFilter === 'uncharted'}
+                  onClick={() => toggleStatFilter('uncharted')}
                 />
                 <Stat
-                  label="Needs review"
-                  hint="LLM Deep Dive — not verified"
+                  label="Quick dip"
+                  hint="LLM-ingested — needs review"
+                  variant="quick"
+                  value={quickDipReviewCount}
+                  highlight={quickDipReviewCount > 0}
+                  selected={statFilter === 'needs_review'}
+                  onClick={() => toggleStatFilter('needs_review')}
+                />
+                <Stat
+                  label="Deep dive"
+                  hint="Verified — human-reviewed"
                   variant="verify"
-                  value={needsVerificationCount}
-                  highlight={needsVerificationCount > 0}
-                  selected={statFilter === 'needs_verification'}
-                  onClick={() => toggleStatFilter('needs_verification')}
+                  value={deepDiveCount}
+                  selected={statFilter === 'verified'}
+                  onClick={() => toggleStatFilter('verified')}
                 />
               </div>
 
-              {enrichEntries.length > 0 && (
+              {unchartedEntries.length > 0 && (
                 <div className="next-step-banner mt-4">
                   <div>
                     <strong>
-                      {enrichEntries.length} paper{enrichEntries.length === 1 ? '' : 's'} need Deep Dive
+                      {unchartedEntries.length} paper{unchartedEntries.length === 1 ? '' : 's'} uncharted
                     </strong>
                     <p>
-                      Run LLM Deep Dive in Actions to add themes, one-liners, and analysis (
-                      {appSettings?.llm.models.deep_dive ?? 'qwen3:32b'}).
+                      Run <strong>Quick Dip</strong> (LLM) in Actions when Ollama is available (
+                      {appSettings?.llm.models.deep_dive ?? 'qwen3:32b'}). Without LLM, only metadata is
+                      surfaced.
                     </p>
                   </div>
                   <button
@@ -1934,16 +1911,16 @@ export default function App() {
                 </div>
               )}
 
-              {needsVerificationEntries.length > 0 && (
+              {quickDipReviewEntries.length > 0 && (
                 <div className="next-step-banner mt-4 next-step-banner--review">
                   <div>
                     <strong>
-                      {needsVerificationEntries.length} paper
-                      {needsVerificationEntries.length === 1 ? '' : 's'} need human review
+                      {quickDipReviewEntries.length} Quick dip
+                      {quickDipReviewEntries.length === 1 ? '' : 's'} need review
                     </strong>
                     <p>
-                      LLM Deep Dive ({needsVerificationEntries[0]?.llm_model || 'qwen3:32b'}) fills
-                      content but does not certify accuracy — review claims, then mark verified.
+                      LLM Quick Dip ({quickDipReviewEntries[0]?.llm_model || 'qwen3:32b'}) filled content —
+                      review claims, then mark verified to promote to <strong>Deep dive</strong>.
                     </p>
                   </div>
                 </div>
@@ -1952,7 +1929,7 @@ export default function App() {
               {(channelStats?.needs_verification?.length ?? 0) > 0 && (
                 <div className="mt-4">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                    Awaiting verification
+                    Awaiting Deep dive review
                   </h3>
                   <ul className="needs-list mt-1">
                     {channelStats!.needs_verification!.map((item) => (
@@ -1980,7 +1957,7 @@ export default function App() {
                           disabled={verifyMutation.isPending}
                           onClick={() => verifyMutation.mutate({ slug: item.slug, verified: true })}
                         >
-                          Mark verified
+                          Mark Deep dive verified
                         </button>
                       </li>
                     ))}
@@ -2038,7 +2015,7 @@ export default function App() {
               <div className="action-block">
                 <h4>Update chart</h4>
                 <p>
-                  <strong>Update chart</strong> maps new docked PDFs (Quick Dip).{' '}
+                  <strong>Update chart</strong> surfaces docked PDFs on the chart (metadata / Uncharted).{' '}
                   <strong>Full rebuild</strong> regenerates the entire wiki from entries.
                 </p>
                 {isIngestPreview && (
@@ -2074,40 +2051,40 @@ export default function App() {
               </div>
 
               <div className="action-block">
-                <h4>Deep Dive (LLM)</h4>
+                <h4>Quick Dip (LLM)</h4>
                 <p>
-                  Run automated Deep Dive on papers needing enrichment using{' '}
+                  Run LLM Quick Dip on <strong>uncharted</strong> papers using{' '}
                   <strong>{appSettings?.llm.models.deep_dive ?? 'qwen3:32b'}</strong> (
-                  {appSettings?.llm.deep_dive_provider ?? 'local'}). Output is marked{' '}
-                  <em>needs review</em> until you verify.
+                  {appSettings?.llm.deep_dive_provider ?? 'local'}). Review output, then mark verified
+                  to promote to <strong>Deep dive</strong>.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() =>
                       deepDiveMutation.mutate({
-                        slugs: enrichEntries.map((e) => e.slug),
+                        slugs: unchartedEntries.map((e) => e.slug),
                       })
                     }
                     disabled={
                       deepDiveMutation.isPending ||
                       isDiving ||
-                      enrichEntries.length === 0 ||
+                      unchartedEntries.length === 0 ||
                       !isPortfolio
                     }
                     className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
                   >
                     {deepDiveMutation.isPending || isDiving
-                      ? 'Running Deep Dive…'
-                      : `Run Deep Dive (${enrichEntries.length})`}
+                      ? 'Running Quick Dip…'
+                      : `Run Quick Dip (${unchartedEntries.length})`}
                   </button>
                 </div>
                 {deepDiveMutation.isError && (
                   <p className="mt-2 text-xs text-red-400">{deepDiveMutation.error.message}</p>
                 )}
-                {enrichEntries.length === 0 && (
+                {unchartedEntries.length === 0 && (
                   <p className="mt-2 text-xs text-[var(--muted)]">
-                    No papers waiting for Deep Dive on this dock.
+                    No uncharted papers on this dock — all have been Quick-dipped or Deep-dived.
                   </p>
                 )}
               </div>
@@ -2120,8 +2097,10 @@ export default function App() {
         <div id="section-query" className="workspace-panel">
           <QueryPanel
             vaultId={vaultId}
+            wikiHints={wikiHints}
             onJobStart={setActiveJobId}
             onQueryMeta={setQueryJobMeta}
+            onWikiNavigate={openInApp}
           />
         </div>
       )}
@@ -2178,6 +2157,7 @@ export default function App() {
           vaultId={vaultId}
           path={viewer.path}
           title={viewer.title}
+          wikiHints={wikiHints}
           onClose={() => setViewer(null)}
         />
       )}

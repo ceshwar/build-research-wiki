@@ -1,21 +1,34 @@
-# Paper chart spec — Quick Dip vs Deep Dive
+# Paper chart spec — Uncharted · Quick Dip · Deep Dive
 
-Chart entries are **product IP**: structured wiki pages we generate for users. Tier 1 must be factual and QA'd — no guessing, no placeholder text that looks like real content.
+Chart entries are **product IP**: structured wiki pages we generate for users. **Update chart** surfaces factual metadata without guessing; **Quick Dip (LLM)** fills generative sections; **Deep dive** means human-verified.
 
 ---
 
-## Tiers
+## Trust tiers (user-facing)
+
+| Tier | UI label | Meaning |
+|------|----------|---------|
+| **0** | **Uncharted** ◎ | On chart, not LLM-ingested — PDF/metadata only (`status: quick-dip` registry row) |
+| **1** | **Quick dip** 🤿 | LLM-ingested — `llm_enriched: true`, awaiting human review |
+| **2** | **Deep dive** 🦑 | Verified — `human_verified: true` (or trusted hand-`mapped`) |
+
+**Pipeline:** Dock → **Update chart** (Uncharted) → **Run Quick Dip (LLM)** → review → mark verified → **Deep dive**.
+
+---
+
+## Tiers (implementation)
 
 | Tier | Name | Trigger | What gets filled |
 |------|------|---------|-------------------|
-| **1** | **Quick Dip** | Dock + **Update chart** (auto after portfolio upload) | PDF-derived facts only |
-| **2+** | **Deep Dive** | **Run Deep Dive (LLM)** in Actions, or agent/manual edit | Themes, one-liner, analysis, cross-links |
+| **1** | **Surface chart** | Dock + **Update chart** | PDF-derived facts only → **Uncharted** |
+| **2** | **Quick Dip (LLM)** | **Run Quick Dip** in Actions | Themes, one-liner, deep dive sections |
+| **3** | **Deep dive** | Mark verified in Portolan | Trust gate — same wiki content, verified flag |
 
-**Quick Dip** = a first pass on the chart. **Deep Dive** = enrichment to a finished paper page (see `examples/minimal-vault/wiki/papers/positive-reinforcement-reddit.md`).
+Registry `status: quick-dip` means “PDF surfaced on chart” (Uncharted), not the UI label Quick dip.
 
 ---
 
-## Quick Dip (Tier 1) — rules
+## Surface chart (Tier 1) — rules
 
 ### Source of truth
 
@@ -35,7 +48,7 @@ Chart entries are **product IP**: structured wiki pages we generate for users. T
 | **One-liner** | — | Empty `## One-liner` |
 | **Deep dive** | — | **Not created** — no `builder/deepdives/<slug>.md` scaffold |
 
-### Forbidden in Quick Dip output
+### Forbidden in surface chart output
 
 - `venue: unknown`
 - `[[theme-slug]]` or similar template placeholders
@@ -47,7 +60,7 @@ Chart entries are **product IP**: structured wiki pages we generate for users. T
 
 ```
 raw/papers/foo.pdf                          # immutable upload
-builder/entries/my-portfolio/foo.md         # Quick Dip entry (edit here)
+builder/entries/my-portfolio/foo.md         # surface entry (edit here)
 builder/auto_papers.json                    # registry row (status: quick-dip)
 wiki/papers/foo.md                          # generated chart page
 ```
@@ -55,7 +68,7 @@ wiki/papers/foo.md                          # generated chart page
 Entry file header:
 
 ```markdown
-<!-- chart-tier: quick-dip — PDF-derived fields only; Deep Dive to enrich -->
+<!-- chart-tier: quick-dip — PDF-derived fields only; run Quick Dip (LLM) to enrich -->
 
 ## Abstract
 <text from PDF or empty>
@@ -67,9 +80,9 @@ Entry file header:
 
 ---
 
-## Deep Dive (Tier 2+)
+## Quick Dip (LLM)
 
-**In-app (v0.6):** Actions → **Run Deep Dive (LLM)** calls `builder/deep_dive_llm.py` via Ollama (default **qwen3:32b** on GPU tunnel `127.0.0.1:11500`). Writes `builder/entries/`, `builder/deepdives/`, marks `enrichment_source` and **needs human review**.
+**In-app:** Actions → **Run Quick Dip (LLM)** calls `builder/deep_dive_llm.py` via Ollama (default **qwen3:32b**). Writes `builder/entries/`, `builder/deepdives/`, sets `llm_enriched: true` — lands in **Quick dip** until you mark verified → **Deep dive**.
 
 User, frontier model, or agent can also enrich manually:
 
@@ -84,45 +97,42 @@ Re-run **Update chart** after edits to refresh `wiki/`.
 
 | `enrichment_source` | Meaning |
 |---------------------|---------|
-| `quick-dip` | Tier 1 PDF facts only |
-| `local-32b` | LLM Deep Dive via local Ollama (e.g. qwen3:32b) |
+| `quick-dip` | Tier 1 PDF surface only (Uncharted) |
+| `local-32b` | Quick Dip (LLM) via local Ollama |
 | `local-custom` | LLM Deep Dive via another local model |
 | `frontier` | LLM Deep Dive via Anthropic/OpenAI |
 | `human` | Hand-charted / user-verified corpus |
 
-### Territory
+### Territory (`territory` frontmatter)
 
 | `territory` | Meaning |
 |-------------|---------|
-| `charted` | You have read/verified (or hand-authored `status: mapped`) |
-| `uncharted` | LLM-filled Deep Dive awaiting your review — surfaced in **Query** and **Needs review** filters |
+| `uncharted` | Not LLM-ingested (`llm_enriched: false`) |
+| `quick_dip` | LLM-ingested, awaiting review |
+| `charted` | Deep dive — human-verified |
 
-Mark **verified** in Portolan after reading; wiki pages get `human_verified: true` and an Obsidian callout.
+Mark **Deep dive verified** in Portolan after reading; wiki gets `human_verified: true` and a callout.
 
 ---
 
-## Completion states (Chart status)
+## Completion states (internal)
 
-| State | Meaning |
-|-------|---------|
-| **Pending** | In `raw/` but not on chart |
-| **Quick dip** | Tier 1 done — PDF facts on chart; themes/one-liner/deep dive still empty |
-| **Needs deep dive** | Themes + abstract + one-liner filled; deep dive incomplete |
-| **Deep dive done** | Fully enriched (processed) — may still **need review** if LLM-generated |
-| **Needs review** | Processed but `human_verified: false` |
-| **Uncharted** | LLM territory — read when Query surfaces it or from Status filter |
+| State | UI mapping |
+|-------|------------|
+| **Pending** | Awaiting chart |
+| **quick_dip / needs_deep_dive / scaffolded** | Usually **Uncharted** (no LLM yet) |
+| **processed + llm_enriched + !verified** | **Quick dip** |
+| **processed + human_verified** | **Deep dive** |
 
 ---
 
 ## UI flow
 
-1. User docks a PDF to a **portfolio** channel → **Confirm upload**
-2. **Quick Dip runs automatically** (same as **Update chart (Quick Dip)**)
-3. Chart status shows **Quick dip** / **Enrich next** / **On chart** counts
-4. User edits entries and deep dives in Obsidian or repo; re-surfaces when ready
-5. **Edit mode** on the Map (List view) — **Edit** → mark **−** → **Done** confirms removals ( **Cancel** discards); PDF stays in `raw/` until **Update chart**
-
-Ingest channels (lit-review, lab-memory, ideas) also get Quick Dip shells in `builder/entries/` → `wiki/sources/`; Deep Dive fills generative sections later.
+1. User docks a PDF → **Confirm upload**
+2. **Update chart** surfaces PDF metadata (**Uncharted**)
+3. **Run Quick Dip (LLM)** when Ollama is available
+4. Review in Navigate → mark **Deep dive verified**
+5. **Query** with scope: All · Deep dive · Quick dip · Uncharted
 
 ---
 

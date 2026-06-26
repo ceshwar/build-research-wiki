@@ -295,6 +295,7 @@ class QueryRequest(BaseModel):
     question: str
     provider: Optional[str] = None
     model: Optional[str] = None
+    scope: str = "all"  # all | verified | needs_review | uncharted
 
 
 class QueryResponse(BaseModel):

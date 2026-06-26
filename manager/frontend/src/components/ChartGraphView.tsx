@@ -6,13 +6,9 @@ type StatFilter =
   | 'all'
   | 'on_chart'
   | 'pending'
-  | 'quick_dip'
-  | 'enrich'
-  | 'processed'
-  | 'needs_deep_dive'
-  | 'charted'
-  | 'needs_verification'
   | 'uncharted'
+  | 'needs_review'
+  | 'verified'
 
 type GraphLayerId = 'paper' | 'theme' | 'concept' | 'entity' | 'synthesis' | 'source'
 
@@ -164,15 +160,10 @@ function linkEndpointIds(link: { source: unknown; target: unknown }): { source: 
 }
 
 function paperMatchesFilter(node: ChartGraphNode, filter: StatFilter): boolean {
-  const status = node.status
   if (filter === 'all' || filter === 'on_chart') return true
-  if (filter === 'needs_verification') return !!node.needs_human_verification
-  if (filter === 'uncharted') return node.territory === 'uncharted'
-  if (filter === 'quick_dip') return status === 'quick_dip'
-  if (filter === 'processed') return status === 'processed'
-  if (filter === 'needs_deep_dive') return status === 'needs_deep_dive'
-  if (filter === 'charted') return status === 'charted'
-  if (filter === 'enrich') return status === 'quick_dip' || status === 'needs_deep_dive'
+  if (filter === 'uncharted') return !node.llm_enriched
+  if (filter === 'needs_review') return !!node.llm_enriched && !node.human_verified
+  if (filter === 'verified') return !!node.human_verified
   return true
 }
 

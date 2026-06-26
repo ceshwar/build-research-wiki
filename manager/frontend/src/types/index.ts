@@ -42,6 +42,8 @@ export interface ChannelStats {
   needs_deep_dive: number
   quick_dip?: number
   needs_review: number
+  uncharted_count?: number
+  quick_dip_review_count?: number
   needs_human_verification?: number
   human_verified_count?: number
   needs_attention: NeedsAttention[]
@@ -68,6 +70,8 @@ export interface Vault {
   quick_dip_count?: number
   needs_deep_dive_count?: number
   needs_review_count: number
+  uncharted_count?: number
+  quick_dip_review_count?: number
   needs_human_verification_count?: number
   human_verified_count?: number
   channels: ChannelStats[]
@@ -123,7 +127,7 @@ export interface ChartEntry {
   llm_enriched: boolean
   llm_model: string
   enrichment_source: string
-  territory: 'charted' | 'uncharted'
+  territory: 'charted' | 'uncharted' | 'quick_dip'
   verified_at: string
   verified_by: string
 }
@@ -153,6 +157,7 @@ export interface ChartGraphNode {
   wiki_page: string
   status?: string | null
   human_verified?: boolean | null
+  llm_enriched?: boolean | null
   needs_human_verification?: boolean | null
   territory?: string | null
 }

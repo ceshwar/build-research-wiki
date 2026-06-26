@@ -1,24 +1,71 @@
 import type { ChartEntry } from '../types'
 
-export const ENRICHMENT_LABELS: Record<string, string> = {
-  'quick-dip': 'Quick dip',
-  'local-32b': 'Deep dive (32B)',
-  'local-custom': 'Deep dive (local)',
-  frontier: 'Deep dive (frontier)',
-  human: 'Human charted',
+function shortModel(model: string) {
+  const part = model.split(':').pop() || model
+  return part.length > 18 ? `${part.slice(0, 16)}…` : part
 }
 
-export function enrichmentLabel(entry: Pick<ChartEntry, 'enrichment_source' | 'llm_model' | 'status'>) {
-  const src = entry.enrichment_source
-  if (src && ENRICHMENT_LABELS[src]) {
-    if (src === 'local-custom' && entry.llm_model) return `Deep dive (${entry.llm_model})`
-    return ENRICHMENT_LABELS[src]
+/** Trust tier for portfolio papers (user-facing workflow). */
+export type TrustTier = 'deep_dive' | 'quick_dip' | 'uncharted'
+
+export function trustTier(entry: ChartEntry): TrustTier {
+  if (entry.human_verified) return 'deep_dive'
+  if (entry.llm_enriched) return 'quick_dip'
+  return 'uncharted'
+}
+
+/** One status pill per paper — Uncharted → Quick Dip (LLM) → Deep Dive (verified). */
+export function entryStatusPill(entry: ChartEntry) {
+  const tier = trustTier(entry)
+  if (tier === 'deep_dive') {
+    return {
+      icon: '🦑',
+      label: 'Deep dive',
+      title: entry.llm_model
+        ? `Verified · ${entry.llm_model}`
+        : 'Deep dive — human-reviewed or hand-charted',
+      className: 'status-pill status-pill--deep',
+    }
   }
-  if (entry.status === 'quick_dip') return 'Quick dip'
-  if (entry.status === 'processed') return 'Deep dive'
-  return ''
+  if (tier === 'quick_dip') {
+    return {
+      icon: '🤿',
+      label: entry.llm_model ? `Quick dip · ${shortModel(entry.llm_model)}` : 'Quick dip',
+      title: 'LLM-ingested — needs human review before Deep Dive',
+      className: 'status-pill status-pill--quick',
+    }
+  }
+  const hint =
+    entry.status === 'needs_deep_dive'
+      ? 'Charted — run Quick Dip (LLM)'
+      : entry.status === 'quick_dip'
+        ? 'PDF surfaced — run Quick Dip (LLM)'
+        : 'On chart — awaiting Quick Dip or hand enrichment'
+  return {
+    icon: '◎',
+    label: 'Uncharted',
+    title: hint,
+    className: 'status-pill status-pill--uncharted',
+  }
 }
 
-export function territoryLabel(territory: string) {
-  return territory === 'uncharted' ? 'Uncharted' : 'Charted'
+/** LLM-ingested, not yet verified (Quick Dip / needs review). */
+export function isQuickDipReview(entry: ChartEntry) {
+  return entry.llm_enriched && !entry.human_verified
 }
+
+/** Human-verified Deep Dive. */
+export function isDeepDiveVerified(entry: ChartEntry) {
+  return entry.human_verified
+}
+
+/** Not LLM-ingested yet. */
+export function isUncharted(entry: ChartEntry) {
+  return !entry.llm_enriched
+}
+
+/** @deprecated use isQuickDipReview */
+export const isNeedsReview = isQuickDipReview
+
+/** @deprecated use isDeepDiveVerified */
+export const isVerifiedEntry = isDeepDiveVerified

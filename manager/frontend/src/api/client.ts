@@ -240,14 +240,20 @@ export function runDeepDive(
   )
 }
 
-export function runWikiQuery(vaultId: string, question: string, provider?: string, model?: string) {
+export function runWikiQuery(
+  vaultId: string,
+  question: string,
+  provider?: string,
+  model?: string,
+  scope: 'all' | 'verified' | 'needs_review' | 'uncharted' = 'all',
+) {
   const params = new URLSearchParams({ vault_id: vaultId })
   return request<{ job_id: string; model: string; provider: string; question: string }>(
     `/query?${params}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, provider, model }),
+      body: JSON.stringify({ question, provider, model, scope }),
     },
   )
 }

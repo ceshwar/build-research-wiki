@@ -21,7 +21,7 @@ Built by the [SCUBA Lab](https://eshwarchandrasekharan.com/lab.html) at UIUC and
 
 ## The control panel
 
-A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **Deep Dive** enrichment, **Navigate** browsing, and **Status** tracking.
+A web app for docking artifacts, **Update chart** (Uncharted metadata), **Quick Dip** (LLM), **Deep Dive** (verified), **Navigate** browsing, **Query**, and **Status** tracking.
 
 ```bash
 ./manager/scripts/dev.sh    # → http://127.0.0.1:5173
@@ -34,8 +34,9 @@ A web app for docking artifacts, **Quick Dip** (Tier 1 PDF facts on chart), **De
 | 3 | **Dock** files — click the dock name in the path, or **Upload PDFs** in Actions |
 | 4 | Check **Status** — on chart, quick dip, enrich next, needs review |
 | 5 | **Navigate** — List, By theme, or Graph; click papers to open in-app (Settings) or Obsidian |
-| 6 | **Run Deep Dive (LLM)** in Actions — default qwen3:32b; mark verified after review |
-| 7 | **Query** — ask the wiki; uncharted LLM papers included with review caveat |
+| 5 | **Update chart** in Actions — surfaces PDFs as **Uncharted** on the chart |
+| 6 | **Run Quick Dip (LLM)** when Ollama is available — review, then mark **Deep dive verified** |
+| 7 | **Query** — scope by All / Deep dive / Quick dip / Uncharted |
 | 8 | **Settings** (⚙) — Ollama URL, models, local vs frontier provider |
 
 Full guide: **[docs/PORTOLAN.md](docs/PORTOLAN.md)** · Chart spec: **[docs/PAPER-CHART-SPEC.md](docs/PAPER-CHART-SPEC.md)**
@@ -46,7 +47,7 @@ Full guide: **[docs/PORTOLAN.md](docs/PORTOLAN.md)** · Chart spec: **[docs/PAPE
 
 ### 1. Portolan (UI) — *recommended for teams*
 
-Dock → Quick Dip → **Run Deep Dive (LLM)** → review → **Query**. Default model: **qwen3:32b** via Ollama (GPU tunnel on port 11500). LLM output is **uncharted** until you mark verified.
+Dock → **Update chart** (Uncharted) → **Quick Dip (LLM)** → review → **Deep dive**. Default model: **qwen3:32b** via Ollama (GPU tunnel on port 11500).
 
 ### 2. LLM-driven ingest (agent workflow)
 

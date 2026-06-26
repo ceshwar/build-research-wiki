@@ -162,7 +162,7 @@ def _section_text(text, heading):
     if not m:
         return ""
     rest = text[m.end():]
-    nxt = re.search(r"(?m)^#{{1,6}}\s+", rest)
+    nxt = re.search(r"(?m)^#{1,6}\s+", rest)
     block = rest[: nxt.start()] if nxt else rest
     return block.strip()
 
@@ -317,7 +317,8 @@ def assess_channel(vault_path, channel_id, pending_count=0):
     assessed = [assess_entry(vault_path, e) for e in corpus]
     counts = {"pending": pending_count, "on_chart": len(corpus),
               "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0,
-              "charted": 0, "needs_human_verification": 0, "human_verified": 0}
+              "charted": 0, "needs_human_verification": 0, "human_verified": 0,
+              "uncharted_territory": 0, "quick_dip_review": 0}
     needs_attention = []
     needs_verification = []
     for a in assessed:
@@ -327,6 +328,10 @@ def assess_channel(vault_path, channel_id, pending_count=0):
         if a.get("needs_human_verification"):
             counts["needs_human_verification"] += 1
             needs_verification.append(a)
+        if not a.get("llm_enriched"):
+            counts["uncharted_territory"] += 1
+        elif not a.get("human_verified"):
+            counts["quick_dip_review"] += 1
         if a["status"] in ("scaffolded", "needs_deep_dive", "charted"):
             needs_attention.append(a)
     return {
@@ -343,13 +348,18 @@ def assess_vault(vault_path, channel_pending=None):
     all_assessed = [assess_entry(vault_path, e) for e in corpus]
     totals = {"on_chart": len(corpus), "pending": sum(channel_pending.values()),
               "quick_dip": 0, "needs_deep_dive": 0, "scaffolded": 0, "processed": 0, "charted": 0,
-              "needs_human_verification": 0, "human_verified": 0}
+              "needs_human_verification": 0, "human_verified": 0,
+              "uncharted_territory": 0, "quick_dip_review": 0}
     for a in all_assessed:
         totals[a["status"]] += 1
         if a.get("human_verified"):
             totals["human_verified"] += 1
         if a.get("needs_human_verification"):
             totals["needs_human_verification"] += 1
+        if not a.get("llm_enriched"):
+            totals["uncharted_territory"] += 1
+        elif not a.get("human_verified"):
+            totals["quick_dip_review"] += 1
     by_channel = {}
     channels = set(e.get("channel") for e in corpus) | set(channel_pending.keys())
     for ch in channels:

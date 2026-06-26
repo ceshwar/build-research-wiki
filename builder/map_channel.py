@@ -150,7 +150,7 @@ def _refresh_stale_quick_dip(vault, channel_id, entries, dry_run=False):
             "status": "quick-dip",
             "themes": [],
             "one": "",
-            "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+            "flag": "Uncharted — run Quick Dip (LLM) in Portolan when ready.",
         })
         refreshed.append(e)
         changed = True
@@ -292,7 +292,7 @@ def map_channel(vault, channel_id, dry_run=False):
                 "pdfs": pdfs,
                 "themes": [],
                 "one": "",
-                "flag": "Quick dip — run Deep Dive to add themes, one-liner, and analysis.",
+                "flag": "Uncharted — run Quick Dip (LLM) in Portolan when ready.",
                 "channel": channel_id,
             }
         else:
@@ -306,7 +306,7 @@ def map_channel(vault, channel_id, dry_run=False):
                 "status": "quick-dip",
                 "date_ingested": datetime.date.today().isoformat(),
                 "one": "",
-                "flag": "Quick dip — run Deep Dive to enrich this artifact.",
+                "flag": "Uncharted — run Quick Dip (LLM) to enrich this artifact.",
             }
         new_entries.append(entry)
         off_chart.remove_slug(builder_dir, channel_id, slug)

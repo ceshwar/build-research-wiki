@@ -13,8 +13,24 @@ DEFAULT_TIMEOUT = 180
 
 
 def _ollama_unreachable(url, exc):
+    detail = str(exc)
+    if isinstance(exc, urllib.error.HTTPError):
+        try:
+            body = exc.read().decode() if exc.fp else ""
+            if body:
+                detail = body[:240]
+        except Exception:
+            pass
+        if "permission denied" in detail.lower() or "ollama-models" in detail.lower():
+            return RuntimeError(
+                "Ollama server error at {} — models path not writable. "
+                "On the GPU server run: chmod o+x /home/eshwar && "
+                "sudo chown -R ollama:ollama /home/eshwar/ollama-models && "
+                "sudo systemctl restart ollama. ({})".format(url, detail[:120])
+            )
     return RuntimeError(
-        "Ollama unreachable at {} — check the GPU tunnel or local server. {}".format(url, exc)
+        "Ollama unreachable at {} — start the SSH tunnel "
+        "(ssh -N -L 127.0.0.1:11500:127.0.0.1:11434 …) or check Settings. {}".format(url, detail)
     )
 
 

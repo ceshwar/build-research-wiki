@@ -71,13 +71,13 @@ def effective(entry, assessed_status=None, overrides=None):
     verified_by = (ov.get("verified_by") or entry.get("verified_by") or "").strip()
 
     status = assessed_status or entry.get("completion_status") or ""
-    needs_human_verification = status == "processed" and not human_verified
-    if human_verified or (entry.get("status") == "mapped" and not llm_enriched):
+    needs_human_verification = llm_enriched and not human_verified
+    if human_verified:
         territory = "charted"
-    elif llm_enriched or status == "processed":
-        territory = "uncharted"
+    elif llm_enriched:
+        territory = "quick_dip"
     else:
-        territory = "charted"
+        territory = "uncharted"
 
     return {
         "human_verified": human_verified,

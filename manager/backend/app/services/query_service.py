@@ -16,13 +16,15 @@ class QueryService:
         # type: (VaultManager) -> None
         self.vaults = vault_manager
 
-    def run_query(self, vault_id, question, provider_override=None, model_override=None):
+    def run_query(self, vault_id, question, provider_override=None, model_override=None, scope="all"):
         vault_path = self.vaults.resolve_path(vault_id)
         provider_kind, model, ollama_url, frontier_provider = resolve_stage("query")
         if provider_override in ("local", "frontier"):
             provider_kind = provider_override
         if model_override:
             model = model_override
+        if scope not in ("all", "verified", "needs_review", "uncharted"):
+            scope = "all"
 
         script = REPO_ROOT / "builder" / "wiki_query.py"
         cmd = [
@@ -36,6 +38,8 @@ class QueryService:
             model,
             "--provider",
             provider_kind,
+            "--scope",
+            scope,
         ]
         if ollama_url:
             cmd.extend(["--ollama-url", ollama_url])

@@ -3,7 +3,7 @@ type: theme
 title: "Healthy Online Behavior"
 slug: healthy-online-behavior
 paper_count: 1
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Healthy Online Behavior

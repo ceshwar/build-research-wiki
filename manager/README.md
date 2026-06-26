@@ -4,7 +4,7 @@
 
 Built for reading, in a world built for writing — Portolan keeps you oriented as the ocean of research keeps rising. The research assistant that actually reads your papers.
 
-A research memory control panel for Obsidian vaults. Dock artifacts into reef channels, run **Quick Dip** to chart PDF facts, then **Deep Dive** to enrich — open the result in Obsidian.
+A research memory control panel for Obsidian vaults. Dock artifacts into reef channels, **Update chart** (Uncharted), run **Quick Dip** (LLM), review to **Deep dive** — browse in-app or Obsidian.
 
 ## Quick start
 
@@ -19,10 +19,10 @@ Open **http://127.0.0.1:5173** → pick **Shallow reef** or **Blank reef** in th
 1. **Pick a dock** — hover pills for channel purpose; workspace opens on **Navigate**
 2. **Workspace** — `Reef › Dock` path + tabs (Navigate · Status · Actions)
 3. **Dock** — click dock name in path or **Upload PDFs** in Actions
-4. **Status** — track on chart / quick dip / enrich next for this dock
-5. **Navigate** — List, By theme, or Graph (portfolio); expand **Note**; **Edit** → mark **−** → **Done** to remove from chart
-6. **Actions** — **Update chart** or **Get ingest prompt** for Deep Dive
-7. **Open reef in Obsidian**
+4. **Status** — Uncharted · Quick dip · Deep dive for this dock
+5. **Navigate** — List, By theme, or Graph; filters: All · Deep dive · Quick dip · Uncharted
+6. **Actions** — **Update chart** and **Run Quick Dip (LLM)**
+7. **Query** — ask the wiki with scope filters
 
 See [docs/PAPER-CHART-SPEC.md](../docs/PAPER-CHART-SPEC.md) for Tier 1 vs Tier 2 rules.
 
@@ -45,7 +45,7 @@ Selecting a dock hides the dock picker and shows one shell:
 |-----|---------|
 | **Navigate** | List (sortable), By theme (portfolio), or Graph; **Edit** → mark **−** → **Done** / **Cancel** |
 | **Status** | Pipeline stats, next-step banner; stat cards filter Navigate |
-| **Actions** | Update chart, Get ingest prompt, upload shortcut |
+| **Actions** | Update chart, Run Quick Dip (LLM), upload shortcut |
 
 Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload. The onboarding guide dismisses per reef (browser `localStorage`).
 
@@ -55,8 +55,9 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 |------|---------|
 | **On chart** | Artifacts already on your wiki chart |
 | **Awaiting chart** | Uploaded to a dock folder, not charted yet (run Update chart) |
-| **Quick dip** | Tier 1 done — PDF facts extracted |
-| **Enrich next** | On chart but needs Deep Dive (themes, analysis) |
+| **Uncharted** | On chart, not LLM-ingested yet |
+| **Quick dip** | LLM-ingested — needs human review |
+| **Deep dive** | Human-verified (or trusted hand-charted) |
 
 **Chart updated** (top right) = when the wiki was last rebuilt — not a count.
 
@@ -65,8 +66,9 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | Term | Meaning |
 |------|---------|
 | **Dock** | Stage artifacts into a channel (no chart update) |
-| **Quick Dip** | Tier 1 chart update — PDF facts only |
-| **Deep Dive** | Tier 2+ enrichment (themes, analysis) |
+| **Uncharted** | Metadata on chart; no LLM pass yet |
+| **Quick Dip** | LLM ingestion — needs review |
+| **Deep Dive** | Verified, human-reviewed content |
 | **Channel** | A reef corpus — portfolio or ingest profile |
 | **Chart** | Generated map (`wiki/` + `index.md`) |
 | **Status** | Per-dock pipeline tracker |

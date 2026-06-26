@@ -3,7 +3,7 @@ type: theme
 title: "Algorithmic and AI Audits"
 slug: algorithmic-ai-audits
 paper_count: 1
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Algorithmic and AI Audits

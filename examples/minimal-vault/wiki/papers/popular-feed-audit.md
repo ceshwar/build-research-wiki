@@ -5,20 +5,21 @@ slug: popular-feed-audit
 venue: ICWSM
 year: 2026
 status: mapped
+human_verified: true
+llm_enriched: false
+enrichment_source: human
+territory: charted
 themes: [algorithmic-ai-audits, social-media-online-communities]
 pdfs: ["raw/papers/2502.20491v3.pdf"]
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Examining Algorithmic Curation on Social Media: An Empirical Audit of Reddit's r/popular Feed
 
 > 11-month audit of r/popular: recent comments help posts climb; cliff below rank 80; toxicity doesn't extend feed life.
 
-## My notes
-
-**Venue:** ICWSM · **Year:** 2026 · **Source:** 📄 charted + PDF
-
-**Themes:** [[algorithmic-ai-audits|Algorithmic and AI Audits]], [[social-media-online-communities|Social Media & Online Communities]]
+> [!tip] Deep dive
+> Verified by reviewer.
 
 ## Abstract / Notes
 

@@ -5,21 +5,21 @@ slug: hidden-values-upvoted
 venue: ICWSM
 year: 2026
 status: quick-dip
+human_verified: false
+llm_enriched: false
+enrichment_source: quick-dip
+territory: uncharted
 themes: []
 pdfs: ["raw/papers/2410.13036.pdf"]
-updated: 2026-06-20
+updated: 2026-06-25
 ---
 
 # Uncovering the Internet's Hidden Values: An Empirical Study of Desirable Behavior Using Highly-Upvoted Content on Reddit
 
 > —
 
-**Venue:** ICWSM · **Year:** 2026 · **Source:** 🤿 quick dip (PDF facts only)
-
-**Themes:** —
-
-> [!note] Quick dip
-> Quick dip — run Deep Dive to add themes, one-liner, and analysis.
+> [!note] Uncharted
+> PDF surfaced on chart. Run **Quick Dip** (LLM) in Portolan when ready.
 
 ## Abstract / Notes
 
@@ -27,7 +27,7 @@ A major task for moderators of online spaces is norm-setting, essentially creati
 
 ## Deep dive
 
-*Run **Deep Dive** to enrich themes, one-liner, method, findings, and cross-links.*
+*Run **Quick Dip** (LLM) in Portolan, then review to promote to **Deep dive**.*
 
 ## Source
 
