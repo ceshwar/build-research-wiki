@@ -36,9 +36,9 @@ export const HOW_TO_SECTIONS = [
     terms: [
       { name: 'Reef', desc: 'Your research wiki — an Obsidian folder Portolan charts and connects.' },
       { name: 'Dock', desc: 'A channel with its own folder under `raw/` (e.g. ⚓ My Portfolio → `raw/papers/`). Hover a dock pill for its purpose.' },
-      { name: 'Uncharted ◎', desc: 'On chart but not LLM-ingested yet — PDF/metadata only until Quick Dip runs (or LLM unavailable).' },
-      { name: 'Quick dip 🤿', desc: 'LLM-ingested content awaiting human review. Shown in **Quick dip** filter until you mark verified.' },
-      { name: 'Deep dive 🦑', desc: 'Verified — human-reviewed (or trusted hand-charted) paper. The gold standard for Query scope.' },
+      { name: 'Uncharted ◎', desc: 'On chart but not LLM-ingested yet — mild red pill. PDF/metadata only until Quick Dip runs.' },
+      { name: 'Quick dip 🤿', desc: 'LLM-ingested content awaiting human review — green pill. Shown in Quick dip filter until verified.' },
+      { name: 'Deep dive 🦑', desc: 'Verified gold-standard paper — gold pill. Best source for Query scope.' },
       { name: 'Chart', desc: 'Generated wiki pages under `wiki/papers/` or `wiki/sources/` — the compounding knowledge base you browse.' },
       { name: 'Status', desc: 'Per-dock pipeline: on chart, awaiting chart, uncharted, quick dip, deep dive.' },
       {

@@ -86,7 +86,9 @@ Click the **dock name** in the path (`Reef › Dock`) to switch docks or upload.
 | GET | `/vaults` |
 | GET | `/chart-map?vault_id=&channel_id=` |
 | GET | `/chart-graph?vault_id=&channel_id=` |
-| GET | `/vault-file?vault_id=&path=` — in-app markdown viewer |
+| GET | `/vault-file?vault_id=&path=` — markdown/text for in-app viewer |
+| GET | `/vault-file/raw?vault_id=&path=` — stream PDFs (iframe / new tab) |
+| POST | `/dock/preflight` — duplicate check before upload |
 | POST | `/deep-dive?vault_id=&channel_id=` — LLM Deep Dive `{ slug \| slugs }` |
 | POST | `/query?vault_id=` — wiki Q&A `{ question }` |
 | GET | `/query/{job_id}` — query result when job completes |

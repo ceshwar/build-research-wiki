@@ -296,6 +296,9 @@ class QueryRequest(BaseModel):
     provider: Optional[str] = None
     model: Optional[str] = None
     scope: str = "all"  # all | verified | needs_review | uncharted
+    paper_slugs: List[str] = []
+    theme_slugs: List[str] = []
+    pdf_fallback: bool = True
 
 
 class QueryResponse(BaseModel):
@@ -313,6 +316,7 @@ class QueryResultResponse(BaseModel):
     model: str = ""
     elapsed_s: Optional[float] = None
     provider_kind: str = ""
+    sources_used: List[str] = []
 
 
 class VaultFileResponse(BaseModel):

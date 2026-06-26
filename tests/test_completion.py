@@ -24,6 +24,8 @@ def test_demo_vault_counts():
     assert totals["on_chart"] == 6
     assert totals["processed"] == 3
     assert totals["quick_dip"] == 3
+    assert totals["human_verified"] == 3
+    assert totals["uncharted_territory"] == 3
     for key in ("needs_deep_dive", "scaffolded", "pending"):
         assert totals[key] == 0, "expected 0 {}, got {}".format(key, totals[key])
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchVaultFile } from '../api/client'
-import { wikiPathForSlug, type WikiSlugHints } from '../lib/wikiLinks'
+import { fetchVaultFile, vaultFileRawUrl } from '../api/client'
+import { prepareWikiMarkdown, resolveWikiPath, type WikiPathResolver } from '../lib/wikiLinks'
 import { MarkdownViewer } from './MarkdownViewer'
 
 type DrawerFrame = { path: string; title?: string }
@@ -9,17 +9,18 @@ export function ContentDrawer({
   vaultId,
   path,
   title,
-  wikiHints,
+  wikiResolver,
   onClose,
 }: {
   vaultId: string
   path: string
   title?: string
-  wikiHints?: WikiSlugHints
+  wikiResolver?: WikiPathResolver
   onClose: () => void
 }) {
   const [stack, setStack] = useState<DrawerFrame[]>([{ path, title }])
   const [content, setContent] = useState<string | null>(null)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -33,14 +34,15 @@ export function ContentDrawer({
     let cancelled = false
     setLoading(true)
     setError(null)
+    setPdfUrl(null)
+    setContent(null)
     fetchVaultFile(vaultId, frame.path)
       .then((data) => {
         if (cancelled) return
         if (data.content_type === 'application/pdf') {
-          setContent(null)
-          setError('PDF preview is not available in-app. Open the file from your reef folder.')
+          setPdfUrl(vaultFileRawUrl(vaultId, frame.path))
         } else {
-          setContent(data.content || '')
+          setContent(prepareWikiMarkdown(data.content || ''))
         }
       })
       .catch((e) => {
@@ -56,10 +58,10 @@ export function ContentDrawer({
 
   const onWikiLink = useCallback(
     (slug: string, label: string) => {
-      const next = wikiPathForSlug(slug, wikiHints)
+      const next = resolveWikiPath(slug, wikiResolver)
       setStack((s) => [...s, { path: next, title: label }])
     },
-    [wikiHints],
+    [wikiResolver],
   )
 
   const canBack = stack.length > 1
@@ -89,6 +91,21 @@ export function ContentDrawer({
           </div>
         )}
         {error && <p className="content-drawer__error">{error}</p>}
+        {pdfUrl && !loading && (
+          <div className="content-drawer__pdf-wrap">
+            <div className="content-drawer__pdf-actions">
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary px-3 py-1 text-xs"
+              >
+                Open in new tab
+              </a>
+            </div>
+            <iframe className="content-drawer__pdf" src={pdfUrl} title={displayTitle} />
+          </div>
+        )}
         {content != null && <MarkdownViewer content={content} onWikiLink={onWikiLink} />}
       </div>
     </aside>

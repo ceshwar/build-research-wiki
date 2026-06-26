@@ -295,6 +295,10 @@ def map_channel(vault, channel_id, dry_run=False):
                 "flag": "Uncharted — run Quick Dip (LLM) in Portolan when ready.",
                 "channel": channel_id,
             }
+            if extracted.get("arxiv_id"):
+                entry["arxiv_id"] = extracted["arxiv_id"]
+            if extracted.get("preprint"):
+                entry["preprint"] = True
         else:
             entry = {
                 "slug": slug,

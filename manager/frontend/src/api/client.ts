@@ -81,13 +81,49 @@ export function createDock(vaultId: string, payload: import('../types').DockCrea
   })
 }
 
-export function dockArtifacts(vaultId: string, files: File[], channelId: string) {
+export type DockPreflightFile = {
+  filename: string
+  matches: { slug: string; title: string; match_type: string; pdf_path: string }[]
+  preprint: boolean
+  arxiv_id: string
+}
+
+export type DockFilePolicy = {
+  filename: string
+  action: 'upload' | 'skip' | 'replace' | 'merge'
+  merge_into_slug?: string
+  merge_fields?: Record<string, string>
+}
+
+export function preflightDock(vaultId: string, files: File[], channelId: string) {
   const form = new FormData()
   files.forEach((f) => form.append('files', f))
+  return request<{ files: DockPreflightFile[] }>(
+    `/dock/preflight?vault_id=${vaultId}&channel_id=${channelId}`,
+    { method: 'POST', body: form },
+  )
+}
+
+export function dockArtifacts(
+  vaultId: string,
+  files: File[],
+  channelId: string,
+  policies: DockFilePolicy[] = [],
+) {
+  const form = new FormData()
+  files.forEach((f) => form.append('files', f))
+  if (policies.length > 0) {
+    form.append('policies_json', JSON.stringify(policies))
+  }
   return request<UploadResult>(
     `/dock?vault_id=${vaultId}&channel_id=${channelId}`,
     { method: 'POST', body: form },
   )
+}
+
+export function vaultFileRawUrl(vaultId: string, path: string) {
+  const params = new URLSearchParams({ vault_id: vaultId, path })
+  return `/api/vault-file/raw?${params}`
 }
 
 export function surfaceInterval(
@@ -246,6 +282,9 @@ export function runWikiQuery(
   provider?: string,
   model?: string,
   scope: 'all' | 'verified' | 'needs_review' | 'uncharted' = 'all',
+  paperSlugs: string[] = [],
+  themeSlugs: string[] = [],
+  pdfFallback = true,
 ) {
   const params = new URLSearchParams({ vault_id: vaultId })
   return request<{ job_id: string; model: string; provider: string; question: string }>(
@@ -253,7 +292,15 @@ export function runWikiQuery(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, provider, model, scope }),
+      body: JSON.stringify({
+        question,
+        provider,
+        model,
+        scope,
+        paper_slugs: paperSlugs,
+        theme_slugs: themeSlugs,
+        pdf_fallback: pdfFallback,
+      }),
     },
   )
 }
@@ -268,6 +315,7 @@ export function fetchQueryResult(jobId: string, question = '') {
     model: string
     elapsed_s?: number
     provider_kind?: string
+    sources_used?: string[]
   }>(`/query/${jobId}?${params}`)
 }
 

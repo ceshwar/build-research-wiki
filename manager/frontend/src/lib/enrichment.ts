@@ -59,9 +59,9 @@ export function isDeepDiveVerified(entry: ChartEntry) {
   return entry.human_verified
 }
 
-/** Not LLM-ingested yet. */
+/** Not LLM-ingested and not yet Deep dive (verified). */
 export function isUncharted(entry: ChartEntry) {
-  return !entry.llm_enriched
+  return trustTier(entry) === 'uncharted'
 }
 
 /** @deprecated use isQuickDipReview */

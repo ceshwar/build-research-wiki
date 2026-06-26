@@ -27,10 +27,10 @@ const LAYER_COLORS: Record<GraphLayerId, string> = {
 }
 
 const PAPER_STATUS_COLORS: Record<string, string> = {
-  processed: '#059669',
-  quick_dip: '#0ea5e9',
-  needs_deep_dive: '#a16207',
-  scaffolded: '#8b7ec8',
+  processed: '#ca8a04',
+  quick_dip: '#059669',
+  needs_deep_dive: '#059669',
+  scaffolded: '#b91c1c',
   charted: '#64748b',
 }
 
@@ -161,7 +161,7 @@ function linkEndpointIds(link: { source: unknown; target: unknown }): { source: 
 
 function paperMatchesFilter(node: ChartGraphNode, filter: StatFilter): boolean {
   if (filter === 'all' || filter === 'on_chart') return true
-  if (filter === 'uncharted') return !node.llm_enriched
+  if (filter === 'uncharted') return !node.llm_enriched && !node.human_verified
   if (filter === 'needs_review') return !!node.llm_enriched && !node.human_verified
   if (filter === 'verified') return !!node.human_verified
   return true

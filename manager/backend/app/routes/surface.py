@@ -2,6 +2,7 @@ import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import FileResponse
 
 from app.models.schemas import (
     BuildResponse,
@@ -28,7 +29,7 @@ from app.services.deep_dive_service import DeepDiveService
 from app.services.map_service import MapService
 from app.services.query_service import QueryService
 from app.services.settings_service import settings_for_api
-from app.services.vault_files import read_vault_file
+from app.services.vault_files import read_vault_file, resolve_vault_file
 from app.deps import vault_manager
 
 router = APIRouter(tags=["surface"])
@@ -119,6 +120,18 @@ def vault_file(vault_id: str, path: str):
     return VaultFileResponse(**data)
 
 
+@router.get("/vault-file/raw")
+def vault_file_raw(vault_id: str, path: str):
+    """Stream a vault file (PDF) for in-app or new-tab viewing."""
+    try:
+        vault_path = vault_manager.resolve_path(vault_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Vault not found")
+    abs_path = resolve_vault_file(str(vault_path), path)
+    media = "application/pdf" if abs_path.suffix.lower() == ".pdf" else "application/octet-stream"
+    return FileResponse(abs_path, media_type=media, filename=abs_path.name)
+
+
 @router.post("/deep-dive", response_model=DeepDiveResponse)
 def run_deep_dive(
     vault_id: str,
@@ -151,7 +164,15 @@ def run_query(vault_id: str, body: QueryRequest):
         raise HTTPException(status_code=400, detail="Question required")
     try:
         job_id, model, provider = query_service.run_query(
-            vault_id, body.question.strip(), body.provider, body.model, body.scope)
+            vault_id,
+            body.question.strip(),
+            body.provider,
+            body.model,
+            body.scope,
+            body.paper_slugs,
+            body.theme_slugs,
+            body.pdf_fallback,
+        )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return QueryResponse(
@@ -173,6 +194,7 @@ def query_result(job_id: str, question: str = ""):
         model=(result or {}).get("model", ""),
         elapsed_s=(result or {}).get("elapsed_s"),
         provider_kind=(result or {}).get("provider_kind", ""),
+        sources_used=(result or {}).get("sources_used", []),
     )
 
 

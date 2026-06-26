@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { fetchQueryResult, fetchSettings, runWikiQuery } from '../api/client'
-import { isChatModel, wikiPathForSlug, type WikiSlugHints } from '../lib/wikiLinks'
+import type { ChartEntry, ChartTheme } from '../types'
+import { isChatModel, resolveWikiPath, type WikiPathResolver } from '../lib/wikiLinks'
 import { MarkdownViewer } from './MarkdownViewer'
+import { QueryFocusPicker, type FocusSelection } from './QueryFocusPicker'
 
-type QueryMeta = { model: string; elapsed_s?: number }
-type QueryScope = 'all' | 'verified' | 'needs_review' | 'uncharted'
+type QueryMeta = { model: string; elapsed_s?: number; sources_used?: string[] }
+type TrustScope = 'all' | 'verified' | 'needs_review' | 'uncharted'
+type ScopeMode = TrustScope | 'focused'
 
 function chatModelOptions(catalog: string[], current: string): string[] {
   const seen = new Set<string>()
@@ -21,13 +24,17 @@ function chatModelOptions(catalog: string[], current: string): string[] {
 
 export function QueryPanel({
   vaultId,
-  wikiHints,
+  wikiResolver,
+  chartEntries = [],
+  themeOptions = [],
   onJobStart,
   onQueryMeta,
   onWikiNavigate,
 }: {
   vaultId: string
-  wikiHints?: WikiSlugHints
+  wikiResolver?: WikiPathResolver
+  chartEntries?: ChartEntry[]
+  themeOptions?: ChartTheme[]
   onJobStart: (jobId: string) => void
   onQueryMeta?: (meta: QueryMeta | null) => void
   onWikiNavigate?: (path: string, title: string) => void
@@ -35,7 +42,10 @@ export function QueryPanel({
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [queryModel, setQueryModel] = useState('')
-  const [scope, setScope] = useState<QueryScope>('all')
+  const [scopeMode, setScopeMode] = useState<ScopeMode>('all')
+  const [trustScope, setTrustScope] = useState<TrustScope>('all')
+  const [focus, setFocus] = useState<FocusSelection>({ papers: [], themes: [] })
+  const [pdfFallback, setPdfFallback] = useState(true)
   const [pendingJobId, setPendingJobId] = useState<string | null>(null)
   const [answerMeta, setAnswerMeta] = useState<QueryMeta | null>(null)
   const [startedAt, setStartedAt] = useState<number | null>(null)
@@ -50,8 +60,23 @@ export function QueryPanel({
   const activeModel = queryModel || defaultModel
   const modelChoices = useMemo(() => chatModelOptions(catalog, defaultModel), [catalog, defaultModel])
 
+  const isFocused = scopeMode === 'focused'
+  const focusCount = focus.papers.length + focus.themes.length
+  const canSubmit =
+    question.trim().length > 0 && (!isFocused || focusCount > 0)
+
   const queryMutation = useMutation({
-    mutationFn: (q: string) => runWikiQuery(vaultId, q, undefined, activeModel, scope),
+    mutationFn: (q: string) =>
+      runWikiQuery(
+        vaultId,
+        q,
+        undefined,
+        activeModel,
+        isFocused ? trustScope : scopeMode,
+        isFocused ? focus.papers : [],
+        isFocused ? focus.themes : [],
+        pdfFallback,
+      ),
     onSuccess: (data) => {
       setPendingJobId(data.job_id)
       onJobStart(data.job_id)
@@ -76,6 +101,7 @@ export function QueryPanel({
               elapsed_s:
                 res.elapsed_s ??
                 (startedAt ? Math.round((Date.now() - startedAt) / 100) / 10 : undefined),
+              sources_used: res.sources_used,
             }
             setAnswer(res.answer)
             setAnswerMeta(meta)
@@ -109,21 +135,25 @@ export function QueryPanel({
 
   const submit = () => {
     const q = question.trim()
-    if (q && !busy) queryMutation.mutate(q)
+    if (q && canSubmit && !busy) queryMutation.mutate(q)
   }
 
   const onWikiLink = onWikiNavigate
     ? (slug: string, label: string) => {
-        onWikiNavigate(wikiPathForSlug(slug, wikiHints), label)
+        const entry = chartEntries.find((e) => e.slug === slug)
+        const path = resolveWikiPath(slug, wikiResolver)
+        onWikiNavigate(path, entry?.title ?? label)
       }
     : undefined
+
+  const hasPicker = chartEntries.length > 0 || themeOptions.length > 0
 
   return (
     <div className="query-panel">
       <p className="workspace-panel__meta">
-        Ask questions against your charted wiki. Scope: <strong>Deep dive</strong> = verified,{' '}
-        <strong>Quick dip</strong> = LLM awaiting review, <strong>Uncharted</strong> = not yet
-        LLM-ingested.
+        Answers use <strong>chart wiki pages</strong> (abstracts, deep dives, themes). Citations are{' '}
+        <code>[[wikilinks]]</code> to those pages. Optional PDF excerpts fill in when chart text is
+        thin.
       </p>
       <form
         onSubmit={(e) => {
@@ -152,17 +182,71 @@ export function QueryPanel({
             <span>Scope</span>
             <select
               className="query-form__model"
-              value={scope}
-              onChange={(e) => setScope(e.target.value as QueryScope)}
+              value={scopeMode}
+              onChange={(e) => setScopeMode(e.target.value as ScopeMode)}
               disabled={busy}
             >
               <option value="all">All charted papers</option>
-              <option value="verified">Deep dive (verified)</option>
-              <option value="needs_review">Quick dip (needs review)</option>
+              <option value="verified">Deep dive only</option>
+              <option value="needs_review">Quick dip only</option>
               <option value="uncharted">Uncharted only</option>
+              <option value="focused">Focused — pick papers/themes…</option>
             </select>
           </label>
         </div>
+
+        {isFocused && hasPicker && (
+          <div className="query-focused-block">
+            <div className="query-focused-block__head">
+              <label className="query-form__label query-focused-block__trust">
+                <span>Trust filter</span>
+                <select
+                  className="query-form__model"
+                  value={trustScope}
+                  onChange={(e) => setTrustScope(e.target.value as TrustScope)}
+                  disabled={busy}
+                >
+                  <option value="all">Any tier</option>
+                  <option value="verified">Deep dive</option>
+                  <option value="needs_review">Quick dip</option>
+                  <option value="uncharted">Uncharted</option>
+                </select>
+              </label>
+              <label className="query-focused-block__pdf">
+                <input
+                  type="checkbox"
+                  checked={pdfFallback}
+                  disabled={busy}
+                  onChange={(e) => setPdfFallback(e.target.checked)}
+                />
+                PDF excerpt fallback when chart text is thin
+              </label>
+            </div>
+            <QueryFocusPicker
+              entries={chartEntries}
+              themes={themeOptions}
+              selection={focus}
+              onChange={setFocus}
+              disabled={busy}
+            />
+            {focusCount === 0 && (
+              <p className="query-focused-block__hint">Select at least one theme or paper.</p>
+            )}
+          </div>
+        )}
+
+        {!isFocused && (
+          <label className="query-focused-block__pdf query-focused-block__pdf--inline">
+            <input
+              type="checkbox"
+              checked={pdfFallback}
+              disabled={busy}
+              onChange={(e) => setPdfFallback(e.target.checked)}
+            />
+            PDF excerpt fallback when chart text is thin
+          </label>
+        )}
+
         <textarea
           className="query-form__input"
           rows={3}
@@ -172,13 +256,17 @@ export function QueryPanel({
           disabled={busy}
         />
         <div className="query-form__actions">
-          <button type="submit" className="btn-primary px-4 py-2 text-sm" disabled={busy || !question.trim()}>
+          <button
+            type="submit"
+            className="btn-primary px-4 py-2 text-sm"
+            disabled={busy || !canSubmit}
+          >
             Ask wiki
           </button>
           {busy && (
             <span className="query-form__status" role="status">
               <span className="spinner spinner--sm" aria-hidden="true" />
-              Working on your answer…
+              Reading chart{pdfFallback ? ' + PDF excerpts' : ''}…
             </span>
           )}
         </div>
@@ -194,6 +282,9 @@ export function QueryPanel({
               <span className="query-answer__meta">
                 {answerMeta.model}
                 {answerMeta.elapsed_s != null ? ` · ${answerMeta.elapsed_s}s` : ''}
+                {answerMeta.sources_used && answerMeta.sources_used.length > 0 && (
+                  <> · {answerMeta.sources_used.length} source(s)</>
+                )}
               </span>
             )}
           </div>

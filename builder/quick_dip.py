@@ -168,6 +168,12 @@ def _extract_venue_year(text, filename=""):
             if m.lastindex and m.group(1) and re.match(r"^\d{4}$", m.group(1)):
                 year = int(m.group(1))
             break
+    try:
+        import arxiv_util
+        if arxiv_util.detect_arxiv_id(filename, blob):
+            venue = venue or "arXiv"
+    except ImportError:
+        pass
     # \b on both sides so digit runs inside an arXiv id (2502.20491 -> 2049) don't match.
     if year is None and filename:
         m = re.search(r"\b(20\d{2}|19\d{2})\b", filename)
@@ -192,6 +198,16 @@ def extract_pdf(pdf_path):
         title = ""  # no filename fallback — Deep Dive or user fills
     abstract = _extract_abstract(text)
     venue, year = _extract_venue_year(text, fname)
+    arxiv_id = ""
+    preprint = False
+    try:
+        import arxiv_util
+        arxiv_id = arxiv_util.detect_arxiv_id(fname, text)
+        if arxiv_id:
+            venue = venue or "arXiv"
+            preprint = True
+    except ImportError:
+        pass
     return {
         "title": title,
         "abstract": abstract,
@@ -199,6 +215,8 @@ def extract_pdf(pdf_path):
         "year": year,
         "title_from": title_from,
         "has_pdf_text": bool(text.strip()),
+        "arxiv_id": arxiv_id,
+        "preprint": preprint,
     }
 
 

@@ -3,6 +3,8 @@ import { useDropzone, type FileRejection } from 'react-dropzone'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HowToPanel } from './components/HowToPanel'
 import { ChartGraphView } from './components/ChartGraphView'
+import { DockUploadZone } from './components/DockUploadZone'
+import { DuplicateUploadModal } from './components/DuplicateUploadModal'
 import { ContentDrawer } from './components/ContentDrawer'
 import { QueryPanel } from './components/QueryPanel'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -10,6 +12,7 @@ import {
   addVault,
   createDock,
   dockArtifacts,
+  preflightDock,
   fetchChannels,
   fetchChartGraph,
   fetchChartMap,
@@ -28,8 +31,8 @@ import {
 } from './api/client'
 import type { Channel, ChartEntry, ChartGraph, ChartMap, Vault } from './types'
 import { entryStatusPill, isDeepDiveVerified, isQuickDipReview, isUncharted } from './lib/enrichment'
-import type { WikiSlugHints } from './lib/wikiLinks'
-import type { VaultValidateResult } from './api/client'
+import { buildWikiResolver } from './lib/wikiLinks'
+import type { DockFilePolicy, DockPreflightFile, VaultValidateResult } from './api/client'
 
 const MIME: Record<string, string> = {
   pdf: 'application/pdf',
@@ -474,6 +477,7 @@ export default function App() {
   const [vaultId, setVaultId] = useState('demo')
   const [channelId, setChannelId] = useState('my-portfolio')
   const [queuedFiles, setQueuedFiles] = useState<File[]>([])
+  const [dupPreflight, setDupPreflight] = useState<DockPreflightFile[] | null>(null)
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; channel: string }[]>([])
   const [showAddReef, setShowAddReef] = useState(false)
@@ -759,13 +763,15 @@ export default function App() {
   }, [isIngestPreview, surfaceMutation])
 
   const dockMutation = useMutation({
-    mutationFn: () => dockArtifacts(vaultId, queuedFiles, channelId),
+    mutationFn: (policies: DockFilePolicy[]) =>
+      dockArtifacts(vaultId, queuedFiles, channelId, policies),
     onSuccess: (data) => {
       setUploadedFiles((prev) => [
         ...data.filenames.map((f) => ({ name: f, channel: data.channel_name })),
         ...prev,
       ])
       setQueuedFiles([])
+      setDupPreflight(null)
       setUploadError(null)
       setUploadExpanded(false)
       queryClient.invalidateQueries({ queryKey: ['vaults'] })
@@ -776,6 +782,21 @@ export default function App() {
       }
     },
   })
+
+  const handleDockConfirm = useCallback(async () => {
+    if (!queuedFiles.length || dockMutation.isPending) return
+    setUploadError(null)
+    try {
+      const pre = await preflightDock(vaultId, queuedFiles, channelId)
+      if (pre.files.some((f) => f.matches.length > 0)) {
+        setDupPreflight(pre.files)
+        return
+      }
+      dockMutation.mutate([])
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload check failed')
+    }
+  }, [queuedFiles, dockMutation, vaultId, channelId])
 
   const rebuildMutation = useMutation({
     mutationFn: () => startBuild(vaultId, 'full'),
@@ -880,7 +901,6 @@ export default function App() {
         return `${r.file.name}: ${r.errors[0]?.message ?? 'upload rejected'}`
       })
       setUploadError(msgs.join(' '))
-      setUploadExpanded(true)
     },
     [channel],
   )
@@ -950,26 +970,29 @@ export default function App() {
 
   const filteredThemeGroups = filterThemeGroups(themeGroups, statFilter)
 
-  const wikiHints = useMemo((): WikiSlugHints => {
-    const hints: WikiSlugHints = {
-      papers: chartMap?.entries.map((e) => e.slug) ?? [],
-      themes: chartMap?.themes.map((t) => t.slug) ?? [],
-      concepts: [],
-      entities: [],
-      sources: [],
-    }
-    for (const node of chartGraph?.nodes ?? []) {
-      if (node.type === 'concept') hints.concepts!.push(node.slug)
-      else if (node.type === 'entity') hints.entities!.push(node.slug)
-      else if (node.type === 'source') hints.sources!.push(node.slug)
-      else if (node.type === 'theme' && !hints.themes!.includes(node.slug)) {
-        hints.themes!.push(node.slug)
-      }
-    }
-    return hints
-  }, [chartMap, chartGraph])
+  const wikiResolver = useMemo(
+    () => buildWikiResolver(chartMap?.entries, chartGraph?.nodes),
+    [chartMap?.entries, chartGraph?.nodes],
+  )
+
   const unchartedEntries = chartMap?.entries.filter((e) => isUncharted(e)) ?? []
   const pendingCount = chartMap?.awaiting_chart.length ?? vault?.pending_artifacts ?? 0
+  const dockUploadZoneProps = {
+    channel: channel
+      ? { emoji: channel.emoji, name: channel.name, extensions: channel.extensions }
+      : undefined,
+    queuedFiles,
+    isDragActive,
+    getRootProps,
+    getInputProps,
+    uploadError,
+    isPending: dockMutation.isPending,
+    onConfirm: () => {
+      void handleDockConfirm()
+    },
+    mutationError: dockMutation.isError ? dockMutation.error?.message ?? null : null,
+    uploadedFiles,
+  }
   const inWorkspace = !!(vault && channel && !showDockPicker && !showReefPicker)
   const builtinVaults = vaults.filter((v) => !v.user_added)
   const userVaults = vaults.filter((v) => v.user_added)
@@ -1259,59 +1282,7 @@ export default function App() {
             )}
           </div>
 
-          {uploadExpanded && (
-            <div className="workflow-panel__upload workflow-panel__upload--inline">
-              <div
-                {...getRootProps()}
-                className={`dropzone dropzone--compact mt-2 cursor-pointer px-4 py-5 text-center ${isDragActive ? 'dropzone--active' : ''}`}
-              >
-                <input {...getInputProps()} />
-                <p className="text-sm text-[var(--text)]">
-                  {isDragActive ? 'Release to dock…' : 'Drop PDFs here'}
-                </p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  {channel?.extensions.map((e) => `.${e}`).join(', ')} · confirm to dock
-                </p>
-              </div>
-
-              {queuedFiles.length > 0 && (
-                <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
-                  {queuedFiles.map((f) => (
-                    <li key={f.name}>{f.name}</li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  onClick={() => dockMutation.mutate()}
-                  disabled={queuedFiles.length === 0 || dockMutation.isPending}
-                  className={`px-4 py-2 text-sm font-medium disabled:opacity-50 ${
-                    queuedFiles.length > 0 ? 'btn-primary' : 'btn-secondary'
-                  }`}
-                >
-                  {dockMutation.isPending ? 'Uploading…' : 'Confirm upload'}
-                </button>
-              </div>
-
-              {uploadError && (
-                <p className="upload-error" role="alert">
-                  {uploadError}
-                </p>
-              )}
-
-              {dockMutation.isError && (
-                <p className="mt-2 text-xs text-red-400">{dockMutation.error.message}</p>
-              )}
-              {uploadedFiles.length > 0 && (
-                <ul className="mt-2 space-y-0.5 text-xs text-[var(--success)]">
-                  {uploadedFiles.slice(0, 5).map((f) => (
-                    <li key={`${f.channel}-${f.name}`}>✓ {f.name}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+          {uploadExpanded && <DockUploadZone variant="panel" {...dockUploadZoneProps} />}
         </div>
       </section>
       )}
@@ -1360,19 +1331,20 @@ export default function App() {
       {inWorkspace && vault && channel && (
         <div className="workspace-shell">
           <div className="workspace-shell__header">
-            <PathBreadcrumb
-              reefName={vault.name}
-              dock={{ emoji: channel.emoji, name: channel.name }}
-              onRootClick={openReefPicker}
-              onReefClick={() => openDockPicker()}
-              meta={
-                <span className="workspace-shell__meta">
-                  {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
-                  {(channelStats?.pending ?? pendingCount) > 0 &&
-                    ` · ${channelStats?.pending ?? pendingCount} awaiting`}
-                </span>
-              }
-            />
+            <div className="workspace-shell__breadcrumb-row">
+              <PathBreadcrumb
+                reefName={vault.name}
+                dock={{ emoji: channel.emoji, name: channel.name }}
+                onRootClick={openReefPicker}
+                onReefClick={() => openDockPicker()}
+              />
+              <DockUploadZone variant="inline" {...dockUploadZoneProps} />
+              <span className="workspace-shell__meta">
+                {chartMap?.entries.length ?? channelStats?.on_chart ?? 0} on chart
+                {(channelStats?.pending ?? pendingCount) > 0 &&
+                  ` · ${channelStats?.pending ?? pendingCount} awaiting`}
+              </span>
+            </div>
             <div className="workspace-shell__tabs" role="tablist" aria-label="Dock workspace">
               {DOCK_WORKSPACE_SECTIONS.map((item) => {
                 const badge = item.badge?.({
@@ -1492,14 +1464,7 @@ export default function App() {
             )}
             {chartMap && chartMap.entries.length === 0 && statFilter !== 'pending' && (
               <div className="empty-map">
-                <p>No papers on chart yet. Upload PDFs to this dock, then run Update chart.</p>
-                <button
-                  type="button"
-                  className="btn-secondary mt-3 px-4 py-2 text-sm"
-                  onClick={() => scrollToSection('section-docks', { expandUpload: true })}
-                >
-                  Go to upload
-                </button>
+                <p>No papers on chart yet — drop PDFs above, then run Update chart in Actions.</p>
               </div>
             )}
             {chartMap && chartMap.entries.length > 0 && statFilter !== 'pending' && (
@@ -2002,15 +1967,6 @@ export default function App() {
       {activeWorkspaceSection === 'section-actions' && (
       <div id="section-actions" className="workspace-panel">
         <div className="workspace-panel__content">
-            <div className="workspace-panel__upload-hint">
-              <button
-                type="button"
-                className="btn-secondary px-3 py-1.5 text-sm"
-                onClick={() => openDockPicker({ expandUpload: true })}
-              >
-                Upload PDFs to {channel.emoji} {channel.name}
-              </button>
-            </div>
             <div className="action-grid">
               <div className="action-block">
                 <h4>Update chart</h4>
@@ -2097,7 +2053,9 @@ export default function App() {
         <div id="section-query" className="workspace-panel">
           <QueryPanel
             vaultId={vaultId}
-            wikiHints={wikiHints}
+            wikiResolver={wikiResolver}
+            chartEntries={chartMap?.entries ?? []}
+            themeOptions={isPortfolio ? chartMap?.themes ?? [] : []}
             onJobStart={setActiveJobId}
             onQueryMeta={setQueryJobMeta}
             onWikiNavigate={openInApp}
@@ -2152,12 +2110,19 @@ export default function App() {
 
       <HowToPanel open={howToOpen} onClose={() => setHowToOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {dupPreflight && (
+        <DuplicateUploadModal
+          files={dupPreflight}
+          onCancel={() => setDupPreflight(null)}
+          onConfirm={(policies) => dockMutation.mutate(policies)}
+        />
+      )}
       {viewer && vault && (
         <ContentDrawer
           vaultId={vaultId}
           path={viewer.path}
           title={viewer.title}
-          wikiHints={wikiHints}
+          wikiResolver={wikiResolver}
           onClose={() => setViewer(null)}
         />
       )}

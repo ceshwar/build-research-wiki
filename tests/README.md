@@ -16,6 +16,8 @@ tests exercise the actual extraction path end-to-end — no mocked PDF text.
   (regression for arXiv ids leaking implausible years); no fabricated sections.
 - `test_completion.py` — pending → quick_dip → needs_deep_dive → processed
   classification, plus the helper predicates.
+- `manager/frontend/src/lib/wikiLinks.test.ts` — Query citation link parsing
+  (`[[wikilink]]`, `[label](slug)`, `portolan://` resolution).
 - `test_fetch_lit.py` / `test_engine_lit.py` — lit expansion transforms + `wiki/lit/` render
   (hop-1 **selection policy** in `docs/LIT-EXPANSION-SPEC.md` §1.1 — tests to add when implemented).
 
@@ -24,6 +26,7 @@ tests exercise the actual extraction path end-to-end — no mocked PDF text.
 ```bash
 pip install -r requirements-dev.txt
 python3 -m pytest -q                              # unit tests
+(cd manager/frontend && npm test)                 # frontend wiki-link tests
 python3 builder/qa_quick_dip.py                   # Tier-1 no-guess contract
 python3 builder/build.py --vault examples/minimal-vault
 python3 builder/ingest_prompt.py --vault examples/minimal-vault --channel my-portfolio

@@ -20,6 +20,54 @@ def _display_field(val, empty="—"):
     return str(val)
 
 
+def _display_venue(p):
+    venue = p.get("venue") or ""
+    if p.get("preprint") or (venue.lower() == "arxiv"):
+        aid = p.get("arxiv_id") or ""
+        label = "arXiv (preprint)"
+        if aid:
+            label = "arXiv (preprint) · {}".format(aid)
+        return label
+    return _display_field(venue)
+
+
+def _tier_icon(root, p):
+    try:
+        import verification
+        vf = verification.effective(
+            p, None, verification.load_overrides(os.path.join(root, "builder")))
+        if vf.get("human_verified"):
+            return "🦑"
+        if vf.get("llm_enriched"):
+            return "🤿"
+    except ImportError:
+        pass
+    return ICON.get(p.get("status"), "◎")
+
+
+def _read_theme_note_excerpt(root, slug, notes_dirs, limit=1200):
+    path = _theme_note_path(root, slug, notes_dirs)
+    if not os.path.isfile(path):
+        return ""
+    with open(path) as f:
+        lines = f.readlines()
+    body = []
+    past_core = False
+    for ln in lines:
+        s = ln.rstrip("\n")
+        if s.strip().startswith("**Core idea:**"):
+            past_core = True
+            continue
+        if not past_core:
+            continue
+        if s.strip().startswith("## "):
+            break
+        if s.strip():
+            body.append(s)
+    text = "\n".join(body).strip()
+    return text[:limit]
+
+
 def _deepdive_block(p, dd_path):
     if os.path.exists(dd_path):
         with open(dd_path) as df:
@@ -174,6 +222,10 @@ def build(root, deepdives_dir, data, today, rebuild_papers=None, rebuild_themes=
             pass
         fm = ["---", "type: paper", f'title: "{p["title"].replace(chr(34), chr(39))}"', f"slug: {p['slug']}",
               f"venue: {p.get('venue') or ''}", f"year: {p.get('year') or 0}", f"status: {p['status']}"]
+        if p.get("preprint"):
+            fm.append("preprint: true")
+        if p.get("arxiv_id"):
+            fm.append(f"arxiv_id: {p['arxiv_id']}")
         if vf is not None:
             fm += [
                 f"human_verified: {'true' if vf['human_verified'] else 'false'}",
@@ -245,17 +297,28 @@ def build(root, deepdives_dir, data, today, rebuild_papers=None, rebuild_themes=
                  f"paper_count: {len(ps)}", f"updated: {today}", "---", "",
                  f"# {name}", "", f"> **Core idea:** {core}", ""]
         if not has_note:
-            lines += ["> [!note] Inferred theme\n> Referenced by your abstract notes but without a theme note of its own yet. Core idea drafted by Claude — please confirm or replace.", ""]
+            lines += [
+                "> [!note] Inferred theme\n"
+                "> Referenced in abstract notes but no dedicated theme note yet. "
+                "Add `raw/notes/themes/{}.md` with a **Core idea:** line.".format(slug),
+                "",
+            ]
         else:
-            lines += [f"*Source note:* `{theme_rel}`", ""]
+            excerpt = _read_theme_note_excerpt(root, slug, notes_dirs)
+            if excerpt:
+                lines += ["## Notes", "", excerpt, ""]
+            lines += [f"*Theme note:* `{theme_rel}`", ""]
         lines += [f"## Papers ({len(ps)})", ""]
+        if not ps:
+            lines += ["*No papers charted under this theme yet.*", ""]
         for p in ps:
-            tag = ""
-            if p["status"] == "quick-dip":
-                tag = " _(uncharted)_"
-            elif p["status"] != "mapped":
-                tag = " _(abstract only)_" if p["status"] == "no-pdf" else " _(legacy)_"
-            lines.append(f"- [[{p['slug']}|{p['title']}]] — {_display_field(p.get('venue'))} {_display_field(p.get('year'))}.{tag} {p.get('one') or ''}")
+            icon = _tier_icon(root, p)
+            venue = _display_venue(p)
+            year = _display_field(p.get("year"))
+            one = (p.get("one") or "").strip()
+            meta = " · ".join(x for x in (venue, year) if x and x != "—")
+            suffix = f" — {one}" if one else ""
+            lines.append(f"- {icon} [[{p['slug']}|{p['title']}]] · {meta}{suffix}")
         rel = [b for b, _ in cooc[slug].most_common(5)]
         if rel:
             lines += ["", "## Related themes", ""]

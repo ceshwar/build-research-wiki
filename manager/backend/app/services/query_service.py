@@ -16,7 +16,17 @@ class QueryService:
         # type: (VaultManager) -> None
         self.vaults = vault_manager
 
-    def run_query(self, vault_id, question, provider_override=None, model_override=None, scope="all"):
+    def run_query(
+        self,
+        vault_id,
+        question,
+        provider_override=None,
+        model_override=None,
+        scope="all",
+        paper_slugs=None,
+        theme_slugs=None,
+        pdf_fallback=False,
+    ):
         vault_path = self.vaults.resolve_path(vault_id)
         provider_kind, model, ollama_url, frontier_provider = resolve_stage("query")
         if provider_override in ("local", "frontier"):
@@ -25,6 +35,8 @@ class QueryService:
             model = model_override
         if scope not in ("all", "verified", "needs_review", "uncharted"):
             scope = "all"
+        paper_slugs = paper_slugs or []
+        theme_slugs = theme_slugs or []
 
         script = REPO_ROOT / "builder" / "wiki_query.py"
         cmd = [
@@ -41,6 +53,12 @@ class QueryService:
             "--scope",
             scope,
         ]
+        if paper_slugs:
+            cmd.extend(["--papers", ",".join(paper_slugs)])
+        if theme_slugs:
+            cmd.extend(["--themes", ",".join(theme_slugs)])
+        if pdf_fallback:
+            cmd.append("--pdf-fallback")
         if ollama_url:
             cmd.extend(["--ollama-url", ollama_url])
         if frontier_provider and provider_kind == "frontier":

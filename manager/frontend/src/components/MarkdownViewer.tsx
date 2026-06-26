@@ -1,6 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { expandWikilinks } from '../lib/wikiLinks'
+import { expandWikilinks, parseWikiLinkHref } from '../lib/wikiLinks'
 
 export function MarkdownViewer({
   content,
@@ -29,21 +29,32 @@ export function MarkdownViewer({
             <blockquote className="markdown-viewer__blockquote">{children}</blockquote>
           ),
           a: ({ href, children }) => {
-            if (href?.startsWith('portolan://') && onWikiLink) {
-              const slug = decodeURIComponent(href.slice('portolan://'.length))
+            const slug = parseWikiLinkHref(href)
+            if (slug && onWikiLink) {
               const label = String(children)
               return (
                 <button
                   type="button"
                   className="markdown-viewer__wiki-link"
-                  onClick={() => onWikiLink(slug, label)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onWikiLink(slug, label)
+                  }}
                 >
                   {children}
                 </button>
               )
             }
+            const external =
+              href?.startsWith('http://') ||
+              href?.startsWith('https://') ||
+              href?.startsWith('mailto:')
             return (
-              <a href={href} className="markdown-viewer__link" target="_blank" rel="noreferrer">
+              <a
+                href={href}
+                className="markdown-viewer__link"
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
                 {children}
               </a>
             )

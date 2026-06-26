@@ -9,8 +9,9 @@ Chart entries are **product IP**: structured wiki pages we generate for users. *
 | Tier | UI label | Meaning |
 |------|----------|---------|
 | **0** | **Uncharted** ◎ | On chart, not LLM-ingested — PDF/metadata only (`status: quick-dip` registry row) |
-| **1** | **Quick dip** 🤿 | LLM-ingested — `llm_enriched: true`, awaiting human review |
-| **2** | **Deep dive** 🦑 | Verified — `human_verified: true` (or trusted hand-`mapped`) |
+| **Uncharted** ◎ | Mild red — on chart, not LLM-ingested |
+| **Quick dip** 🤿 | Green — LLM-ingested, awaiting review |
+| **Deep dive** 🦑 | Gold — verified gold standard |
 
 **Pipeline:** Dock → **Update chart** (Uncharted) → **Run Quick Dip (LLM)** → review → mark verified → **Deep dive**.
 
@@ -132,7 +133,7 @@ Mark **Deep dive verified** in Portolan after reading; wiki gets `human_verified
 2. **Update chart** surfaces PDF metadata (**Uncharted**)
 3. **Run Quick Dip (LLM)** when Ollama is available
 4. Review in Navigate → mark **Deep dive verified**
-5. **Query** with scope: All · Deep dive · Quick dip · Uncharted
+5. **Query** — scope: All · Deep dive · Quick dip · Uncharted · **Focused** (pick themes/papers). Optional PDF excerpt fallback when chart text is thin.
 
 ---
 

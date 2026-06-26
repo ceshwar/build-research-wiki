@@ -328,7 +328,7 @@ def assess_channel(vault_path, channel_id, pending_count=0):
         if a.get("needs_human_verification"):
             counts["needs_human_verification"] += 1
             needs_verification.append(a)
-        if not a.get("llm_enriched"):
+        if not a.get("llm_enriched") and not a.get("human_verified"):
             counts["uncharted_territory"] += 1
         elif not a.get("human_verified"):
             counts["quick_dip_review"] += 1
@@ -356,7 +356,7 @@ def assess_vault(vault_path, channel_pending=None):
             totals["human_verified"] += 1
         if a.get("needs_human_verification"):
             totals["needs_human_verification"] += 1
-        if not a.get("llm_enriched"):
+        if not a.get("llm_enriched") and not a.get("human_verified"):
             totals["uncharted_territory"] += 1
         elif not a.get("human_verified"):
             totals["quick_dip_review"] += 1
