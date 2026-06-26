@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.1 — Trust-tier UI + hero (2026-06-25)
+
+### Changed
+
+- **Hero screenshot** — `docs/images/portolan-hero.png` (Shallow reef · Navigate · Graph; Uncharted / Quick dip / Deep dive filters)
+
+---
+
 ## v0.5.1 — Graph framing + hero (2026-06-25)
 
 ### Fixed

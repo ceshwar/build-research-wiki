@@ -40,11 +40,21 @@ def main() -> int:
         )
         page.reload(wait_until="networkidle")
 
-        page.get_by_role("button", name="/", exact=True).click()
-        page.get_by_role("button", name="Shallow reef", exact=True).click()
+        # Default load: demo + my-portfolio workspace. If reef picker is open, select Shallow reef.
+        if page.locator(".workspace-shell").count() == 0:
+            if page.get_by_role("button", name="Shallow reef", exact=True).count():
+                page.get_by_role("button", name="Shallow reef", exact=True).click()
+            elif page.get_by_role("button", name="/", exact=True).count():
+                page.get_by_role("button", name="/", exact=True).click()
+                page.get_by_role("button", name="Shallow reef", exact=True).click()
 
-        # vault switch keeps my-portfolio channel → workspace opens directly
-        page.wait_for_selector(".workspace-shell", timeout=15000)
+        # Dock picker may appear after reef switch — open My Portfolio.
+        if page.locator(".workspace-shell").count() == 0:
+            portfolio = page.get_by_role("button").filter(has_text="My Portfolio")
+            if portfolio.count():
+                portfolio.first.click()
+
+        page.wait_for_selector(".workspace-shell", timeout=20000)
         page.get_by_role("tab", name="Graph", exact=True).click()
 
         page.add_style_tag(
